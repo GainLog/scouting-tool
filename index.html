@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moneyball Scout FM26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg-root:#03060f;
+  --bg-card:rgba(8,16,42,0.95);
+  --bg-sidebar:rgba(5,10,28,0.98);
+  --bg-nav:rgba(4,8,22,0.98);
+  --border-dim:rgba(255,255,255,0.06);
+  --border-mid:rgba(255,255,255,0.10);
+  --accent-blue:#3b82f6;
+  --accent-cyan:#06b6d4;
+  --accent-green:#10b981;
+  --accent-amber:#f59e0b;
+  --accent-red:#ef4444;
+  --accent-purple:#8b5cf6;
+  --accent-orange:#f97316;
+  --text-primary:#f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:#475569;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --sidebar-w:220px;
+  --nav-h:52px;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-root);color:var(--text-primary);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+
+/* ── KEYFRAME ANIMATIONS ──────────────────────────────────── */
+@keyframes ringDraw{from{stroke-dashoffset:var(--ring-full)}to{stroke-dashoffset:var(--ring-offset)}}
+@keyframes barSlide{from{width:0}to{width:var(--bar-w)}}
+@keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dealBarSlide{from{width:0%}to{width:var(--ds-w,98%)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+.anim-card-in{animation:cardIn .4s cubic-bezier(.4,0,.2,1) both;}
+.anim-bar{animation:barSlide .7s cubic-bezier(.4,0,.2,1) both;}
+.anim-ring{animation:ringDraw 1s cubic-bezier(.4,0,.2,1) both;}
+.anim-deal{animation:dealBarSlide .9s .3s cubic-bezier(.4,0,.2,1) both;}
+
+/* ── LAYOUT ───────────────────────────────────────────────── */
+#app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--nav-h) 1fr;grid-template-areas:"sidebar topnav" "sidebar main";height:100vh;overflow:hidden;}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+#sidebar{grid-area:sidebar;background:var(--bg-sidebar);border-right:1px solid var(--border-dim);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;}
+#sidebar::-webkit-scrollbar{width:4px;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:2px;}
+.sidebar-logo{padding:14px 16px 12px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-main{font-size:15px;font-weight:800;letter-spacing:0.04em;background:linear-gradient(90deg,#fff 0%,var(--accent-cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:9px;font-weight:500;color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;}
+.sidebar-section{padding:14px 12px 10px;flex-shrink:0;}
+.sidebar-section+.sidebar-section{border-top:1px solid var(--border-dim);}
+.section-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;padding:0 4px;}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.btn-preset{display:flex;align-items:center;gap:4px;padding:6px 7px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:10px;font-weight:500;cursor:pointer;transition:all .15s;white-space:normal;overflow:visible;font-family:inherit;line-height:1.25;text-align:left;}
+.btn-preset:hover{background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.35);color:#93c5fd;}
+.btn-preset.active{background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.55);color:#60a5fa;font-weight:700;}
+.btn-preset .bico{font-size:11px;flex-shrink:0;}
+.sb-collapsible{overflow:hidden;transition:max-height .22s ease;max-height:0;}
+.sb-collapsible.open{max-height:400px;}
+.sb-toggle{width:100%;display:flex;align-items:center;gap:7px;padding:7px 4px;background:transparent;border:none;color:var(--text-muted);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:color .15s;}
+.sb-toggle:hover{color:var(--text-secondary);}
+.sb-toggle .sbt-arrow{margin-left:auto;font-size:9px;transition:transform .2s;}
+.sb-toggle.open .sbt-arrow{transform:rotate(180deg);}
+.sb-toggle.open{color:var(--accent-blue);}
+.filter-group{margin-bottom:10px;}
+.filter-label{font-size:9px;font-weight:700;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;padding:0 2px;}
+.filter-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:var(--radius-sm);color:var(--text-primary);font-family:inherit;font-size:12px;padding:6px 28px 6px 8px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.filter-select:focus{border-color:rgba(59,130,246,0.4);}
+.filter-select option{background:#0f172a;}
+.slider-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.slider-val{font-size:11px;font-weight:700;color:var(--accent-blue);}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent-blue);cursor:pointer;box-shadow:0 0 0 3px rgba(59,130,246,0.25);}
+.btn-sidebar-action{width:100%;display:flex;align-items:center;gap:7px;padding:7px 10px;background:transparent;border:1px solid var(--border-dim);border-radius:var(--radius-sm);color:var(--text-secondary);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:6px;}
+.btn-sidebar-action:hover{background:rgba(255,255,255,0.04);border-color:var(--border-mid);color:var(--text-primary);}
+.btn-sidebar-action.danger:hover{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:#fca5a5;}
+.sidebar-footer{margin-top:auto;padding:10px 12px;border-top:1px solid var(--border-dim);font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px;}
+.sidebar-footer .sdot{width:6px;height:6px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 4px var(--accent-green);flex-shrink:0;}
+
+/* ── TOP NAV ─────────────────────────────────────────────── */
+#topnav{grid-area:topnav;background:var(--bg-nav);border-bottom:1px solid var(--border-dim);display:flex;align-items:center;padding:0 16px;z-index:10;}
+.nav-links{display:flex;align-items:stretch;height:100%;flex:1;}
+.nav-link{display:flex;align-items:center;padding:0 14px;font-size:12px;font-weight:500;color:var(--text-secondary);border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;letter-spacing:0.03em;white-space:nowrap;border-radius:0;background:transparent;border-left:none;border-right:none;border-top:none;font-family:inherit;}
+.nav-link:hover{color:var(--text-primary);}
+.nav-link.active{color:var(--accent-blue);border-bottom-color:var(--accent-blue);}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.player-count{display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border-dim);border-radius:var(--radius-sm);font-size:12px;font-weight:600;}
+.player-count .cnum{color:var(--accent-cyan);}
+.btn-import{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--accent-blue);border:none;border-radius:var(--radius-sm);color:#fff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
+.btn-import:hover{background:#2563eb;}
+
+/* ── MAIN ────────────────────────────────────────────────── */
+#main{grid-area:main;overflow-y:auto;overflow-x:hidden;background:var(--bg-root);scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;}
+#main::-webkit-scrollbar{width:5px;}
+#main::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px;}
+.main-inner{padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px;}
+
+/* ── CARDS ───────────────────────────────────────────────── */
+.card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.card:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(0,0,0,0.35);}
+/* P9 — visual hierarchy: hero cards get brighter border */
+.card.hero{border-color:rgba(255,255,255,0.09);}
+.card-header{padding:10px 14px 0;display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);}
+.card-title-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;background:rgba(59,130,246,0.15);color:var(--accent-blue);}
+
+/* ── P1: EXECUTIVE BAR ── per-card colour identity ───────── */
+.exec-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+
+/* Base card */
+.exec-card{
+  border-radius:var(--radius-md);
+  padding:11px 12px 10px;
+  display:flex;flex-direction:column;gap:0;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+  border:1px solid transparent;
+}
+/* P4: hover glow + scale */
+.exec-card:hover{transform:translateY(-3px) scale(1.015);cursor:pointer;}
+/* Category: green steal */
+.exec-card.green{
+  background:linear-gradient(145deg,rgba(8,32,22,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(16,185,129,0.22);
+  box-shadow:0 0 0 0 rgba(16,185,129,0);
+}
+.exec-card.green:hover{box-shadow:0 0 20px rgba(16,185,129,0.18),0 4px 24px rgba(0,0,0,0.4);}
+/* Category: cyan gem */
+.exec-card.cyan{
+  background:linear-gradient(145deg,rgba(4,28,40,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(6,182,212,0.20);
+}
+.exec-card.cyan:hover{box-shadow:0 0 20px rgba(6,182,212,0.16),0 4px 24px rgba(0,0,0,0.4);}
+/* Category: orange impact */
+.exec-card.orange{
+  background:linear-gradient(145deg,rgba(28,14,4,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(249,115,22,0.20);
+}
+.exec-card.orange:hover{box-shadow:0 0 20px rgba(249,115,22,0.16),0 4px 24px rgba(0,0,0,0.4);}
+/* Category: purple resale */
+.exec-card.purple{
+  background:linear-gradient(145deg,rgba(18,10,36,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(139,92,246,0.20);
+}
+.exec-card.purple:hover{box-shadow:0 0 20px rgba(139,92,246,0.16),0 4px 24px rgba(0,0,0,0.4);}
+/* Category: red overpriced */
+.exec-card.red{
+  background:linear-gradient(145deg,rgba(28,6,6,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(239,68,68,0.20);
+}
+.exec-card.red:hover{box-shadow:0 0 20px rgba(239,68,68,0.16),0 4px 24px rgba(0,0,0,0.4);}
+/* Category: amber salary */
+.exec-card.amber{
+  background:linear-gradient(145deg,rgba(28,20,4,0.97),rgba(8,16,42,0.95));
+  border-color:rgba(245,158,11,0.20);
+}
+.exec-card.amber:hover{box-shadow:0 0 20px rgba(245,158,11,0.14),0 4px 24px rgba(0,0,0,0.4);}
+
+/* Colour top bar — always on */
+.exec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.exec-card.green::before{background:linear-gradient(90deg,var(--accent-green),rgba(16,185,129,0));}
+.exec-card.cyan::before{background:linear-gradient(90deg,var(--accent-cyan),rgba(6,182,212,0));}
+.exec-card.orange::before{background:linear-gradient(90deg,var(--accent-orange),rgba(249,115,22,0));}
+.exec-card.purple::before{background:linear-gradient(90deg,var(--accent-purple),rgba(139,92,246,0));}
+.exec-card.red::before{background:linear-gradient(90deg,var(--accent-red),rgba(239,68,68,0));}
+.exec-card.amber::before{background:linear-gradient(90deg,var(--accent-amber),rgba(245,158,11,0));}
+
+.exec-cat{font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;}
+.exec-hero-name{font-size:14px;font-weight:800;line-height:1.15;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.exec-card.green .exec-hero-name{color:#6ee7b7;}
+.exec-card.cyan .exec-hero-name{color:#67e8f9;}
+.exec-card.orange .exec-hero-name{color:#fdba74;}
+.exec-card.purple .exec-hero-name{color:#c4b5fd;}
+.exec-card.red .exec-hero-name{color:#fca5a5;}
+.exec-card.amber .exec-hero-name{color:#fcd34d;}
+.exec-stat{font-size:11px;font-weight:700;margin-bottom:2px;}
+.exec-card.green .exec-stat{color:var(--accent-green);}
+.exec-card.cyan .exec-stat{color:var(--accent-cyan);}
+.exec-card.orange .exec-stat{color:var(--accent-orange);}
+.exec-card.purple .exec-stat{color:var(--accent-purple);}
+.exec-card.red .exec-stat{color:var(--accent-red);}
+.exec-card.amber .exec-stat{color:var(--accent-amber);}
+.exec-meta{font-size:9px;color:var(--text-muted);line-height:1.3;margin-bottom:6px;}
+.exec-cta{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;align-self:flex-start;margin-top:auto;}
+.exec-card.green .exec-cta{background:rgba(16,185,129,0.14);color:#6ee7b7;border:1px solid rgba(16,185,129,0.25);transition:all .15s;}.exec-card:hover .exec-cta{letter-spacing:0.06em;}
+.exec-card.cyan .exec-cta{background:rgba(6,182,212,0.14);color:#67e8f9;border:1px solid rgba(6,182,212,0.25);}
+.exec-card.orange .exec-cta{background:rgba(249,115,22,0.14);color:#fdba74;border:1px solid rgba(249,115,22,0.25);}
+.exec-card.purple .exec-cta{background:rgba(139,92,246,0.14);color:#c4b5fd;border:1px solid rgba(139,92,246,0.25);}
+.exec-card.red .exec-cta{background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.22);}
+.exec-card.amber .exec-cta{background:rgba(245,158,11,0.14);color:#fcd34d;border:1px solid rgba(245,158,11,0.25);}
+
+/* ── GRID ROWS ────────────────────────────────────────────── */
+.dash-row{display:grid;gap:10px;}
+.dash-row-1{grid-template-columns:2fr 1.1fr 1.5fr;}
+.dash-row-2{grid-template-columns:1fr 1fr 1fr 1fr 1.15fr;}
+.dash-row-3{grid-template-columns:1fr 1fr 1.5fr 1.1fr;}
+
+/* ── PLAYER OVERVIEW ─────────────────────────────────────── */
+.overview-top{display:flex;align-items:center;gap:14px;padding:10px 14px 8px;}
+.gauge-wrap{position:relative;width:100px;height:100px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.gauge-wrap svg{position:absolute;top:0;left:0;}
+.gauge-center{position:relative;text-align:center;pointer-events:none;}
+.gauge-lbl{font-size:9px;font-weight:700;color:var(--text-muted);letter-spacing:0.06em;}
+.gauge-ovs{font-size:30px;font-weight:900;line-height:1;color:var(--text-primary);}
+.gauge-pct{font-size:11px;font-weight:700;color:var(--accent-cyan);}
+.ovs-tooltip{position:absolute;top:50%;left:calc(100% + 10px);transform:translateY(-50%);background:rgba(4,8,22,0.97);border:1px solid var(--border-mid);border-radius:var(--radius-md);padding:10px 12px;width:180px;z-index:50;opacity:0;pointer-events:none;transition:opacity .18s;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.gauge-wrap:hover .ovs-tooltip{opacity:1;}
+.ovs-tt-title{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px;}
+.ovs-tt-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;font-size:10px;}
+.ovs-tt-label{color:var(--text-secondary);}
+.ovs-tt-val{font-weight:700;}
+.ovs-tt-val.pos{color:var(--accent-green);}
+.ovs-tt-val.neg{color:var(--accent-red);}
+.ovs-tt-sep{border-top:1px solid var(--border-dim);margin:5px 0;}
+.ovs-tt-total{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:800;}
+.ovs-tt-total .lbl{color:var(--text-muted);}
+.ovs-tt-total .val{color:var(--accent-cyan);}
+.bars-wrap{flex:1;display:flex;flex-direction:column;gap:4px;}
+.bar-row{display:grid;grid-template-columns:88px 1fr 28px 60px;align-items:center;gap:5px;}
+.bar-label{font-size:10px;font-weight:500;color:var(--text-secondary);white-space:nowrap;}
+.bar-track{height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;background:var(--accent-blue);}
+.bar-fill.g{background:var(--accent-green);}
+.bar-fill.c{background:var(--accent-cyan);}
+.bar-fill.a{background:var(--accent-amber);}
+.bar-fill.r{background:var(--accent-red);}
+.bar-num{font-size:11px;font-weight:700;color:var(--text-primary);text-align:right;}
+.bar-rank{font-size:9px;font-weight:600;color:var(--accent-cyan);white-space:nowrap;}
+.ovs-connector{padding:0 14px 12px;display:flex;align-items:center;gap:0;}
+.ovs-conn-label{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-right:8px;white-space:nowrap;}
+.ovs-conn-chips{display:flex;gap:4px;flex-wrap:wrap;}
+.conn-chip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;}
+.conn-chip.pos{background:rgba(16,185,129,0.12);color:var(--accent-green);border:1px solid rgba(16,185,129,0.2);}
+.conn-chip.neg{background:rgba(239,68,68,0.10);color:var(--accent-red);border:1px solid rgba(239,68,68,0.18);}
+
+/* OVS breakdown */
+.breakdown-list{display:flex;flex-direction:column;gap:4px;padding:4px 14px 10px;}
+.breakdown-row{display:grid;grid-template-columns:16px 1fr 40px 52px;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border-dim);}
+.breakdown-row:last-child{border-bottom:none;}
+.bd-icon{font-size:12px;text-align:center;}
+.bd-label{font-size:11px;color:var(--text-secondary);}
+.bd-bar{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;}
+.bd-bar-fill{height:100%;border-radius:2px;}
+.bd-bar-fill.pos{background:var(--accent-green);}
+.bd-bar-fill.neg{background:var(--accent-red);}
+.bd-val{font-size:12px;font-weight:800;text-align:right;}
+.bd-val.pos{color:var(--accent-green);}
+.bd-val.neg{color:var(--accent-red);}
+.breakdown-total{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border-mid);}
+.breakdown-total-label{font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;}
+.breakdown-total-val{font-size:18px;font-weight:900;color:var(--accent-green);}
+.ovs-tie-note{font-size:9px;color:var(--text-muted);padding:0 14px 8px;font-style:italic;}
+
+/* ── P2: SCOUT VERDICT — dominant hero panel ─────────────── */
+.verdict-panel{
+  position:relative;overflow:hidden;
+  /* P2: stronger coloured border */
+  border:1px solid rgba(16,185,129,0.40)!important;
+  box-shadow:0 0 32px rgba(16,185,129,0.06),inset 0 0 60px rgba(16,185,129,0.03);
+}
+.verdict-glow-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 180% 120% at 55% -20%, rgba(16,185,129,0.13) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 80% at 80% 100%, rgba(6,182,212,0.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+.verdict-top{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 6px;}
+.verdict-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+/* P2: bigger, glowing verdict text */
+.verdict-text{
+  font-size:32px;font-weight:900;color:var(--accent-green);line-height:1;letter-spacing:-0.03em;
+  text-shadow:0 0 32px rgba(16,185,129,0.55),0 0 12px rgba(16,185,129,0.25),0 0 4px rgba(16,185,129,0.15);
+}
+/* P2: premium badge — gradient border via pseudo */
+.verdict-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:5px;padding:3px 8px;
+  background:rgba(16,185,129,0.10);
+  border:1px solid rgba(16,185,129,0.22);
+  border-radius:4px;font-size:9px;font-weight:600;
+  color:rgba(110,231,183,0.75);letter-spacing:0.05em;text-transform:uppercase;
+  position:relative;
+}
+.verdict-badge::before{
+  content:'';position:absolute;inset:0;border-radius:6px;
+  background:linear-gradient(135deg,rgba(16,185,129,0.5),rgba(6,182,212,0.3));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  padding:1px;
+}
+.verdict-conf{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.conf-ring-wrap{position:relative;width:60px;height:60px;}
+.conf-num{font-size:17px;font-weight:800;color:var(--text-primary);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.conf-label{font-size:9px;color:var(--text-muted);text-align:center;letter-spacing:0.08em;}
+.verdict-meta{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:0 14px 8px;}
+.vmeta-label{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px;}
+.vmeta-val{font-size:11px;font-weight:700;}
+.vmeta-val.gn{color:var(--accent-green);}
+.vmeta-val.cy{color:var(--accent-cyan);}
+.vmeta-val.am{color:var(--accent-amber);}
+.rdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.rdot.low{background:var(--accent-green);box-shadow:0 0 5px var(--accent-green);}
+.rdot.med{background:var(--accent-amber);box-shadow:0 0 5px var(--accent-amber);}
+.rdot.hi{background:var(--accent-red);box-shadow:0 0 5px var(--accent-red);}
+
+/* ── P3: DEAL SCORE — premium animated block ────────────── */
+.deal-score-wrap{
+  margin:0 14px 10px;padding:12px 14px;
+  background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(6,182,212,0.04));
+  border:1px solid rgba(16,185,129,0.25);
+  border-radius:var(--radius-md);
+  position:relative;overflow:hidden;
+}
+.deal-score-wrap::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle,rgba(16,185,129,0.12),transparent 70%);
+  pointer-events:none;
+}
+.ds-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.ds-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);}
+.ds-score-group{display:flex;align-items:baseline;gap:2px;}
+.ds-score-text{font-size:22px;font-weight:900;color:var(--accent-green);line-height:1;}
+.ds-slash{font-size:12px;color:var(--text-muted);font-weight:500;}
+.ds-bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden;margin-bottom:7px;position:relative;}
+.ds-bar-fill{
+  height:100%;border-radius:5px;
+  background:linear-gradient(90deg,#059669,var(--accent-green),var(--accent-cyan));
+  --ds-w:98%;width:0%;
+}
+.ds-verdict-row{display:flex;align-items:center;justify-content:space-between;}
+.ds-verdict{font-size:12px;font-weight:900;color:var(--accent-green);letter-spacing:0.04em;}
+.ds-ai-tag{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(16,185,129,0.12);color:#6ee7b7;border:1px solid rgba(16,185,129,0.2);letter-spacing:0.06em;}
+.ds-quote{font-size:9px;color:var(--text-muted);margin-top:5px;font-style:italic;line-height:1.5;border-top:1px solid var(--border-dim);padding-top:5px;}
+
+.verdict-fees{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 8px;}
+.fee-box{background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-radius:var(--radius-sm);padding:7px 10px;}
+.fee-box-label{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px;}
+.fee-box-val{font-size:15px;font-weight:800;color:var(--text-primary);}
+.fee-box.danger .fee-box-val{color:var(--accent-red);}
+.verdict-quote{margin:0 14px 12px;padding:8px 10px;background:rgba(255,255,255,0.02);border-left:2px solid var(--accent-green);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:10px;line-height:1.65;color:var(--text-secondary);font-style:italic;}
+
+/* ── ROW 2 ───────────────────────────────────────────────── */
+.reason-list{display:flex;flex-direction:column;gap:4px;padding:6px 14px 14px;}
+.reason-item{display:flex;align-items:flex-start;gap:8px;padding:5px 8px;border-radius:6px;transition:background .12s;}
+.reason-item:hover{background:rgba(255,255,255,0.03);}
+.reason-icon-wrap{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px;}
+.reason-icon-wrap.pro{background:rgba(16,185,129,0.15);}
+.reason-icon-wrap.con{background:rgba(239,68,68,0.12);}
+.reason-text{flex:1;}
+.reason-main{font-size:11px;font-weight:600;color:var(--text-primary);line-height:1.3;}
+.reason-sub{font-size:9px;color:var(--text-muted);margin-top:1px;}
+.mkt-ineff{padding:10px 14px 14px;text-align:center;}
+.mkt-pct-big{font-size:40px;font-weight:900;color:var(--accent-cyan);line-height:1;letter-spacing:-0.02em;text-shadow:0 0 20px rgba(6,182,212,0.3);}
+.mkt-sub{font-size:10px;font-weight:700;color:var(--text-secondary);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.mkt-values{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;text-align:left;}
+.mkt-val-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;}
+.mkt-val-num{font-size:13px;font-weight:700;color:var(--text-primary);}
+.mkt-bar{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:8px;}
+.mkt-bar-fill{height:100%;border-radius:2px;background:var(--accent-cyan);}
+.risk-total-banner{margin:10px 14px 6px;padding:10px 12px;border-radius:var(--radius-md);background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.18);display:flex;align-items:center;gap:12px;}
+.risk-total-dot{width:14px;height:14px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 8px var(--accent-green);flex-shrink:0;animation:pulse 2s ease-in-out infinite;}
+.risk-total-text{flex:1;}
+.risk-total-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);}
+.risk-total-level{font-size:16px;font-weight:900;color:var(--accent-green);line-height:1.1;}
+.risk-total-score{font-size:11px;font-weight:700;color:var(--accent-green);opacity:0.7;}
+.risk-panel{padding:4px 14px 14px;display:flex;align-items:center;gap:12px;}
+.risk-ring-wrap{position:relative;width:64px;height:64px;flex-shrink:0;}
+.risk-ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.risk-level-text{font-size:8px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent-green);line-height:1.2;}
+.risk-dots{flex:1;display:flex;flex-direction:column;gap:4px;}
+.risk-dot-row{display:flex;align-items:center;justify-content:space-between;font-size:10px;}
+.risk-dot-name{color:var(--text-secondary);}
+.risk-pill{font-size:9px;font-weight:700;padding:1px 7px;border-radius:3px;}
+.risk-pill.low{background:rgba(16,185,129,0.15);color:var(--accent-green);}
+.risk-pill.med{background:rgba(245,158,11,0.15);color:var(--accent-amber);}
+.risk-pill.hi{background:rgba(239,68,68,0.15);color:var(--accent-red);}
+
+/* P5: BUDGET DEAL — expanded with all KPIs */
+.budget-panel{padding:8px 14px 14px;display:flex;flex-direction:column;gap:8px;}
+.budget-rings{display:flex;gap:8px;justify-content:center;}
+.budget-ring-item{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.budget-ring-wrap{position:relative;width:50px;height:50px;}
+.budget-ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:800;color:var(--text-primary);}
+.budget-ring-label{font-size:9px;color:var(--text-muted);text-align:center;line-height:1.2;}
+.budget-kpis{display:flex;flex-direction:column;gap:3px;}
+.budget-kpi-row{display:grid;grid-template-columns:1fr auto;align-items:center;padding:4px 0;border-bottom:1px solid var(--border-dim);}
+.budget-kpi-row:last-child{border-bottom:none;}
+.budget-kpi-label{font-size:9px;color:var(--text-muted);}
+.budget-kpi-val{font-size:10px;font-weight:700;text-align:right;}
+.budget-kpi-val.gn{color:var(--accent-green);}
+.budget-kpi-val.am{color:var(--accent-amber);}
+.budget-kpi-val.rd{color:var(--accent-red);}
+.budget-kpi-val.cy{color:var(--accent-cyan);}
+/* Transfer efficiency mini bar inside budget */
+.budget-eff-bar{height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:1px;grid-column:1/-1;}
+.budget-eff-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent-green),var(--accent-cyan));}
+
+/* ── ROW 3 ───────────────────────────────────────────────── */
+.player-type-panel{padding:8px 14px 14px;}
+.player-type-badge{font-size:12px;font-weight:700;color:var(--accent-cyan);margin-bottom:6px;}
+.radar-wrap{display:flex;justify-content:center;}
+
+/* P7: SIMILAR PLAYERS */
+.similar-list{display:flex;flex-direction:column;gap:6px;padding:6px 14px 14px;}
+.similar-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;}
+.similar-item:hover{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2);}
+.similar-avatar{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0;}
+.similar-info{flex:1;min-width:0;}
+.similar-name{font-size:12px;font-weight:600;color:var(--text-primary);}
+.similar-club{font-size:10px;color:var(--text-muted);margin-bottom:4px;}
+.similar-chips{display:flex;flex-wrap:wrap;gap:3px;}
+.sim-chip{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.sim-chip.pos{background:rgba(16,185,129,0.12);color:var(--accent-green);border:1px solid rgba(16,185,129,0.18);}
+.sim-chip.neg{background:rgba(239,68,68,0.10);color:#fca5a5;border:1px solid rgba(239,68,68,0.18);}
+.sim-chip.neu{background:rgba(245,158,11,0.10);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.18);}
+.similar-right{text-align:right;flex-shrink:0;}
+.similar-pct{font-size:14px;font-weight:800;color:var(--accent-green);}
+.similar-pct-label{font-size:8px;color:var(--text-muted);}
+.view-all-link{display:flex;align-items:center;gap:4px;padding:6px 14px;font-size:11px;font-weight:600;color:var(--accent-blue);cursor:pointer;border-top:1px solid var(--border-dim);}
+.view-all-link:hover{color:#93c5fd;}
+
+/* P6: SCOUT REPORT — intelligent prose */
+.scout-report-panel{padding:8px 14px 14px;display:flex;flex-direction:column;gap:10px;}
+.scout-verdict-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;background:rgba(16,185,129,0.12);color:var(--accent-green);border:1px solid rgba(16,185,129,0.2);margin-bottom:2px;}
+.scout-prose{font-size:11px;line-height:1.8;color:var(--text-secondary);}
+.scout-prose strong{color:var(--text-primary);font-weight:600;}
+.scout-prose em{color:var(--accent-cyan);font-style:normal;font-weight:600;}
+.scout-action{margin-top:4px;padding:8px 10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:6px;font-size:10px;font-weight:600;color:var(--accent-blue);line-height:1.5;}
+.scout-tags{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.scout-tag{display:flex;align-items:flex-start;gap:5px;font-size:10px;color:var(--text-secondary);line-height:1.3;padding:3px 0;}
+.scout-tag.pro .si{color:var(--accent-green);}
+.scout-tag.warn .si{color:var(--accent-amber);}
+.si{font-size:10px;flex-shrink:0;margin-top:1px;}
+
+/* P8: HIDDEN GEM */
+.gem-panel{padding:8px 14px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.gem-top{display:flex;align-items:center;gap:14px;width:100%;}
+.gem-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0;}
+.gem-ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.gem-pct{font-size:20px;font-weight:900;color:var(--text-primary);line-height:1;}
+.gem-verdict-side{flex:1;}
+.gem-verdict-label{font-size:8px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;}
+.gem-verdict-val{font-size:12px;font-weight:800;color:var(--accent-amber);line-height:1.2;}
+.gem-reasons{width:100%;display:flex;flex-direction:column;gap:3px;}
+.gem-reason-row{display:flex;align-items:flex-start;gap:7px;font-size:10px;padding:3px 8px;border-radius:5px;transition:background .12s;}
+.gem-reason-row:hover{background:rgba(255,255,255,0.03);}
+.gem-reason-icon{width:16px;height:16px;border-radius:3px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent-green);flex-shrink:0;margin-top:1px;}
+.gem-reason-text{flex:1;}
+.gem-reason-main{color:var(--text-secondary);line-height:1.3;}
+.gem-reason-detail{font-size:9px;color:var(--text-muted);margin-top:1px;}
+.gem-sparkline{width:100%;height:24px;}
+
+/* ── MISC ────────────────────────────────────────────────── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px 20px;text-align:center;color:var(--text-muted);}
+.empty-icon{font-size:48px;opacity:0.4;}
+.empty-title{font-size:18px;font-weight:700;color:var(--text-secondary);}
+.empty-desc{font-size:13px;line-height:1.6;max-width:340px;}
+.empty-btn{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-blue);border:none;border-radius:var(--radius-md);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
+.empty-btn:hover{background:#2563eb;}
+.view{display:none;}
+.view.active{display:flex;flex-direction:column;gap:12px;}
+.list-header-row{display:grid;grid-template-columns:32px 1fr 60px 70px 70px 80px 60px 80px;gap:10px;padding:6px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border-dim);}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">&#9917;</div>
+    <div style="line-height:1.1">
+      <div class="logo-main">MONEYBALL</div>
+      <div class="logo-sub">Data &middot; Scout &middot; Win</div>
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="section-label">Quick Presets</div>
+    <div class="preset-grid">
+      <button class="btn-preset active" data-preset="steals"><span class="bico">&#9889;</span> Top Steals</button>
+      <button class="btn-preset" data-preset="wonderkids"><span class="bico">&#11088;</span> Wonderkids</button>
+      <button class="btn-preset" data-preset="impact"><span class="bico">&#128293;</span> Sofortimpact</button>
+      <button class="btn-preset" data-preset="resale"><span class="bico">&#128081;</span> Resale Kings</button>
+      <button class="btn-preset" data-preset="value"><span class="bico">&#128200;</span> High Value</button>
+      <button class="btn-preset" data-preset="lowrisk"><span class="bico">&#128737;</span> Low Risk</button>
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="section-label">Filter</div>
+    <div class="filter-group">
+      <div class="filter-label">Position</div>
+      <select class="filter-select" id="filter-pos">
+        <option value="">Alle Positionen</option>
+        <option>GK</option><option>CB</option><option>LB</option><option>RB</option>
+        <option>DM</option><option>CM</option><option>AM</option><option>LW</option><option>RW</option><option>ST</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Alter</div>
+      <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">16</span><span class="slider-val" id="age-val">16&ndash;28</span><span style="font-size:10px;color:var(--text-muted)">45</span></div>
+      <input type="range" id="filter-age-min" min="16" max="45" value="16">
+      <input type="range" id="filter-age-max" min="16" max="45" value="28" style="margin-top:4px">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Max. Budget</div>
+      <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">0</span><span class="slider-val" id="fee-val">Kein Limit</span><span style="font-size:10px;color:var(--text-muted)">200M</span></div>
+      <input type="range" id="filter-fee" min="0" max="200" value="200">
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <button class="sb-toggle" id="toggle-adv">&#9654; Erweiterte Filter<span class="sbt-arrow">&#8964;</span></button>
+    <div class="sb-collapsible" id="drawer-adv">
+      <div class="filter-group" style="margin-top:6px">
+        <div class="filter-label">Rolle</div>
+        <select class="filter-select" id="filter-role"><option value="">Alle Rollen</option></select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Max. Gehalt</div>
+        <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">0</span><span class="slider-val" id="wage-val">Kein Limit</span><span style="font-size:10px;color:var(--text-muted)">500K</span></div>
+        <input type="range" id="filter-wage" min="0" max="500" value="500">
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Anzeigen</div>
+        <select class="filter-select" id="filter-show">
+          <option value="">Alle Spieler</option>
+          <option value="steal">Nur Steals</option>
+          <option value="gem">Hidden Gems</option>
+          <option value="wonderkid">Wonderkids</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-sidebar-action danger" id="btn-reset" style="margin-top:8px"><span>&#8635;</span> Filter zur&uuml;cksetzen</button>
+  </div>
+  <div class="sidebar-footer"><div class="sdot"></div>Moneyball Scout FM26 v4</div>
+</aside>
+
+<!-- TOP NAV -->
+<nav id="topnav">
+  <div class="nav-links">
+    <button class="nav-link active" data-view="dashboard">DASHBOARD</button>
+    <button class="nav-link" data-view="players">PLAYERS</button>
+    <button class="nav-link" data-view="scout-reports">SCOUT REPORTS</button>
+    <button class="nav-link" data-view="compare">COMPARE</button>
+    <button class="nav-link" data-view="hidden-gems">HIDDEN GEMS</button>
+    <button class="nav-link" data-view="settings">SETTINGS</button>
+  </div>
+  <div class="nav-right">
+    <div class="player-count"><span class="cnum" id="player-count-num">0</span><span style="color:var(--text-muted)">Players</span></div>
+    <button class="btn-import" id="btn-import">&#8593; Import CSV</button>
+    <input type="file" id="file-input" accept=".csv" style="display:none">
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+<div class="main-inner">
+<div class="view active" id="view-dashboard">
+
+<div id="dashboard-empty" class="empty-state">
+  <div class="empty-icon">&#128202;</div>
+  <div class="empty-title">Keine Daten geladen</div>
+  <div class="empty-desc">FM26 CSV importieren — sofort wissen wen kaufen, warum jetzt, welcher Preis.</div>
+  <button class="empty-btn" onclick="document.getElementById('file-input').click()">&#8593; CSV importieren</button>
+</div>
+
+<div id="dashboard-content" class="hidden">
+
+<!-- ═══ P1: EXECUTIVE BAR — unique visual identity per category ═══ -->
+<div class="exec-bar" id="exec-bar">
+  <div class="exec-card green anim-card-in" style="animation-delay:.05s">
+    <div class="exec-cat">&#9889; Bestes Steal</div>
+    <div class="exec-hero-name">M. Gu&eacute;ndouzi</div>
+    <div class="exec-stat">74% unter Marktwert</div>
+    <div class="exec-meta">23 J. &bull; CM &bull; OVS 87 &bull; Marseille</div>
+    <div class="exec-cta">&#8594; Jetzt kaufen</div>
+  </div>
+  <div class="exec-card cyan anim-card-in" style="animation-delay:.1s">
+    <div class="exec-cat">&#128142; Hidden Gem</div>
+    <div class="exec-hero-name">J. Grealish</div>
+    <div class="exec-stat">Konf. 89% &mdash; Markt blind</div>
+    <div class="exec-meta">Liga unterschätzt &bull; 25 J. &bull; AM</div>
+    <div class="exec-cta">&#8594; Scout Report</div>
+  </div>
+  <div class="exec-card orange anim-card-in" style="animation-delay:.15s">
+    <div class="exec-cat">&#128293; Soforthilfe</div>
+    <div class="exec-hero-name">R. Lukaku</div>
+    <div class="exec-stat">Impact HIGH &bull; Sofort erste Elf</div>
+    <div class="exec-meta">26 J. &bull; ST &bull; Top 5% Abschluss</div>
+    <div class="exec-cta">&#8594; Deal pr&uuml;fen</div>
+  </div>
+  <div class="exec-card purple anim-card-in" style="animation-delay:.2s">
+    <div class="exec-cat">&#128081; Resale King</div>
+    <div class="exec-hero-name">P. Schick</div>
+    <div class="exec-stat">ROI gesch. +180%</div>
+    <div class="exec-meta">21 J. &bull; ST &bull; Potenzial Elite</div>
+    <div class="exec-cta">&#8594; Investieren</div>
+  </div>
+  <div class="exec-card red anim-card-in" style="animation-delay:.25s">
+    <div class="exec-cat">&#128683; Overpriced</div>
+    <div class="exec-hero-name">M. Depay</div>
+    <div class="exec-stat">38% &uuml;ber Marktwert</div>
+    <div class="exec-meta">Vermeiden &bull; 30 J. &bull; Abwärtstrend</div>
+    <div class="exec-cta">&#8594; Meiden</div>
+  </div>
+  <div class="exec-card amber anim-card-in" style="animation-delay:.3s">
+    <div class="exec-cat">&#128181; Value/Gehalt</div>
+    <div class="exec-hero-name">K. Tierney</div>
+    <div class="exec-stat">Top 4% Gehalts-Effizienz</div>
+    <div class="exec-meta">27 J. &bull; LB &bull; Wenig Gehalt</div>
+    <div class="exec-cta">&#8594; Analysieren</div>
+  </div>
+</div>
+
+<!-- ═══ ROW 1: Player Overview | OVS Breakdown | Scout Verdict ═══ -->
+<div class="dash-row dash-row-1">
+
+  <!-- Player Overview (hero card) -->
+  <div class="card hero" style="display:flex;flex-direction:column;">
+    <div class="card-header">
+      <span class="card-title">Player Overview</span>
+      <span class="card-title-badge">OVS erkl&auml;rt &mdash; Hover f&uuml;r Details</span>
+    </div>
+    <div class="overview-top">
+      <!-- OVS gauge with animated ring + hover tooltip -->
+      <div class="gauge-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+          <circle id="ovs-gauge-ring" cx="50" cy="50" r="42" fill="none"
+            stroke="var(--accent-cyan)" stroke-width="8" stroke-dasharray="264"
+            stroke-dashoffset="264" stroke-linecap="round" transform="rotate(-90 50 50)"
+            style="--ring-full:264;--ring-offset:66;filter:drop-shadow(0 0 7px var(--accent-cyan))"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-lbl">OVS</div>
+          <div class="gauge-ovs" id="ovs-num">87</div>
+          <div class="gauge-pct" id="ovs-pct">Top 6%</div>
+        </div>
+        <div class="ovs-tooltip">
+          <div class="ovs-tt-title">OVS Aufschl&uuml;sselung</div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Performance</span><span class="ovs-tt-val pos">+31</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Marktwert</span><span class="ovs-tt-val pos">+22</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Gehaltseffizienz</span><span class="ovs-tt-val pos">+15</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Alter &amp; Potenzial</span><span class="ovs-tt-val pos">+12</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Verl&auml;sslichkeit</span><span class="ovs-tt-val pos">+8</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Risikofaktor</span><span class="ovs-tt-val neg">&minus;6</span></div>
+          <div class="ovs-tt-row"><span class="ovs-tt-label">Datenqualit&auml;t</span><span class="ovs-tt-val neg">&minus;3</span></div>
+          <div class="ovs-tt-sep"></div>
+          <div class="ovs-tt-total"><span class="lbl">OVS Score</span><span class="val">87 &mdash; Top 6%</span></div>
+        </div>
+      </div>
+      <!-- Animated progress bars -->
+      <div class="bars-wrap" id="ovs-bars">
+        <div class="bar-row"><div class="bar-label">Performance</div><div class="bar-track"><div class="bar-fill g anim-bar" style="--bar-w:89%;width:0%"></div></div><div class="bar-num">89</div><div class="bar-rank">Top 6%</div></div>
+        <div class="bar-row"><div class="bar-label">Kosteneffizienz</div><div class="bar-track"><div class="bar-fill anim-bar" style="--bar-w:82%;width:0%;animation-delay:.1s"></div></div><div class="bar-num">82</div><div class="bar-rank">Top 12%</div></div>
+        <div class="bar-row"><div class="bar-label">Marktchance</div><div class="bar-track"><div class="bar-fill c anim-bar" style="--bar-w:88%;width:0%;animation-delay:.15s"></div></div><div class="bar-num">88</div><div class="bar-rank">Top 8%</div></div>
+        <div class="bar-row"><div class="bar-label">Verl&auml;sslichkeit</div><div class="bar-track"><div class="bar-fill anim-bar" style="--bar-w:80%;width:0%;animation-delay:.2s"></div></div><div class="bar-num">80</div><div class="bar-rank">Top 15%</div></div>
+        <div class="bar-row"><div class="bar-label">Alterskurve</div><div class="bar-track"><div class="bar-fill a anim-bar" style="--bar-w:76%;width:0%;animation-delay:.25s"></div></div><div class="bar-num">76</div><div class="bar-rank">Top 20%</div></div>
+        <div class="bar-row"><div class="bar-label">Potenzial</div><div class="bar-track"><div class="bar-fill g anim-bar" style="--bar-w:86%;width:0%;animation-delay:.3s"></div></div><div class="bar-num">86</div><div class="bar-rank">Top 7%</div></div>
+        <div class="bar-row"><div class="bar-label">Risiko</div><div class="bar-track"><div class="bar-fill r anim-bar" style="--bar-w:32%;width:0%;animation-delay:.35s"></div></div><div class="bar-num">32</div><div class="bar-rank">Besser 65%</div></div>
+      </div>
+    </div>
+    <div class="ovs-connector">
+      <span class="ovs-conn-label">Score:</span>
+      <div class="ovs-conn-chips">
+        <span class="conn-chip pos">+31 Perf.</span><span class="conn-chip pos">+22 Markt</span>
+        <span class="conn-chip pos">+15 Gehalt</span><span class="conn-chip pos">+12 Alter</span>
+        <span class="conn-chip pos">+8 Zuverl.</span><span class="conn-chip neg">&minus;6 Risiko</span>
+        <span class="conn-chip neg">&minus;3 Daten</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVS Breakdown -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">OVS Aufschl&uuml;sselung</span></div>
+    <div class="breakdown-list">
+      <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Performance</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:100%"></div></div><div class="bd-val pos">+31</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">Marktwert</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">Gehaltseffizienz</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">Alter &amp; Potenzial</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128737;</div><div class="bd-label">Verl&auml;sslichkeit</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:26%"></div></div><div class="bd-val pos">+8</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">Risikofaktor</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Datenqualit&auml;t</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:10%"></div></div><div class="bd-val neg">&minus;3</div></div>
+    </div>
+    <div class="ovs-tie-note">Starke Performance &amp; Marktchance treiben OVS. Minimales Risiko dr&uuml;ckt leicht.</div>
+    <div class="breakdown-total"><div class="breakdown-total-label">OVS Gesamt</div><div class="breakdown-total-val">+79</div></div>
+  </div>
+
+  <!-- P2+P3: SCOUT VERDICT — dominant hero -->
+  <div class="card verdict-panel hero">
+    <div class="verdict-glow-bg"></div>
+    <div class="verdict-top">
+      <div>
+        <div class="verdict-label">Scout Verdict</div>
+        <div class="verdict-text" id="verdict-text">STRONG BUY</div>
+        <div class="verdict-badge">&#11088; A+ Recommendation</div>
+      </div>
+      <div class="verdict-conf">
+        <div class="conf-ring-wrap">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>
+            <circle id="conf-ring" cx="30" cy="30" r="25" fill="none"
+              stroke="var(--accent-green)" stroke-width="5"
+              stroke-dasharray="157" stroke-dashoffset="157"
+              stroke-linecap="round" transform="rotate(-90 30 30)"
+              style="--ring-full:157;--ring-offset:19;filter:drop-shadow(0 0 7px var(--accent-green))"/>
+          </svg>
+          <div class="conf-num" id="conf-num">92</div>
+        </div>
+        <div class="conf-label">KONFIDENZ</div>
+      </div>
+    </div>
+    <div class="verdict-meta">
+      <div><div class="vmeta-label">Hidden Gem</div><div class="vmeta-val gn">JA</div></div>
+      <div><div class="vmeta-label">Sofortimpact</div><div class="vmeta-val cy">HOCH</div></div>
+      <div><div class="vmeta-label">Resale</div><div class="vmeta-val am">SEHR HOCH</div></div>
+      <div><div class="vmeta-label">Risiko</div><div class="vmeta-val gn"><span class="rdot low"></span>GERING</div></div>
+    </div>
+
+    <!-- P6: verdict quick reasons — filled by renderDashboard -->
+    <div id="verdict-quick-reasons" style="display:none;margin:0 14px 8px;padding:7px 10px;border-radius:6px"></div>
+    <!-- P3: DEAL SCORE — animated premium block -->
+    <div class="deal-score-wrap">
+      <div class="ds-header">
+        <span class="ds-label">&#9878; Deal Score</span>
+        <div class="ds-score-group">
+          <span class="ds-score-text" id="ds-num">0</span>
+          <span class="ds-slash">&thinsp;/ 100</span>
+        </div>
+      </div>
+      <div class="ds-bar-track">
+        <div class="ds-bar-fill anim-deal" id="ds-bar" style="--ds-w:98%;width:0%"></div>
+      </div>
+      <div class="ds-verdict-row">
+        <span class="ds-verdict">NO-BRAINER DEAL</span>
+        <span class="ds-ai-tag">Transferfazit</span>
+      </div>
+      <div class="ds-quote">"Wenn heute nur ein Spieler verpflichtet werden kann &mdash; dann dieser. Chance-Risiko geh&ouml;rt zum Besten im gesamten Datensatz."</div>
+    </div>
+
+    <div class="verdict-fees">
+      <div class="fee-box"><div class="fee-box-label">Empf. Ablöse</div><div class="fee-box-val" id="fee-rec">&#8364;3,8M</div></div>
+      <div class="fee-box danger"><div class="fee-box-label">Niemals &uuml;ber</div><div class="fee-box-val" id="fee-max">&#8364;4,5M</div></div>
+    </div>
+    <!-- stable placeholder: filled by renderDashboard -->
+    <div id="verdict-why-not" style="display:none;margin:0 14px 10px;padding:8px 10px;border-radius:6px;font-size:10px;line-height:1.6"></div>
+    <div class="verdict-quote">"Markt bewertet die Liga, nicht die Leistung. Unsere Modelle sehen Bundesliga-Spitzenniveau. Selbst konservativ gerechnet: enormes Upside."</div>
+  </div>
+
+</div><!-- /row1 -->
+
+<!-- ═══ ROW 2: Why Buy | Risks | Market | Risk | Budget ═══ -->
+<div class="dash-row dash-row-2">
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Warum kaufen?</span></div>
+    <div class="reason-list">
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#9650;</div><div class="reason-text"><div class="reason-main">Elite-Passspiel Top 3%</div><div class="reason-sub">Besser als 97% vergleichbarer Spieler</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#128181;</div><div class="reason-text"><div class="reason-main">42% unter Marktwert</div><div class="reason-sub">Markt unterschätzt ihn massiv</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#9889;</div><div class="reason-text"><div class="reason-main">Sofort erste Elf</div><div class="reason-sub">Kein Eingewöhnungsbedarf</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#128200;</div><div class="reason-text"><div class="reason-main">Perfekte Alterskurve</div><div class="reason-sub">Noch 5&ndash;7 Jahre Top-Niveau</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#128181;</div><div class="reason-text"><div class="reason-main">Gehaltseffizienz Top 8%</div><div class="reason-sub">Au&szlig;ergew&ouml;hnliches Preis-Leistungs-Verh&auml;ltnis</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Risiken</span></div>
+    <div class="reason-list">
+      <div class="reason-item"><div class="reason-icon-wrap con">&#8593;</div><div class="reason-text"><div class="reason-main">Kopfball unter Durchschnitt</div><div class="reason-sub">Nur 34% Kopfballduelle gewonnen</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap con">&#128680;</div><div class="reason-text"><div class="reason-main">Kleine Verletzungshistorie</div><div class="reason-sub">2 kurze Ausf&auml;lle letzte Saison</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap con">&#127758;</div><div class="reason-text"><div class="reason-main">Kleinere Liga</div><div class="reason-sub">Ligafaktor 0.76 &mdash; Abschlag n&ouml;tig</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap con">&#128202;</div><div class="reason-text"><div class="reason-main">Datenbasis begrenzt</div><div class="reason-sub">Nur 22 Spiele in der Datenbank</div></div></div>
+      <div class="reason-item"><div class="reason-icon-wrap con">&#128081;</div><div class="reason-text"><div class="reason-main">Resale entwicklungsabh&auml;ngig</div><div class="reason-sub">Nur bei Sprung zur Top-Liga</div></div></div>
+    </div>
+  </div>
+
+  <!-- P9: Market Inefficiency — hero sizing -->
+  <div class="card hero">
+    <div class="card-header"><span class="card-title">Marktineffizienz</span></div>
+    <div class="mkt-ineff">
+      <div class="mkt-pct-big" id="mkt-pct">74%</div>
+      <div class="mkt-sub">unter Marktwert</div>
+      <div class="mkt-values">
+        <div><div class="mkt-val-label">Gesch. Wert</div><div class="mkt-val-num" id="mkt-estimated">&#8364;12,5M</div></div>
+        <div><div class="mkt-val-label">Aktueller Preis</div><div class="mkt-val-num" id="mkt-current">&#8364;3,2M</div></div>
+      </div>
+      <div class="mkt-bar"><div class="mkt-bar-fill" id="mkt-bar-fill" style="width:74%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Risikoanalyse</span></div>
+    <div class="risk-total-banner">
+      <div class="risk-total-dot"></div>
+      <div class="risk-total-text">
+        <div class="risk-total-label">&#9679; Gesamtrisiko</div>
+        <div class="risk-total-level">GERING</div>
+        <div class="risk-total-score">8,4 / 10 Sicherheit</div>
+      </div>
+    </div>
+    <div class="risk-panel">
+      <div class="risk-ring-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="25" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+          <circle id="risk-ring" cx="32" cy="32" r="25" fill="none" stroke="var(--accent-green)" stroke-width="6"
+            stroke-dasharray="157" stroke-dashoffset="157" stroke-linecap="round" transform="rotate(-90 32 32)"
+            style="--ring-full:157;--ring-offset:118;filter:drop-shadow(0 0 5px var(--accent-green))"/>
+        </svg>
+        <div class="risk-ring-label"><div class="risk-level-text">LOW<br>RISK</div></div>
+      </div>
+      <div class="risk-dots">
+        <div class="risk-dot-row"><span class="risk-dot-name">Verletzung</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name">Datenbasis</span><span class="risk-pill med">Mittel</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name">Altersrisiko</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name">Preisrisiko</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name">Gehaltsrisiko</span><span class="risk-pill med">Mittel</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P5: Budget & Deal — all KPIs -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Budget &amp; Transfer-Effizienz</span></div>
+    <div class="budget-panel">
+      <div class="budget-rings">
+        <div class="budget-ring-item">
+          <div class="budget-ring-wrap">
+            <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/><circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-blue)" stroke-width="5" stroke-dasharray="126" stroke-dashoffset="103" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg>
+            <div class="budget-ring-center">18%</div>
+          </div>
+          <div class="budget-ring-label">Transfer<br>Budget</div>
+        </div>
+        <div class="budget-ring-item">
+          <div class="budget-ring-wrap">
+            <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/><circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-cyan)" stroke-width="5" stroke-dasharray="126" stroke-dashoffset="115" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg>
+            <div class="budget-ring-center">9%</div>
+          </div>
+          <div class="budget-ring-label">Gehalts<br>Budget</div>
+        </div>
+      </div>
+      <!-- highlighted KPIs — filled by renderDashboard -->
+      <div id="budget-highlights" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px">
+        <div id="bh-roi"   style="padding:6px 8px;border-radius:6px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);text-align:center">
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:2px">Gesch. ROI</div>
+          <div id="bv-roi" style="font-size:16px;font-weight:900;color:var(--accent-green)">+180%</div>
+        </div>
+        <div id="bh-vfm"  style="padding:6px 8px;border-radius:6px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.18);text-align:center">
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:2px">Value for Money</div>
+          <div id="bv-vfm" style="font-size:13px;font-weight:800;color:var(--accent-cyan)">Top 9%</div>
+        </div>
+      </div>
+      <div class="budget-kpis">
+        <div class="budget-kpi-row"><span class="budget-kpi-label">Fair Value</span><span class="budget-kpi-val cy" id="bv-fv">&#8364;12,5M</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label">Empf. Abl&ouml;se</span><span class="budget-kpi-val gn" id="bv-rec">&#8364;3,8M</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label">Niemals &uuml;ber</span><span class="budget-kpi-val rd" id="bv-max">&#8364;4,5M</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label">Break-Even</span><span class="budget-kpi-val cy" id="bv-be">ca. 14 Monate</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label">Resale-Potenzial</span><span class="budget-kpi-val am" id="bv-rs">&#8364;8&ndash;14M</span></div>
+        <div class="budget-kpi-row" style="border:none"><span class="budget-kpi-label">Transfereffizienz</span><span class="budget-kpi-val gn" id="bv-eff">EXZELLENT</span></div>
+        <div class="budget-eff-bar"><div class="budget-eff-fill" id="bv-eff-bar" style="width:91%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row2 -->
+
+<!-- ═══ ROW 3: Radar | Similar | Scout Report | Hidden Gem ═══ -->
+<div class="dash-row dash-row-3">
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Spielertyp</span></div>
+    <div class="player-type-panel">
+      <div class="player-type-badge">Box-to-Box Midfielder</div>
+      <div class="radar-wrap">
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <g opacity="0.12"><polygon points="74,14 123,44 123,104 74,134 25,104 25,44" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/><polygon points="74,29 111,51 111,97 74,119 37,97 37,51" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/><polygon points="74,44 99,59 99,89 74,104 49,89 49,59" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></g>
+          <g stroke="rgba(255,255,255,0.08)" stroke-width="0.6"><line x1="74" y1="14" x2="74" y2="134"/><line x1="74" y1="74" x2="123" y2="44"/><line x1="74" y1="74" x2="123" y2="104"/><line x1="74" y1="74" x2="25" y2="104"/><line x1="74" y1="74" x2="25" y2="44"/></g>
+          <polygon points="74,21 117,50 109,97 74,121 37,91 39,48" fill="rgba(59,130,246,0.16)" stroke="var(--accent-blue)" stroke-width="1.5" stroke-linejoin="round"/>
+          <text x="74" y="10" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Schuss</text>
+          <text x="132" y="45" text-anchor="start" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Pass</text>
+          <text x="132" y="107" text-anchor="start" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Dribling</text>
+          <text x="74" y="145" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Verteidigung</text>
+          <text x="15" y="107" text-anchor="end" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Physis</text>
+          <g fill="var(--accent-blue)"><circle cx="74" cy="21" r="2.5"/><circle cx="117" cy="50" r="2.5"/><circle cx="109" cy="97" r="2.5"/><circle cx="74" cy="121" r="2.5"/><circle cx="37" cy="91" r="2.5"/><circle cx="39" cy="48" r="2.5"/></g>
+          <text x="74" y="18" text-anchor="middle" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">81</text>
+          <text x="121" y="48" text-anchor="start" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">88</text>
+          <text x="113" y="100" text-anchor="start" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">83</text>
+          <text x="74" y="130" text-anchor="middle" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">74</text>
+          <text x="33" y="94" text-anchor="end" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">78</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- P7: Similar Players with rich diff chips -->
+  <div class="card" style="display:flex;flex-direction:column;">
+    <div class="card-header"><span class="card-title">&#196;hnliche Spieler</span></div>
+    <div class="similar-list">
+      <div class="similar-item">
+        <div class="similar-avatar">FV</div>
+        <div class="similar-info">
+          <div class="similar-name">F. Valverde</div>
+          <div class="similar-club">Real Madrid</div>
+          <div class="similar-chips">
+            <span class="sim-chip pos">&#8593; Mehr Tempo</span>
+            <span class="sim-chip pos">&#8593; Besseres Dribling</span>
+            <span class="sim-chip neg">&#8595; 4x teurer</span>
+            <span class="sim-chip neg">&#8595; H&ouml;heres Gehalt</span>
+          </div>
+        </div>
+        <div class="similar-right"><div class="similar-pct">89%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
+      </div>
+      <div class="similar-item">
+        <div class="similar-avatar">HC</div>
+        <div class="similar-info">
+          <div class="similar-name">H. &#199;alhanoglu</div>
+          <div class="similar-club">Inter Milan</div>
+          <div class="similar-chips">
+            <span class="sim-chip pos">&#8593; Besseres Passspiel</span>
+            <span class="sim-chip neu">&#8596; &Auml;hnliches Alter</span>
+            <span class="sim-chip neg">&#8595; 30% teurer</span>
+            <span class="sim-chip neg">&#8595; Schw&auml;cher defensiv</span>
+          </div>
+        </div>
+        <div class="similar-right"><div class="similar-pct">87%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
+      </div>
+      <div class="similar-item">
+        <div class="similar-avatar">PF</div>
+        <div class="similar-info">
+          <div class="similar-name">P. Foden</div>
+          <div class="similar-club">Man City</div>
+          <div class="similar-chips">
+            <span class="sim-chip pos">&#8593; H&ouml;heres Potenzial</span>
+            <span class="sim-chip neu">&#8596; G&uuml;nstiger</span>
+            <span class="sim-chip neg">&#8595; H&ouml;heres Risiko</span>
+            <span class="sim-chip neg">&#8595; 8x teurer</span>
+          </div>
+        </div>
+        <div class="similar-right"><div class="similar-pct">85%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
+      </div>
+    </div>
+    <div class="view-all-link">Alle &auml;hnlichen Spieler &#8594;</div>
+  </div>
+
+  <!-- P6: SCOUT REPORT -->
+  <div class="card hero">
+    <div class="card-header"><span class="card-title">Chefscout-Analyse</span></div>
+    <div class="scout-report-panel">
+      <div class="scout-verdict-tag">&#10003; Kaufempfehlung &mdash; Sofort handeln</div>
+      <div class="scout-prose" id="scout-prose">
+        <strong>Marktbewertung:</strong> Der Markt bewertet aktuell die Liga, nicht die tats&auml;chliche Leistung dieses Spielers. Unsere Modelle erkennen <em>Bundesliga-Spitzenniveau</em> &mdash; ein Wert, den die aktuelle Ablöse von 3,2M vollst&auml;ndig ignoriert.<br><br>
+        <strong>Warum jetzt?</strong> Das Transferfenster &ouml;ffnet bald. Die Datenlage ist eindeutig, aber andere Scouts werden folgen. Wer zuerst handelt, sichert sich den Deal des Jahres.<br><br>
+        <strong>Systemfit &amp; Upside:</strong> Ideale Erg&auml;nzung f&uuml;r 4-3-3 Pressingssysteme. Selbst bei konservativer Entwicklung besteht <em>erhebliches Upside-Potenzial</em>. Das Chance-Risiko-Verh&auml;ltnis geh&ouml;rt zu den besten im gesamten Datensatz.
+      </div>
+      <div class="scout-action" id="scout-action">&#9658; Sofort Kontakt aufnehmen. Angebot bei &#8364;3,4M starten. Absolute Grenze: &#8364;4,5M.</div>
+      <!-- stable placeholder: filled by renderDashboard -->
+      <div id="why-now-block" style="display:none"></div>
+      <div class="scout-tags">
+        <div class="scout-tag pro"><span class="si">&#10003;</span> Exzellente Ballverteilung</div>
+        <div class="scout-tag pro"><span class="si">&#10003;</span> Konsistenz steigend</div>
+        <div class="scout-tag pro"><span class="si">&#10003;</span> Hoher Defensivbeitrag</div>
+        <div class="scout-tag warn"><span class="si">&#9888;</span> Kleine Verletzungshistorie</div>
+        <div class="scout-tag pro"><span class="si">&#10003;</span> Top-Fit f&uuml;r Gegenpressing</div>
+        <div class="scout-tag warn"><span class="si">&#9888;</span> Kopfball ausbauf&auml;hig</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P8: HIDDEN GEM — expanded with detailed reasons -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Hidden Gem Analyse</span></div>
+    <div class="gem-panel">
+      <div class="gem-top">
+        <div class="gem-ring-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="33" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="7"/>
+            <circle id="gem-ring" cx="40" cy="40" r="33" fill="none" stroke="var(--accent-amber)" stroke-width="7"
+              stroke-dasharray="207" stroke-dashoffset="207" stroke-linecap="round" transform="rotate(-90 40 40)"
+              style="--ring-full:207;--ring-offset:25;filter:drop-shadow(0 0 7px var(--accent-amber))"/>
+          </svg>
+          <div class="gem-ring-center"><div class="gem-pct" id="gem-pct">89%</div></div>
+        </div>
+        <div class="gem-verdict-side">
+          <div class="gem-verdict-label">Scouting-Bewertung</div>
+          <div class="gem-verdict-val">SEHR HOCH<br>KONFIDENT</div>
+        </div>
+      </div>
+      <div class="gem-reasons">
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Liga vom Markt unterschätzt</div><div class="gem-reason-detail">Ligafaktor 0.76 &mdash; echtes Talent wird skaliert</div></div></div>
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Verein ohne Aufmerksamkeit</div><div class="gem-reason-detail">Scouts ignorieren diesen Markt systematisch</div></div></div>
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Markt ignoriert Leistung</div><div class="gem-reason-detail">Keine Medienpräsenz &mdash; Preis bleibt k&uuml;nstlich niedrig</div></div></div>
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Gehalt weit unter Standard</div><div class="gem-reason-detail">Gehaltsrahmen optimal f&uuml;r das Budget</div></div></div>
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">G&uuml;nstige Vertragssituation</div><div class="gem-reason-detail">Ablöse unter 20% des fairen Marktwertes</div></div></div>
+        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Geringe Konkurrenz</div><div class="gem-reason-detail">Kein bekanntes Bieterangebot im Markt</div></div></div>
+      </div>
+      <svg class="gem-sparkline" viewBox="0 0 140 24" preserveAspectRatio="none">
+        <defs><linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-amber)" stop-opacity="0.35"/><stop offset="100%" stop-color="var(--accent-amber)" stop-opacity="0"/></linearGradient></defs>
+        <path d="M0,20 L20,17 L40,14 L60,11 L80,8 L100,6 L120,3 L140,1" fill="none" stroke="var(--accent-amber)" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M0,20 L20,17 L40,14 L60,11 L80,8 L100,6 L120,3 L140,1 L140,24 L0,24Z" fill="url(#spark-grad)"/>
+      </svg>
+    </div>
+  </div>
+
+</div><!-- /row3 -->
+</div><!-- /dashboard-content -->
+</div><!-- /view-dashboard -->
+
+<div class="view" id="view-players">
+  <div class="card" style="overflow:hidden">
+    <div style="padding:12px 16px 0;display:flex;align-items:center;justify-content:space-between">
+      <span class="card-title">Alle Spieler</span>
+      <span class="card-title-badge" id="players-count-badge">0 Spieler</span>
+    </div>
+    <div id="player-list-body" style="overflow-x:auto">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:50px 20px;text-align:center">
+        <div style="font-size:36px;opacity:0.3">&#128202;</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text-secondary)">CSV importieren um Spieler zu sehen</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="view" id="view-scout-reports"><div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-title">Scout Reports</div><div class="empty-desc">Spieler aus dem Dashboard w&auml;hlen.</div></div></div>
+<div class="view" id="view-compare"><div class="empty-state"><div class="empty-icon">&#9878;</div><div class="empty-title">Spieler vergleichen</div></div></div>
+<div class="view" id="view-hidden-gems"><div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Hidden Gems</div><div class="empty-desc">CSV importieren und unterbewertete Spieler entdecken.</div></div></div>
+<div class="view" id="view-settings"><div class="card"><div class="card-header"><span class="card-title">Einstellungen</span></div><div style="padding:14px;color:var(--text-secondary);font-size:12px">Folgt in Phase 3.</div></div></div>
+
+</div></main></div>
+
+<script>
+(function(){
+
+/* ══════════════════════════════════════════════════════════════
+   LEAGUE STRENGTH TABLE
+══════════════════════════════════════════════════════════════ */
+var LEAGUE_STRENGTH={
+  'Premier League':1.00,'La Liga':0.98,'Bundesliga':0.97,'Serie A':0.96,
+  'Ligue 1':0.92,'Eredivisie':0.87,'Primeira Liga':0.86,'Super Lig':0.82,
+  'Scottish Premiership':0.78,'Belgian Pro League':0.80,'MLS':0.75,
+  'Saudi Pro League':0.76,'Brazilian Serie A':0.78,'Argentine Primera':0.74,
+  'default':0.76
+};
+
+/* ══════════════════════════════════════════════════════════════
+   OVS WEIGHTS  (must sum to 1.0)
+══════════════════════════════════════════════════════════════ */
+var OVS_W={perf:0.30,mkt:0.22,wage:0.18,age:0.14,rel:0.10,risk:0.06};
+
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL STATE
+══════════════════════════════════════════════════════════════ */
+var ALL_PLAYERS=[];
+var FILTERED=[];
+var SELECTED_IDX=0;
+
+/* ══════════════════════════════════════════════════════════════
+   CSV PARSER
+   Handles: BOM, semicolon + comma delimiters, quoted fields,
+   "5,25K€ /J." wage format, date → months
+══════════════════════════════════════════════════════════════ */
+function parseCSV(raw){
+  /* strip BOM */
+  raw=raw.replace(/^\uFEFF/,'');
+  var lines=raw.split(/\r?\n/);
+  if(lines.length<2)return[];
+
+  /* detect delimiter from header */
+  var delim=lines[0].indexOf(';')>-1?';':',';
+
+  /* parse header — normalise */
+  var headers=splitLine(lines[0],delim).map(function(h){return h.trim().toLowerCase().replace(/[^a-z0-9äöü]/g,'_');});
+
+  var players=[];
+  for(var i=1;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!line)continue;
+    var cols=splitLine(line,delim);
+    var p={};
+    for(var j=0;j<headers.length;j++){
+      p[headers[j]]=(cols[j]||'').trim().replace(/^"|"$/g,'');
+    }
+    /* require at least a name */
+    var name=p['name']||p['spieler']||p['player']||p['naam']||'';
+    if(!name)continue;
+    players.push(p);
+  }
+  return players;
+}
+
+function splitLine(line,delim){
+  var cols=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===delim&&!inQ){cols.push(cur);cur='';}
+    else{cur+=c;}
+  }
+  cols.push(cur);
+  return cols;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VALUE PARSERS
+══════════════════════════════════════════════════════════════ */
+function parseVal(s){
+  /* "5,25K€ /J." or "1.2M€" or "750.000 €" or plain number */
+  if(!s||s==='-'||s==='')return 0;
+  s=s.replace(/\s/g,'').replace(',','.');
+  var m;
+  if((m=s.match(/([\d.]+)[Kk]/))){return parseFloat(m[1])*1000;}
+  if((m=s.match(/([\d.]+)[Mm]/))){return parseFloat(m[1])*1000000;}
+  return parseFloat(s.replace(/[^\d.]/g,''))||0;
+}
+
+function parseAge(s){
+  var m=(s||'').match(/(\d+)/);
+  return m?parseInt(m[1]):0;
+}
+
+function parseDate(s){
+  /* returns months remaining on contract, or 36 default */
+  if(!s||s==='-')return 36;
+  var m=s.match(/(\d{1,2})[.\/-](\d{4})/);
+  if(m){
+    var end=new Date(parseInt(m[2]),parseInt(m[1])-1,1);
+    var now=new Date();
+    var months=(end.getFullYear()-now.getFullYear())*12+(end.getMonth()-now.getMonth());
+    return Math.max(0,months);
+  }
+  return 36;
+}
+
+function leagueFactor(s){
+  for(var k in LEAGUE_STRENGTH){
+    if(k!=='default'&&(s||'').toLowerCase().indexOf(k.toLowerCase())>-1)return LEAGUE_STRENGTH[k];
+  }
+  return LEAGUE_STRENGTH['default'];
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FIELD RESOLVER — map FM column names to canonical fields
+══════════════════════════════════════════════════════════════ */
+function resolve(p,keys){
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i].toLowerCase().replace(/[^a-z0-9äöü]/g,'_');
+    if(p[k]!==undefined&&p[k]!==''&&p[k]!=='-')return p[k];
+  }
+  return '';
+}
+
+function rNum(p,keys){return parseVal(resolve(p,keys));}
+function rStr(p,keys){return resolve(p,keys)||'';}
+
+/* ══════════════════════════════════════════════════════════════
+   SCORE ENGINE
+══════════════════════════════════════════════════════════════ */
+function scorePlayer(raw){
+  var name=rStr(raw,['Name','Spieler','Player','Naam']);
+  var pos =rStr(raw,['Position','Pos','Best Position']);
+  var club=rStr(raw,['Verein','Club','Team','Klub']);
+  var league=rStr(raw,['Liga','League','Competition','Wettbewerb']);
+  var age =parseAge(rStr(raw,['Alter','Age']));
+  var ca  =rNum(raw,['CA','Current Ability','Akt. Stärke','Gesamtstärke']);
+  var pa  =rNum(raw,['PA','Potential Ability','Potenzial']);
+  var mv  =rNum(raw,['Marktwert','Market Value','Wert','Value','Transfer Value']);
+  var wage=rNum(raw,['Gehalt','Wage','Lohn','Salary','Verdienst']);
+  var fee =rNum(raw,['Ablöse','Transfer Fee','Mindestablöse','Min Fee','Price']);
+  var contract=parseDate(rStr(raw,['Vertrag','Contract','Contract Expiry','Vertragsende']));
+  var inj =rNum(raw,['Verletzungsanfälligkeit','Injury Proneness','Injuries'])||5;
+
+  /* use CA as proxy for performance if no dedicated stat */
+  if(ca===0)ca=rNum(raw,['Stärke','Overall','OVR','Rating'])||50;
+  if(fee===0)fee=mv*0.8;
+  if(mv===0&&ca>0)mv=ca*ca*800; /* rough estimate */
+
+  var lf=leagueFactor(league||club);
+
+  /* ── COMPONENT SCORES (0-100 each) ── */
+  var perfScore=Math.min(100,ca*lf);
+
+  /* market efficiency: how cheap relative to estimated value */
+  var estVal=mv>0?mv:fee*1.3;
+  var mktScore=fee>0&&estVal>0?Math.min(100,Math.max(0,(1-(fee/estVal))*100+50)):50;
+
+  /* wage efficiency */
+  var wageScore=50;
+  if(wage>0&&ca>0){var wageRatio=wage/(ca*ca*8);wageScore=Math.min(100,Math.max(0,100-wageRatio*50));}
+
+  /* age curve — peak 24-28 */
+  var ageScore=age<=16?30:age<=20?55:age<=24?80:age<=28?100:age<=32?70:age<=35?40:20;
+
+  /* reliability */
+  var relScore=Math.min(100,Math.max(0,100-(inj-1)*10));
+
+  /* risk */
+  var riskScore=Math.min(100,Math.max(0,
+    (contract<12?30:contract<24?15:0)+
+    (inj>14?30:inj>10?20:inj>7?10:0)+
+    (lf<0.80?15:lf<0.85?8:0)
+  ));
+
+  /* ── OVS COMPOSITE ── */
+  var ovs=Math.round(
+    perfScore*OVS_W.perf+
+    mktScore*OVS_W.mkt+
+    wageScore*OVS_W.wage+
+    ageScore*OVS_W.age+
+    relScore*OVS_W.rel+
+    (100-riskScore)*OVS_W.risk
+  );
+  ovs=Math.min(99,Math.max(1,ovs));
+
+  /* ── DEAL SCORE ── */
+  var mktIneff=estVal>0&&fee>0?Math.max(0,Math.round((1-(fee/estVal))*100)):0;
+  var dealScore=Math.min(100,Math.round(
+    ovs*0.40+
+    Math.min(100,mktIneff)*0.30+
+    (100-riskScore)*0.15+
+    (pa>0&&ca>0?Math.min(100,(pa-ca)*2+50):50)*0.15
+  ));
+
+  /* ── VERDICT ── */
+  var verdict=dealScore>=85?'STRONG BUY':dealScore>=70?'BUY':dealScore>=55?'WATCH':dealScore>=40?'HOLD':'AVOID';
+  var verdictColor=dealScore>=85?'var(--accent-green)':dealScore>=70?'var(--accent-cyan)':dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
+
+  var isSteal=mktIneff>=30&&dealScore>=60;
+  var isGem=mktIneff>=20&&lf<0.88&&dealScore>=55;
+  var isWonderkid=age<=21&&(pa>ca||pa===0)&&dealScore>=50;
+  var isImpact=perfScore>=70&&dealScore>=60;
+  var confScore=Math.min(99,Math.round(50+mktIneff*0.3+dealScore*0.2+(lf<0.85?10:0)));
+
+  /* ── BREAKDOWN components — capped to human-readable scale (-20..+35) ── */
+  /* Each component = weight * normalised score, scaled to fixed max */
+  var bdPerf  = Math.min(35, Math.max(0,  Math.round(perfScore  * OVS_W.perf  * 1.17)));
+  var bdMkt   = Math.min(25, Math.max(0,  Math.round(mktScore   * OVS_W.mkt   * 1.13)));
+  var bdWage  = Math.min(20, Math.max(0,  Math.round(wageScore  * OVS_W.wage  * 1.11)));
+  var bdAge   = Math.min(16, Math.max(0,  Math.round(ageScore   * OVS_W.age   * 1.14)));
+  var bdRel   = Math.min(12, Math.max(0,  Math.round(relScore   * OVS_W.rel   * 1.20)));
+  var bdRisk  = Math.max(-15,Math.min(0, -Math.round(riskScore  * OVS_W.risk  * 2.50)));
+  var bdData  = lf<0.80?-5:lf<0.85?-3:0;
+
+  /* deal label */
+  var dealLabel=dealScore>=90?'NO-BRAINER DEAL':dealScore>=80?'STARKER DEAL':dealScore>=65?'GUTER DEAL':dealScore>=50?'SOLIDER DEAL':'RISIKO-DEAL';
+
+  return {
+    raw:raw,name:name,pos:pos,club:club,league:league,age:age,
+    ca:ca,pa:pa,mv:mv,wage:wage,fee:fee,contract:contract,
+    perfScore:Math.round(perfScore),mktScore:Math.round(mktScore),
+    wageScore:Math.round(wageScore),ageScore:Math.round(ageScore),
+    relScore:Math.round(relScore),riskScore:Math.round(riskScore),
+    ovs:ovs,dealScore:dealScore,verdict:verdict,verdictColor:verdictColor,
+    isSteal:isSteal,isGem:isGem,isWonderkid:isWonderkid,isImpact:isImpact,
+    mktIneff:mktIneff,estVal:estVal,confScore:confScore,lf:lf,
+    bd:{perf:bdPerf,mkt:bdMkt,wage:bdWage,age:bdAge,rel:bdRel,risk:bdRisk,data:bdData},
+    dealLabel:dealLabel
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORMAT HELPERS
+══════════════════════════════════════════════════════════════ */
+function fmtMoney(v){
+  if(!v||v===0)return '—';
+  if(v>=1000000)return '\u20AC'+(v/1000000).toFixed(1)+'M';
+  if(v>=1000)return '\u20AC'+(v/1000).toFixed(0)+'K';
+  return '\u20AC'+Math.round(v);
+}
+function pctRank(score){
+  if(score>=95)return 'Top 1%';
+  if(score>=90)return 'Top 3%';
+  if(score>=85)return 'Top 6%';
+  if(score>=80)return 'Top 10%';
+  if(score>=75)return 'Top 15%';
+  if(score>=70)return 'Top 20%';
+  if(score>=60)return 'Top 30%';
+  return 'Top 50%';
+}
+function sign(n){return n>0?'+'+n:String(n);}
+function clamp(v,lo,hi){return Math.min(hi,Math.max(lo,v));}
+
+/* ══════════════════════════════════════════════════════════════
+   RING ANIMATION
+══════════════════════════════════════════════════════════════ */
+function animateRing(el,full,offset,delay){
+  if(!el)return;
+  el.style.strokeDashoffset=full;
+  setTimeout(function(){
+    el.style.transition='stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)';
+    el.style.strokeDashoffset=offset;
+  },delay||0);
+}
+
+function countUp(el,target,delay){
+  if(!el)return;
+  el.textContent='0';
+  setTimeout(function(){
+    var start=null,dur=900;
+    function step(ts){
+      if(!start)start=ts;
+      var p=Math.min((ts-start)/dur,1),e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(e*target);
+      if(p<1)requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  },delay||0);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TEXT HELPERS — professional scouting voice
+══════════════════════════════════════════════════════════════ */
+function scoutVerdictBadge(score){
+  if(score>=90)return'A+ Empfehlung';
+  if(score>=80)return'Starke Empfehlung';
+  if(score>=65)return'Gute Option';
+  if(score>=50)return'Beobachten';
+  return'Kein Kauf';
+}
+function dealQuote(p,recFee,maxFee){
+  if(p.dealScore>=85){
+    return'Unsere Analyse bewertet diesen Transfer als au\u00dfergew\u00f6hnliche Marktchance. Der Spieler ist zu '+p.mktIneff+'% unter seinem fairen Wert erh\u00e4ltlich \u2014 ein Niveau, das selten vorkommt.';
+  }
+  if(p.dealScore>=70){
+    return'Die Transferbewertung f\u00e4llt positiv aus. Performance und Preis stehen in einem g\u00fcnstigen Verh\u00e4ltnis. Empfehlung: Angebot starten, solange die Ablöse unter '+maxFee+' bleibt.';
+  }
+  if(p.dealScore>=55){
+    return'Solider Kandidat mit positivem Preis-Leistungs-Verh\u00e4ltnis. Unsere Bewertung empfiehlt eine genauere Pr\u00fcfung, bevor eine Entscheidung getroffen wird.';
+  }
+  return'Die Scouting-Einsch\u00e4tzung f\u00e4llt zur\u00fcckhaltend aus. Das Risikoprofil und der Preis stehen nicht in einem ausreichend g\u00fcnstigen Verh\u00e4ltnis.';
+}
+function scoutReport(p,recFee,maxFee){
+  /* WHY BUY */
+  var why='';
+  if(p.mktIneff>=35){
+    why='Unsere Marktanalyse zeigt eine au\u00dfergew\u00f6hnliche Preisanomalie: Der aktuelle Marktwert von '+fmtMoney(p.fee||p.mv)+' liegt um '+p.mktIneff+'% unter dem von uns ermittelten fairen Wert. Der Markt bewertet aktuell die Liga \u2014 nicht die tats\u00e4chliche Leistungsf\u00e4higkeit des Spielers.';
+  } else if(p.mktIneff>=15){
+    why='Unsere Analyse zeigt eine klare Marktineffizienz: Die Leistungsdaten liegen deutlich \u00fcber dem, was der aktuelle Preis widerspiegelt. Das Preis-Leistungs-Verh\u00e4ltnis geh\u00f6rt zu den st\u00e4rksten im gesamten Datensatz.';
+  } else {
+    why='Unsere Scouting-Einsch\u00e4tzung bewertet diesen Spieler positiv. Der Mehrwert liegt nicht prim\u00e4r in einer Preisanomalie, sondern in der Qualit\u00e4t der Leistungsdaten und dem Entwicklungspotenzial.';
+  }
+  /* WHY NOW */
+  var now='';
+  if(p.contract<12){
+    now='Die Vertragssituation ist entscheidend: Vertragsende in weniger als einem Jahr. Der Verein ist unter Druck \u2014 die Verhandlungsposition ist derzeit so gut wie nie.';
+  } else if(p.contract<24){
+    now='Das Transferfenster bietet eine klare Gelegenheit: Vertragsende in ca. '+Math.round(p.contract/12)+' Jahren. Die Ablöse d\u00fcrfte bei l\u00e4ngerem Zuwarten steigen.';
+  } else {
+    now='Kein unmittelbarer Zeitdruck \u2014 der Vertrag l\u00e4uft noch ca. '+Math.round(p.contract/12)+' Jahre. Fr\u00fchzeitiges Handeln sichert jedoch den besten Preis, bevor andere Vereine aufmerksam werden.';
+  }
+  /* SYSTEM FIT */
+  var fit=p.perfScore>=80?
+    'Das Profil passt hervorragend in pressingorientierte Systeme (4-3-3, 4-2-3-1). Hohe Laufbereitschaft und taktische Intelligenz sind nachgewiesen.':
+    p.perfScore>=65?
+    'Solides Leistungsprofil f\u00fcr kontrollbasierte Spielsysteme. Sofortige Einsatzf\u00e4higkeit ist gegeben.':
+    'Das Profil eignet sich eher f\u00fcr eine unterst\u00fctzende Rolle. Entwicklungspotenzial vorhanden.';
+  /* RISK */
+  var risk=p.riskScore<=25?
+    'Das Risikoprofil ist gering. Verletzungshistorie unproblematisch, Datenbasis solide.':
+    p.riskScore<=55?
+    'Moderates Risikoprofil. Einzelne Faktoren \u2014 etwa Datenbasis oder Ligaabschlag \u2014 bed\u00fcrfen Beachtung.':
+    'Erh\u00f6htes Risikoprofil. Unsere Bewertung empfiehlt eine sorgf\u00e4ltige Pr\u00fcfung vor dem Transfer.';
+  return '<strong>Marktlage:</strong> '+why+'<br><br>'+
+         '<strong>Warum jetzt?</strong> '+now+'<br><br>'+
+         '<strong>Systemfit:</strong> '+fit+' Selbst bei konservativer Entwicklung sehen wir erhebliches Upside-Potenzial.<br><br>'+
+         '<strong>Risikobewertung:</strong> '+risk;
+}
+function gemReasons(p){
+  var reasons=[];
+  if(p.lf<0.85) reasons.push({t:'Liga wird vom Markt untersch\u00e4tzt',d:'Ligafaktor '+p.lf.toFixed(2)+' \u2014 echtes Talent wird h\u00e4ufig \u00fcbersehen'});
+  if(p.mktIneff>=20) reasons.push({t:'Markt ignoriert aktuelle Leistungen',d:'Preisgestaltung folgt Reputation, nicht Datenlage'});
+  if(p.confScore>=70) reasons.push({t:'Niedrige Medienpräsenz',d:'Aufmerksamkeit anderer Clubs bleibt bisher gering'});
+  if(p.wage<50000) reasons.push({t:'Attraktive Gehaltsstruktur',d:'Geringes Grundgehalt erm\u00f6glicht effizienten Einsatz des Budgets'});
+  if(p.contract<24) reasons.push({t:'G\u00fcnstige Vertragssituation',d:'Abl\u00f6se unter Marktwert durch auslaufenden Vertrag'});
+  if(p.riskScore<=35) reasons.push({t:'Geringe Konkurrenz auf dem Markt',d:'Kein bekanntes Bieterangebot \u2014 Zeitfenster ist offen'});
+  if(p.age<=23&&p.ageScore>=70) reasons.push({t:'Entwicklungspotenzial unterschätzt',d:'Leistungskurve zeigt klaren Aufwärtstrend'});
+  /* always at least 3 */
+  if(reasons.length<3) reasons.push({t:'Sehr gutes Preis-Leistungs-Verh\u00e4ltnis',d:'Unsere Bewertung z\u00e4hlt diesen Deal zu den st\u00e4rksten im Datensatz'});
+  if(reasons.length<4) reasons.push({t:'Marktbewertung unter fairem Wert',d:'Abl\u00f6se entspricht nicht der tats\u00e4chlichen St\u00e4rke'});
+  return reasons.slice(0,6);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER DASHBOARD for one player
+══════════════════════════════════════════════════════════════ */
+function renderDashboard(p){
+  /* ── Fee helpers (used in multiple places) ── */
+  var recFee=p.fee>0?fmtMoney(p.fee*0.85):fmtMoney(p.estVal*0.32);
+  var maxFee=p.fee>0?fmtMoney(p.fee*1.15):fmtMoney(p.estVal*0.40);
+
+  /* ── OVS gauge ── */
+  var gaugeRing=document.getElementById('ovs-gauge-ring');
+  var gFull=264,gOff=gFull-(gFull*(p.ovs/100));
+  var gCol=p.ovs>=80?'var(--accent-cyan)':p.ovs>=60?'var(--accent-blue)':'var(--accent-amber)';
+  gaugeRing.style.stroke=gCol;
+  gaugeRing.style.filter='drop-shadow(0 0 7px '+gCol+')';
+  animateRing(gaugeRing,gFull,gOff,200);
+  document.getElementById('ovs-num').textContent=p.ovs;
+  document.getElementById('ovs-pct').textContent=pctRank(p.ovs);
+
+  /* ── OVS tooltip (P5) ── */
+  var tt=document.querySelector('.ovs-tooltip');
+  if(tt){
+    var trow=function(label,val,pos){
+      return '<div class="ovs-tt-row"><span class="ovs-tt-label">'+label+'</span>'+
+        '<span class="ovs-tt-val '+(pos?'pos':'neg')+'">'+val+'</span></div>';
+    };
+    tt.innerHTML='<div class="ovs-tt-title">OVS Aufschl\u00fcsselung</div>'+
+      trow('Performance',sign(p.bd.perf),p.bd.perf>=0)+
+      trow('Marktwert',sign(p.bd.mkt),p.bd.mkt>=0)+
+      trow('Gehaltseffizienz',sign(p.bd.wage),p.bd.wage>=0)+
+      trow('Alter & Potenzial',sign(p.bd.age),p.bd.age>=0)+
+      trow('Verl\u00e4sslichkeit',sign(p.bd.rel),p.bd.rel>=0)+
+      trow('Risikofaktor',sign(p.bd.risk),p.bd.risk>=0)+
+      trow('Datenqualit\u00e4t',sign(p.bd.data),p.bd.data>=0)+
+      '<div class="ovs-tt-sep"></div>'+
+      '<div class="ovs-tt-total"><span class="lbl">OVS Score</span><span class="val">'+p.ovs+' \u2014 '+pctRank(p.ovs)+'</span></div>';
+  }
+
+  /* ── OVS bars (P11 — animated) ── */
+  var bars=[
+    {label:'Performance',val:p.perfScore,cls:'g'},
+    {label:'Kosteneffizienz',val:p.mktScore,cls:''},
+    {label:'Marktchance',val:p.mktIneff>0?Math.min(100,p.mktIneff+50):50,cls:'c'},
+    {label:'Verl\u00e4sslichkeit',val:p.relScore,cls:''},
+    {label:'Alterskurve',val:p.ageScore,cls:'a'},
+    {label:'Potenzial',val:p.pa>0&&p.ca>0?Math.min(100,Math.round((p.pa/p.ca)*60+20)):p.ageScore,cls:'g'},
+    {label:'Risiko',val:100-p.riskScore,cls:'r'}
+  ];
+  var bw=document.getElementById('ovs-bars');
+  bw.innerHTML=bars.map(function(b){
+    return '<div class="bar-row">'+
+      '<div class="bar-label">'+b.label+'</div>'+
+      '<div class="bar-track"><div class="bar-fill '+b.cls+'" style="width:0%;transition:width .7s cubic-bezier(.4,0,.2,1)" data-w="'+b.val+'"></div></div>'+
+      '<div class="bar-num">'+b.val+'</div>'+
+      '<div class="bar-rank">'+pctRank(b.val)+'</div>'+
+      '</div>';
+  }).join('');
+  setTimeout(function(){bw.querySelectorAll('.bar-fill').forEach(function(el){el.style.width=el.dataset.w+'%';});},50);
+
+  /* ── OVS chips ── */
+  var chips=document.querySelector('.ovs-conn-chips');
+  if(chips){
+    chips.innerHTML=[
+      {v:p.bd.perf,l:'Perf.'},{v:p.bd.mkt,l:'Markt'},{v:p.bd.wage,l:'Gehalt'},
+      {v:p.bd.age,l:'Alter'},{v:p.bd.rel,l:'Zuverl.'},{v:p.bd.risk,l:'Risiko'},{v:p.bd.data,l:'Daten'}
+    ].map(function(c){
+      return '<span class="conn-chip '+(c.v>=0?'pos':'neg')+'">'+(c.v>=0?'+':'')+c.v+' '+c.l+'</span>';
+    }).join('');
+  }
+
+  /* ── OVS breakdown card — with % share (P5) ── */
+  var bdList=document.querySelector('.breakdown-list');
+  if(bdList){
+    var rawItems=[
+      {icon:'&#128202;',label:'Performance',val:p.bd.perf},
+      {icon:'&#128176;',label:'Marktwert',val:p.bd.mkt},
+      {icon:'&#128181;',label:'Gehaltseffizienz',val:p.bd.wage},
+      {icon:'&#128200;',label:'Alter & Potenzial',val:p.bd.age},
+      {icon:'&#128737;',label:'Verl\u00e4sslichkeit',val:p.bd.rel},
+      {icon:'&#9888;',label:'Risikofaktor',val:p.bd.risk},
+      {icon:'&#128202;',label:'Datenqualit\u00e4t',val:p.bd.data}
+    ];
+    var posTotal=rawItems.reduce(function(s,it){return s+(it.val>0?it.val:0);},0)||1;
+    bdList.innerHTML=rawItems.map(function(it){
+      var pos=it.val>=0,pct=Math.abs(it.val)/35*100;
+      var share=pos&&posTotal>0?Math.round(it.val/posTotal*100):null;
+      return '<div class="breakdown-row">'+
+        '<div class="bd-icon">'+it.icon+'</div>'+
+        '<div class="bd-label">'+it.label+'</div>'+
+        '<div class="bd-bar"><div class="bd-bar-fill '+(pos?'pos':'neg')+'" style="width:'+pct+'%"></div></div>'+
+        '<div class="bd-val '+(pos?'pos':'neg')+'">'+(pos?'+':'')+it.val+
+          (share?' <span style="font-size:8px;opacity:0.6">('+share+'%)</span>':'')+'</div>'+
+        '</div>';
+    }).join('');
+  }
+  var totalEl=document.querySelector('.breakdown-total-val');
+  if(totalEl){
+    var t=p.bd.perf+p.bd.mkt+p.bd.wage+p.bd.age+p.bd.rel+p.bd.risk+p.bd.data;
+    totalEl.textContent=(t>0?'+':'')+t;
+  }
+
+  /* ── P3 + Verdict clarity: if HOLD/AVOID show why-not reasons ── */
+  var verdNote=document.getElementById('verdict-why-not');
+  if(verdNote){
+    if(p.dealScore<55){
+      var notR=whyNotReasons(p);
+      verdNote.style.background='rgba(239,68,68,0.07)';
+      verdNote.style.border='1px solid rgba(239,68,68,0.18)';
+      verdNote.innerHTML='<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent-red);margin-bottom:5px">Warum keine Kaufempfehlung?</div>'+
+        notR.map(function(r){return '<div style="display:flex;gap:6px;color:var(--text-secondary);font-size:10px;margin-bottom:2px"><span style="color:var(--accent-red);flex-shrink:0">&#10007;</span>'+r+'</div>';}).join('');
+      verdNote.style.display='block';
+    } else {
+      verdNote.style.display='none';
+    }
+  }
+
+  /* ── P3: Scout Verdict — dominant ── */
+  var vt=document.getElementById('verdict-text');
+  if(vt){
+    vt.textContent=p.verdict;
+    vt.style.color=p.verdictColor;
+    vt.style.textShadow='0 0 40px '+p.verdictColor+',0 0 16px '+p.verdictColor+',0 0 4px '+p.verdictColor;
+  }
+  /* badge text */
+  var badge=document.querySelector('.verdict-badge');
+  if(badge){badge.innerHTML='&#11088; '+scoutVerdictBadge(p.dealScore);}
+  /* panel border colour by verdict strength */
+  var verdictPanel=document.querySelector('.verdict-panel');
+  if(verdictPanel){
+    var bc=p.dealScore>=80?'rgba(16,185,129,0.45)':p.dealScore>=65?'rgba(59,130,246,0.38)':p.dealScore>=50?'rgba(245,158,11,0.35)':'rgba(239,68,68,0.35)';
+    verdictPanel.style.borderColor=bc;
+  }
+  /* confidence ring */
+  var confRing=document.getElementById('conf-ring');
+  var cFull=157,cOff=cFull-(cFull*(p.confScore/100));
+  if(confRing){confRing.style.stroke=p.verdictColor;confRing.style.filter='drop-shadow(0 0 6px '+p.verdictColor+')';}
+  animateRing(confRing,cFull,cOff,400);
+  countUp(document.getElementById('conf-num'),p.confScore,400);
+  /* verdict meta */
+  var vmHidden=document.querySelectorAll('.vmeta-val')[0];
+  var vmImpact=document.querySelectorAll('.vmeta-val')[1];
+  var vmResale=document.querySelectorAll('.vmeta-val')[2];
+  if(vmHidden)vmHidden.textContent=p.isGem?'JA':'NEIN';
+  if(vmImpact)vmImpact.textContent=p.isImpact?'HOCH':'MITTEL';
+  if(vmResale)vmResale.textContent=p.dealScore>=80?'SEHR HOCH':p.dealScore>=65?'HOCH':'MITTEL';
+
+  /* ── P4: Deal Score — brand piece ── */
+  var dsBar=document.getElementById('ds-bar');
+  var dsEl=document.getElementById('ds-num');
+  var dsVerdict=document.querySelector('.ds-verdict');
+  var dsQuote=document.querySelector('.ds-quote');
+  if(dsBar){dsBar.style.width='0%';setTimeout(function(){dsBar.style.transition='width .9s cubic-bezier(.4,0,.2,1)';dsBar.style.width=p.dealScore+'%';},350);}
+  countUp(dsEl,p.dealScore,350);
+  if(dsVerdict)dsVerdict.textContent=p.dealLabel;
+  if(dsQuote)dsQuote.textContent=dealQuote(p,recFee,maxFee);
+  /* fee boxes */
+  var feeRec=document.getElementById('fee-rec');
+  var feeMax=document.getElementById('fee-max');
+  if(feeRec)feeRec.textContent=recFee;
+  if(feeMax)feeMax.textContent=maxFee;
+  /* verdict quote */
+  var vq=document.querySelector('.verdict-quote');
+  if(vq)vq.innerHTML='\u201e'+dealQuote(p,recFee,maxFee)+'\u201c';
+
+  /* ── Market Inefficiency ── */
+  var mktPct=document.getElementById('mkt-pct');
+  var mktEst=document.getElementById('mkt-estimated');
+  var mktCur=document.getElementById('mkt-current');
+  var mktBar=document.getElementById('mkt-bar-fill');
+  if(mktPct)mktPct.textContent=p.mktIneff+'%';
+  if(mktEst)mktEst.textContent=fmtMoney(p.estVal);
+  if(mktCur)mktCur.textContent=fmtMoney(p.fee||p.mv);
+  if(mktBar)mktBar.style.width=Math.min(100,p.mktIneff)+'%';
+
+  /* ── Risk ring ── */
+  var riskRing=document.getElementById('risk-ring');
+  var rFull=157,rOff=rFull-(rFull*((100-p.riskScore)/100));
+  var rCol=p.riskScore<=30?'var(--accent-green)':p.riskScore<=60?'var(--accent-amber)':'var(--accent-red)';
+  if(riskRing){riskRing.style.stroke=rCol;riskRing.style.filter='drop-shadow(0 0 5px '+rCol+')';}
+  animateRing(riskRing,rFull,rOff,500);
+  var rtLevel=document.querySelector('.risk-total-level');
+  var rtScore=document.querySelector('.risk-total-score');
+  var rtDot=document.querySelector('.risk-total-dot');
+  var rLabel=p.riskScore<=30?'GERING':p.riskScore<=60?'MITTEL':'HOCH';
+  var rSafe=(Math.round((100-p.riskScore)/10)).toFixed(1);
+  if(rtLevel){rtLevel.textContent=rLabel;rtLevel.style.color=rCol;}
+  if(rtScore)rtScore.textContent=rSafe+' / 10 Sicherheit';
+  if(rtDot){rtDot.style.background=rCol;rtDot.style.boxShadow='0 0 8px '+rCol;}
+
+  /* ── P5: Budget panel — named IDs + highlighted KPIs ── */
+  var roi=p.estVal>0&&p.fee>0?Math.round((p.estVal-p.fee)/p.fee*100):0;
+  var resaleLo=fmtMoney(p.estVal*0.65);
+  var resaleHi=fmtMoney(p.estVal*1.1);
+  var breakEven=p.wage>0&&p.fee>0?Math.round((p.fee/p.wage/12)*10)/10:null;
+  var vfm=p.dealScore>=85?'EXZELLENT':p.dealScore>=70?'SEHR GUT':p.dealScore>=55?'GUT':'BEFRIEDIGEND';
+  var vfmRank='Top '+Math.max(1,Math.round((100-p.dealScore)/2))+'%';
+  var effPct=Math.min(99,Math.max(5,p.dealScore));
+  /* highlighted boxes */
+  var bvRoi=document.getElementById('bv-roi');
+  var bvVfm=document.getElementById('bv-vfm');
+  if(bvRoi)bvRoi.textContent=roi>0?'+'+roi+'%':'—';
+  if(bvVfm)bvVfm.textContent=vfmRank;
+  /* detail rows */
+  var bvFv=document.getElementById('bv-fv');
+  var bvRec=document.getElementById('bv-rec');
+  var bvMax=document.getElementById('bv-max');
+  var bvBe=document.getElementById('bv-be');
+  var bvRs=document.getElementById('bv-rs');
+  var bvEff=document.getElementById('bv-eff');
+  var bvEffBar=document.getElementById('bv-eff-bar');
+  if(bvFv)bvFv.textContent=fmtMoney(p.estVal);
+  if(bvRec)bvRec.textContent=recFee;
+  if(bvMax)bvMax.textContent=maxFee;
+  if(bvBe)bvBe.textContent=breakEven?'ca. '+breakEven+' Jahre':'\u2014';
+  if(bvRs)bvRs.textContent=resaleLo+'\u2013'+resaleHi;
+  if(bvEff)bvEff.textContent=vfm;
+  if(bvEffBar)bvEffBar.style.width=effPct+'%';
+
+  /* ── P6: Verdict quick-reasons summary ── */
+  var vqr=document.getElementById('verdict-quick-reasons');
+  if(vqr){
+    var isPos=p.dealScore>=55;
+    var reasons=[];
+    if(isPos){
+      if(p.mktIneff>=20) reasons.push({t:p.mktIneff+'% unter Marktwert',c:'gn'});
+      if(p.perfScore>=75) reasons.push({t:'Performance '+pctRank(p.perfScore),c:'gn'});
+      if(p.riskScore<=30) reasons.push({t:'Geringes Risiko',c:'gn'});
+      if(p.mktIneff>=15||p.isGem) reasons.push({t:'Hohes Wiederverkaufspotenzial',c:'am'});
+      if(p.wageScore>=70) reasons.push({t:'Ausgezeichnete Gehaltseffizienz',c:'gn'});
+      if(p.ageScore>=80) reasons.push({t:'Optimale Alterskurve',c:'cy'});
+      vqr.style.background='rgba(16,185,129,0.06)';
+      vqr.style.border='1px solid rgba(16,185,129,0.15)';
+    } else {
+      if(p.mktIneff<10) reasons.push({t:'Kein Preisvorteil vorhanden',c:'rd'});
+      if(p.riskScore>50) reasons.push({t:'Risikoprofil zu hoch',c:'rd'});
+      if(p.wageScore<45) reasons.push({t:'Gehalt im ungünstigen Verhältnis',c:'rd'});
+      if(p.mktIneff<=0) reasons.push({t:'Marktpreis bereits fair bewertet',c:'rd'});
+      if(p.dealScore<50) reasons.push({t:'Begrenztes Resale-Potenzial',c:'am'});
+      vqr.style.background='rgba(239,68,68,0.05)';
+      vqr.style.border='1px solid rgba(239,68,68,0.15)';
+    }
+    if(reasons.length>0){
+      var col={'gn':'var(--accent-green)','cy':'var(--accent-cyan)','am':'var(--accent-amber)','rd':'var(--accent-red)'};
+      var icon=isPos?'&#10003;':'&#10007;';
+      vqr.innerHTML='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:5px">'+(isPos?'Warum kaufen?':'Warum nicht?')+'</div>'+
+        reasons.slice(0,4).map(function(r){
+          return '<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:2px">'+
+            '<span style="color:'+col[r.c]+';flex-shrink:0">'+icon+'</span>'+
+            '<span style="color:var(--text-secondary)">'+r.t+'</span></div>';
+        }).join('');
+      vqr.style.display='block';
+    } else {
+      vqr.style.display='none';
+    }
+  }
+
+  /* ── P6: Hidden Gem ring + reasons ── */
+  var gemRing=document.getElementById('gem-ring');
+  var gFull2=207,gOff2=gFull2-(gFull2*(p.confScore/100));
+  animateRing(gemRing,gFull2,gOff2,600);
+  var gemPct=document.getElementById('gem-pct');
+  if(gemPct)gemPct.textContent=p.confScore+'%';
+  var gemReasonEl=document.querySelector('.gem-reasons');
+  if(gemReasonEl){
+    var reasons=gemReasons(p);
+    gemReasonEl.innerHTML=reasons.map(function(r){
+      return '<div class="gem-reason-row">'+
+        '<div class="gem-reason-icon">&#10003;</div>'+
+        '<div class="gem-reason-text">'+
+          '<div class="gem-reason-main">'+r.t+'</div>'+
+          '<div class="gem-reason-detail">'+r.d+'</div>'+
+        '</div></div>';
+    }).join('');
+  }
+  var gemVerdictEl=document.querySelector('.gem-verdict-val');
+  if(gemVerdictEl){
+    var gv=p.confScore>=80?'SEHR HOCH\nKONFIDENT':p.confScore>=65?'HOCH\nKONFIDENT':'MODERAT\nKONFIDENT';
+    gemVerdictEl.innerHTML=gv.replace('\n','<br>');
+  }
+
+  /* ── P9: Scout Report — human chefscout voice ── */
+  var prose=document.getElementById('scout-prose');
+  if(prose)prose.innerHTML=scoutReport(p,recFee,maxFee);
+  var action=document.getElementById('scout-action');
+  if(action)action.textContent='\u25BA Transferfazit: Angebot bei '+recFee+' starten. Absolute Grenze: '+maxFee+'. Transferbewertung: '+p.dealScore+'/100.';
+  /* scout verdict tag */
+  var svTag=document.querySelector('.scout-verdict-tag');
+  if(svTag){
+    svTag.textContent=p.dealScore>=85?'\u2713 Kaufempfehlung \u2014 Sofort handeln':
+      p.dealScore>=70?'\u2713 Empfehlung \u2014 Transfer pr\u00fcfen':
+      p.dealScore>=55?'\u2014 Beobachten \u2014 Weitere Pr\u00fcfung':'! Zur\u00fcckhaltung empfohlen';
+  }
+
+  /* ── P7: Warum jetzt? block ── */
+  var whyNowEl=document.getElementById('why-now-block');
+  if(whyNowEl){
+    if(p.dealScore>=55){
+      var wnR=whyNowReasons(p);
+      whyNowEl.innerHTML='<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent-cyan);margin-bottom:6px;margin-top:2px">&#9654; Warum jetzt?</div>'+
+        '<div style="display:flex;flex-direction:column;gap:3px">'+
+        wnR.map(function(r){
+          return '<div style="display:flex;align-items:flex-start;gap:6px;font-size:10px;color:var(--text-secondary)">'+
+            '<span style="color:var(--accent-green);flex-shrink:0">&#10003;</span>'+r+'</div>';
+        }).join('')+'</div>';
+      whyNowEl.style.display='block';
+    } else {
+      whyNowEl.style.display='none';
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER PLAYER LIST — premium card layout
+══════════════════════════════════════════════════════════════ */
+function renderList(players){
+  var body=document.getElementById('player-list-body');
+  if(!body)return;
+  if(!players||players.length===0){
+    body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:50px 20px;text-align:center">'+
+      '<div style="font-size:36px;opacity:0.3">&#128202;</div>'+
+      '<div style="font-size:14px;font-weight:700;color:var(--text-secondary)">Keine Spieler nach Filter</div>'+
+      '<div style="font-size:11px;color:var(--text-muted)">Filter anpassen oder CSV neu importieren</div></div>';
+    return;
+  }
+
+  /* header row */
+  var hdr='<div style="display:grid;grid-template-columns:44px 1fr 54px 80px 40px 90px 90px 100px 110px;'+
+    'gap:8px;padding:8px 16px;border-bottom:1px solid var(--border-dim);'+
+    'font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">'+
+    '<div></div><div>Spieler</div><div style="text-align:center">OVS</div>'+
+    '<div>Position</div><div style="text-align:center">Alter</div>'+
+    '<div style="text-align:right">Marktwert</div>'+
+    '<div style="text-align:right">Ablöse</div>'+
+    '<div style="text-align:center">Deal Score</div>'+
+    '<div style="text-align:center">Verdict</div></div>';
+
+  var rows=players.map(function(p,i){
+    var isSel=i===SELECTED_IDX;
+    /* verdict styling */
+    var vc=p.dealScore>=85?'var(--accent-green)':p.dealScore>=70?'var(--accent-cyan)':p.dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
+    var vbg=p.dealScore>=85?'rgba(16,185,129,0.12)':p.dealScore>=70?'rgba(6,182,212,0.12)':p.dealScore>=55?'rgba(245,158,11,0.12)':'rgba(239,68,68,0.10)';
+    /* OVS badge colour */
+    var oc=p.ovs>=80?'var(--accent-cyan)':p.ovs>=65?'var(--accent-blue)':'var(--accent-amber)';
+    var obg=p.ovs>=80?'rgba(6,182,212,0.14)':p.ovs>=65?'rgba(59,130,246,0.14)':'rgba(245,158,11,0.12)';
+    /* deal bar */
+    var barW=p.dealScore+'%';
+    var barCol=p.dealScore>=85?'linear-gradient(90deg,#059669,var(--accent-green))':
+               p.dealScore>=70?'linear-gradient(90deg,var(--accent-blue),var(--accent-cyan))':
+               p.dealScore>=55?'linear-gradient(90deg,#d97706,var(--accent-amber))':
+               'linear-gradient(90deg,#dc2626,var(--accent-red))';
+    /* tags */
+    var tags='';
+    if(p.isSteal) tags+='<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(16,185,129,0.15);color:var(--accent-green);border:1px solid rgba(16,185,129,0.25)">Steal</span> ';
+    if(p.isGem)   tags+='<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(245,158,11,0.14);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.25)">&#128142;</span> ';
+    if(p.isWonderkid) tags+='<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(139,92,246,0.14);color:#c4b5fd;border:1px solid rgba(139,92,246,0.25)">&#11088;</span>';
+
+    return '<div onclick="window.selectPlayer('+i+')" '+
+      'style="display:grid;grid-template-columns:44px 1fr 54px 80px 40px 90px 90px 100px 110px;'+
+      'gap:8px;padding:9px 16px;border-bottom:1px solid var(--border-dim);cursor:pointer;'+
+      'transition:background .12s;align-items:center;'+
+      (isSel?'background:rgba(59,130,246,0.09);border-left:2px solid var(--accent-blue);':'background:transparent;')+
+      '" onmouseenter="if(!'+isSel+')this.style.background=\'rgba(255,255,255,0.025)\'" onmouseleave="if(!'+isSel+')this.style.background=\'transparent\'">'+
+
+      /* OVS badge */
+      '<div style="display:flex;justify-content:center">'+
+        '<div style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;'+
+        'font-size:13px;font-weight:900;background:'+obg+';color:'+oc+';border:1px solid '+oc.replace(')',',0.3)').replace('var(--','rgba(').replace('accent-cyan','6,182,212').replace('accent-blue','59,130,246').replace('accent-amber','245,158,11')+';">'+p.ovs+'</div>'+
+      '</div>'+
+
+      /* Name + club + tags */
+      '<div style="min-width:0">'+
+        '<div style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+p.name+'</div>'+
+        '<div style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+
+          p.club+(p.league?'&nbsp;&bull;&nbsp;'+p.league:'')+'</div>'+
+        (tags?'<div style="margin-top:3px">'+tags+'</div>':'')+
+      '</div>'+
+
+      /* OVS number */
+      '<div style="text-align:center;font-size:12px;font-weight:700;color:'+oc+'">'+p.ovs+'</div>'+
+
+      /* Position */
+      '<div style="font-size:10px;color:var(--text-secondary);font-weight:500">'+p.pos+'</div>'+
+
+      /* Age */
+      '<div style="text-align:center;font-size:11px;color:var(--text-secondary)">'+p.age+'</div>'+
+
+      /* Market value */
+      '<div style="text-align:right;font-size:11px;font-weight:600;color:var(--text-primary)">'+fmtMoney(p.estVal)+'</div>'+
+
+      /* Fee */
+      '<div style="text-align:right;font-size:11px;font-weight:600;color:var(--accent-green)">'+fmtMoney(p.fee)+'</div>'+
+
+      /* Deal score bar + number */
+      '<div style="display:flex;flex-direction:column;gap:3px;align-items:center">'+
+        '<div style="font-size:11px;font-weight:800;color:'+vc+'">'+p.dealScore+'</div>'+
+        '<div style="width:60px;height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden">'+
+          '<div style="height:100%;width:'+barW+';background:'+barCol+';border-radius:2px"></div>'+
+        '</div>'+
+      '</div>'+
+
+      /* Verdict pill */
+      '<div style="display:flex;justify-content:center">'+
+        '<span style="font-size:9px;font-weight:800;padding:3px 8px;border-radius:4px;'+
+        'background:'+vbg+';color:'+vc+';border:1px solid '+vc.replace(')',',0.3)').replace('var(--','rgba(').replace('accent-green','16,185,129').replace('accent-cyan','6,182,212').replace('accent-amber','245,158,11').replace('accent-red','239,68,68')+';">'+
+        p.verdict+'</span>'+
+      '</div>'+
+
+    '</div>';
+  }).join('');
+
+  body.innerHTML=hdr+rows;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   P2: RENDER EXEC BAR — dynamic, story-per-card, no hardcoded names
+══════════════════════════════════════════════════════════════ */
+function renderExec(players){
+  if(!players||players.length===0)return;
+  var sorted=[].concat(players).sort(function(a,b){return b.dealScore-a.dealScore;});
+  var steals=[].concat(players).filter(function(p){return p.isSteal;}).sort(function(a,b){return b.mktIneff-a.mktIneff;});
+  var gems=[].concat(players).filter(function(p){return p.isGem;}).sort(function(a,b){return b.confScore-a.confScore;});
+  var impacts=[].concat(players).filter(function(p){return p.isImpact;}).sort(function(a,b){return b.dealScore-a.dealScore;});
+  var wonders=[].concat(players).filter(function(p){return p.isWonderkid;}).sort(function(a,b){return b.dealScore-a.dealScore;});
+  var overpriced=[].concat(players).filter(function(p){return p.mktIneff<-15;}).sort(function(a,b){return a.mktIneff-b.mktIneff;});
+
+  /* Each card gets: name, key stat, narrative meta line, action CTA */
+  function setCard(id,p,stat,meta,cta){
+    var el=document.getElementById(id);
+    if(!el||!p)return;
+    el.querySelector('.exec-hero-name').textContent=p.name;
+    el.querySelector('.exec-stat').textContent=stat;
+    el.querySelector('.exec-meta').textContent=meta;
+    el.querySelector('.exec-cta').textContent=cta;
+    el.onclick=function(){window.selectPlayer(players.indexOf(p));};
+  }
+
+  var best=sorted[0];
+  var bestSteal=steals[0]||best;
+  var bestGem=gems[0]||sorted[1]||best;
+  var bestImpact=impacts[0]||best;
+  var bestResale=wonders[0]||sorted[2]||best;
+  var bestOver=overpriced[0]||(sorted.length>1?sorted[sorted.length-1]:null);
+  var bestWage=[].concat(players).sort(function(a,b){return b.wageScore-a.wageScore;})[0];
+
+  if(bestSteal) setCard('exec-steal',bestSteal,
+    bestSteal.mktIneff+'% unter Marktwert',
+    'Unsere Analyse empfiehlt sofortigen Transfer \u2022 '+bestSteal.age+' J. \u2022 '+bestSteal.pos,
+    '\u2192 Sofort verpflichten');
+  if(bestGem)   setCard('exec-gem',bestGem,
+    'Bewertung: '+bestGem.confScore+'% \u2014 Markt unterschätzt ihn',
+    'Scouting-Einsch\u00e4tzung: Klare Marktanomalie \u2022 '+bestGem.age+' J.',
+    '\u2192 Scout Report \u00f6ffnen');
+  if(bestImpact)setCard('exec-impact',bestImpact,
+    'Sofortimpact gesichert \u2022 Performance '+pctRank(bestImpact.perfScore),
+    'Bereit f\u00fcr erste Elf \u2022 '+bestImpact.age+' J. \u2022 '+bestImpact.pos,
+    '\u2192 Deal pr\u00fcfen');
+  if(bestResale)setCard('exec-resale',bestResale,
+    'Resale-Potenzial: '+fmtMoney(bestResale.estVal*1.0)+'+',
+    'Entwicklungsperspektive exzellent \u2022 '+bestResale.age+' J. \u2022 '+bestResale.pos,
+    '\u2192 Als Investment analysieren');
+  if(bestOver)  setCard('exec-over',bestOver,
+    Math.abs(bestOver.mktIneff)+'% \u00fcber fairem Wert',
+    'Transferbewertung: Nicht empfohlen \u2022 '+bestOver.age+' J. \u2022 OVS '+bestOver.ovs,
+    '\u2192 Finger weg');
+  if(bestWage)  setCard('exec-wage',bestWage,
+    'Gehaltseffizienz: '+pctRank(bestWage.wageScore),
+    'Bestes Preis-Leistungs-Verh\u00e4ltnis im Datensatz \u2022 '+bestWage.age+' J.',
+    '\u2192 Sofort analysieren');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FILTER & APPLY
+══════════════════════════════════════════════════════════════ */
+function applyFilters(){
+  var pos=(document.getElementById('filter-pos').value||'').toLowerCase();
+  var ageMin=parseInt(document.getElementById('filter-age-min').value)||16;
+  var ageMax=parseInt(document.getElementById('filter-age-max').value)||45;
+  var feeMax=parseInt(document.getElementById('filter-fee').value)||200;
+  var wageMax=parseInt(document.getElementById('filter-wage')?document.getElementById('filter-wage').value:500)||500;
+  var show=document.getElementById('filter-show')?document.getElementById('filter-show').value:'';
+
+  FILTERED=ALL_PLAYERS.filter(function(p){
+    if(pos&&p.pos.toLowerCase().indexOf(pos)<0&&pos!==''){}
+    if(pos){var pm=p.pos.toLowerCase();if(pm.indexOf(pos)<0&&pos.indexOf(pm)<0)return false;}
+    if(p.age<ageMin||p.age>ageMax)return false;
+    if(feeMax<200&&p.fee>feeMax*1000000)return false;
+    if(wageMax<500&&p.wage>wageMax*1000)return false;
+    if(show==='steal'&&!p.isSteal)return false;
+    if(show==='gem'&&!p.isGem)return false;
+    if(show==='wonderkid'&&!p.isWonderkid)return false;
+    return true;
+  });
+
+  FILTERED.sort(function(a,b){return b.dealScore-a.dealScore;});
+  SELECTED_IDX=0;
+  renderList(FILTERED);
+  renderExec(FILTERED);
+  if(FILTERED.length>0){
+    renderDashboard(FILTERED[0]);
+    renderScoutReportView(FILTERED[0]);
+    renderHiddenGemsView();
+    renderCompareView();
+  }
+  document.getElementById('player-count-num').textContent=FILTERED.length;
+  var pcb=document.getElementById('players-count-badge');
+  if(pcb)pcb.textContent=FILTERED.length+' Spieler';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WHY NOW — dynamic urgency reasons
+══════════════════════════════════════════════════════════════ */
+function whyNowReasons(p){
+  var r=[];
+  if(p.contract<12) r.push('Vertrag läuft in unter 12 Monaten aus — Verein unter Verkaufsdruck');
+  else if(p.contract<24) r.push('Vertrag läuft bald aus — Verhandlungsposition aktuell optimal');
+  if(p.mktIneff>=20) r.push('Marktwert wurde noch nicht an die Leistungsdaten angepasst');
+  if(p.lf<0.85) r.push('Ligawechsel würde Marktwert sofort erheblich steigern');
+  if(p.riskScore<=30) r.push('Kaum Konkurrenz — kein bekanntes Bieterangebot');
+  if(p.isGem) r.push('Hidden Gem: andere Clubs haben diesen Spieler noch nicht entdeckt');
+  if(p.mktIneff>=15&&p.fee>0) r.push('Preis-Leistungs-Verhältnis aktuell auf Höchststand');
+  if(p.age<=23) r.push('Entwicklungskurve zeigt klar aufwärts — jetzt ist der ideale Einstiegszeitpunkt');
+  if(r.length<3) r.push('Frühzeitiges Handeln sichert den besten Preis, bevor andere Clubs aufmerksam werden');
+  return r.slice(0,5);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WHY HOLD/AVOID — explain negative verdict clearly
+══════════════════════════════════════════════════════════════ */
+function whyNotReasons(p){
+  var r=[];
+  if(p.mktIneff<5&&p.mktIneff>-10) r.push('Marktpreis entspricht bereits dem fairen Wert — kein Moneyball-Vorteil');
+  if(p.mktIneff<=-10) r.push(Math.abs(p.mktIneff)+'% über fairem Wert — Preisaufschlag gegenüber vergleichbaren Alternativen');
+  if(p.riskScore>60) r.push('Risikoprofil zu hoch — Verletzungshistorie oder Datenbasis problematisch');
+  if(p.wageScore<40) r.push('Gehaltsforderung in keinem angemessenen Verhältnis zur Leistung');
+  if(p.ageScore<40) r.push('Alterskurve lässt keine nachhaltige Wertentwicklung erwarten');
+  if(p.perfScore<50) r.push('Leistungsdaten reichen für den angestrebten Transfer nicht aus');
+  if(p.lf>=0.95&&p.mktIneff<15) r.push('Top-Liga-Spieler — Marktpreise bereits weitgehend effizient');
+  if(r.length<2) r.push('Deal Score von '+p.dealScore+'/100 liegt unter der Kaufempfehlungsgrenze');
+  if(r.length<3) r.push('Bessere Alternativen im Datensatz vorhanden');
+  return r.slice(0,4);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER SCOUT REPORT VIEW (full page for a player)
+══════════════════════════════════════════════════════════════ */
+function renderScoutReportView(p){
+  var el=document.getElementById('view-scout-reports');
+  if(!el||!p)return;
+  var recFee=p.fee>0?fmtMoney(p.fee*0.85):fmtMoney(p.estVal*0.32);
+  var maxFee=p.fee>0?fmtMoney(p.fee*1.15):fmtMoney(p.estVal*0.40);
+  var isPos=p.dealScore>=55;
+  var verdCol=p.dealScore>=85?'var(--accent-green)':p.dealScore>=70?'var(--accent-cyan)':p.dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
+  var whyNow=whyNowReasons(p);
+  var whyNot=whyNotReasons(p);
+  var roi=p.estVal>0&&p.fee>0?Math.round((p.estVal-p.fee)/p.fee*100):0;
+
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">'+
+
+  /* header */
+  '<div class="card" style="border-color:'+verdCol.replace('var(--','').replace(')','')+'33;padding:18px 20px">'+
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">'+
+      '<div>'+
+        '<div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px">Chefscout-Analyse</div>'+
+        '<div style="font-size:26px;font-weight:900;color:var(--text-primary);line-height:1">'+p.name+'</div>'+
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">'+p.pos+' &bull; '+p.age+' Jahre &bull; '+p.club+(p.league?' &bull; '+p.league:'')+'</div>'+
+      '</div>'+
+      '<div style="text-align:right;flex-shrink:0">'+
+        '<div style="font-size:32px;font-weight:900;color:'+verdCol+';text-shadow:0 0 24px '+verdCol+';line-height:1">'+p.verdict+'</div>'+
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Deal Score: <strong style="color:'+verdCol+'">'+p.dealScore+'/100</strong></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>'+
+
+  /* 2-col grid */
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+
+    /* scout prose */
+    '<div class="card" style="grid-column:1/-1">'+
+      '<div class="card-header"><span class="card-title">Analyse &amp; Einschätzung</span></div>'+
+      '<div style="padding:10px 14px 14px;font-size:11px;line-height:1.8;color:var(--text-secondary)">'+
+        scoutReport(p,recFee,maxFee)+
+      '</div>'+
+      (isPos?
+        '<div style="margin:0 14px 14px;padding:8px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:6px;font-size:10px;font-weight:600;color:var(--accent-blue)">'+
+          '&#9658; Transferfazit: Angebot bei '+recFee+' starten. Absolute Grenze: '+maxFee+'. Darüber hinaus verliert der Transfer seinen Vorteil.</div>'
+        :
+        '<div style="margin:0 14px 14px;padding:8px 12px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:10px;font-weight:600;color:var(--accent-red)">'+
+          '&#8856; Empfehlung: Zurückhaltung. Aktuell bessere Optionen im Datensatz vorhanden.</div>'
+      )+
+    '</div>'+
+
+    /* Why Now */
+    (isPos?
+    '<div class="card">'+
+      '<div class="card-header"><span class="card-title">Warum jetzt?</span></div>'+
+      '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:6px">'+
+        whyNow.map(function(r){
+          return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.1)">'+
+            '<span style="color:var(--accent-green);font-size:12px;flex-shrink:0;margin-top:1px">&#10003;</span>'+
+            '<span style="color:var(--text-secondary)">'+r+'</span></div>';
+        }).join('')+
+      '</div>'+
+    '</div>'
+    :
+    '<div class="card">'+
+      '<div class="card-header"><span class="card-title">Warum keine Kaufempfehlung?</span></div>'+
+      '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:6px">'+
+        whyNot.map(function(r){
+          return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:5px 8px;border-radius:6px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.1)">'+
+            '<span style="color:var(--accent-red);font-size:12px;flex-shrink:0;margin-top:1px">&#10007;</span>'+
+            '<span style="color:var(--text-secondary)">'+r+'</span></div>';
+        }).join('')+
+      '</div>'+
+    '</div>'
+    )+
+
+    /* Key numbers */
+    '<div class="card">'+
+      '<div class="card-header"><span class="card-title">Kenndaten &amp; Preisgrenzen</span></div>'+
+      '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:4px">'+
+        [
+          ['OVS Score',p.ovs+' ('+pctRank(p.ovs)+')','var(--accent-cyan)'],
+          ['Deal Score',p.dealScore+' / 100',verdCol],
+          ['Geschätzter Wert',fmtMoney(p.estVal),'var(--text-primary)'],
+          ['Empf. Ablöse',recFee,'var(--accent-green)'],
+          ['Niemals über',maxFee,'var(--accent-red)'],
+          ['Gesch. ROI',roi>0?'+'+roi+'%':'—','var(--accent-green)'],
+          ['Resale-Potenzial',fmtMoney(p.estVal*0.65)+'–'+fmtMoney(p.estVal*1.1),'var(--accent-amber)'],
+          ['Marktineffizienz',p.mktIneff+'%',p.mktIneff>=20?'var(--accent-cyan)':'var(--text-muted)']
+        ].map(function(row){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-dim)">'+
+            '<span style="font-size:10px;color:var(--text-muted)">'+row[0]+'</span>'+
+            '<span style="font-size:11px;font-weight:700;color:'+row[2]+'">'+row[1]+'</span></div>';
+        }).join('')+
+      '</div>'+
+    '</div>'+
+
+    /* Maximalpreis explanation (P8) */
+    '<div class="card" style="grid-column:1/-1">'+
+      '<div class="card-header"><span class="card-title">&#9888; Maximalpreis-Begründung</span></div>'+
+      '<div style="padding:10px 14px 14px">'+
+        '<div style="font-size:22px;font-weight:900;color:var(--accent-red);margin-bottom:6px">Niemals über '+maxFee+'</div>'+
+        '<div style="font-size:11px;line-height:1.7;color:var(--text-secondary)">'+
+          'Ab einer Ablöse oberhalb dieses Betrags verliert der Transfer seinen Moneyball-Vorteil. '+
+          'Das Risiko-Ertrags-Verhältnis kehrt sich um: Der Preisaufschlag gegenüber dem fairen Wert von '+fmtMoney(p.estVal)+' '+
+          'übersteigt den erwarteten Mehrwert. Unsere Bewertung empfiehlt daher, Verhandlungen bei dieser Grenze abzubrechen '+
+          'und auf eine günstigere Alternative zu wechseln.'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+  '</div>'+ /* end grid */
+  '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER HIDDEN GEMS VIEW
+══════════════════════════════════════════════════════════════ */
+function renderHiddenGemsView(){
+  var el=document.getElementById('view-hidden-gems');
+  if(!el)return;
+  var gems=[].concat(FILTERED).filter(function(p){return p.isGem||p.mktIneff>=15;})
+    .sort(function(a,b){return b.confScore-a.confScore;});
+  if(!gems||gems.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Keine Hidden Gems</div><div class="empty-desc">In den aktuellen Daten wurden keine versteckten Talente gefunden. Filter anpassen oder mehr Spieler importieren.</div></div>';
+    return;
+  }
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+
+    gems.map(function(p){
+      var realIdx=FILTERED.indexOf(p);
+      var verdCol=p.confScore>=70?'var(--accent-amber)':'var(--accent-cyan)';
+      var reasons=gemReasons(p);
+      return '<div class="card" style="cursor:pointer;border-color:rgba(245,158,11,0.2);transition:all .2s" onclick="window.selectPlayerAndView('+realIdx+')" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,0.3)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">'+
+        '<div style="padding:12px 14px 0;display:flex;align-items:flex-start;justify-content:space-between">'+
+          '<div>'+
+            '<div style="font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent-amber);margin-bottom:4px">&#128142; Hidden Gem</div>'+
+            '<div style="font-size:15px;font-weight:800;color:var(--text-primary)">'+p.name+'</div>'+
+            '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">'+p.pos+' &bull; '+p.age+' J. &bull; '+p.club+'</div>'+
+          '</div>'+
+          '<div style="text-align:center;flex-shrink:0">'+
+            '<div style="font-size:22px;font-weight:900;color:'+verdCol+'">'+p.confScore+'%</div>'+
+            '<div style="font-size:8px;color:var(--text-muted);letter-spacing:0.08em">BEWERTUNG</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="padding:8px 14px 4px">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--accent-amber);margin-bottom:6px">'+p.mktIneff+'% unter Marktwert &bull; Deal Score '+p.dealScore+'/100</div>'+
+          '<div style="display:flex;flex-direction:column;gap:3px">'+
+            reasons.slice(0,4).map(function(r){
+              return '<div style="display:flex;align-items:flex-start;gap:6px;font-size:10px;color:var(--text-secondary)">'+
+                '<span style="color:var(--accent-green);flex-shrink:0">&#10003;</span>'+r.t+'</div>';
+            }).join('')+
+          '</div>'+
+        '</div>'+
+        '<div style="padding:8px 14px 12px;display:flex;gap:8px;justify-content:space-between;align-items:center;border-top:1px solid var(--border-dim);margin-top:8px">'+
+          '<span style="font-size:10px;color:var(--text-muted)">Empf. Ablöse: <strong style="color:var(--accent-green)">'+fmtMoney(p.fee>0?p.fee*0.85:p.estVal*0.32)+'</strong></span>'+
+          '<span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,0.14);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.25)">Scout Report &#8594;</span>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER COMPARE VIEW
+══════════════════════════════════════════════════════════════ */
+function renderCompareView(){
+  var el=document.getElementById('view-compare');
+  if(!el)return;
+  if(!FILTERED||FILTERED.length<2){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#9878;</div><div class="empty-title">Spieler vergleichen</div><div class="empty-desc">Mindestens 2 Spieler werden benötigt. Bitte CSV importieren.</div></div>';
+    return;
+  }
+  /* Compare top 4 by deal score */
+  var top=FILTERED.slice(0,Math.min(4,FILTERED.length));
+  var metrics=[
+    {l:'OVS Score',f:function(p){return p.ovs;}},
+    {l:'Deal Score',f:function(p){return p.dealScore;}},
+    {l:'Performance',f:function(p){return p.perfScore;}},
+    {l:'Marktineffizienz',f:function(p){return Math.max(0,p.mktIneff);}},
+    {l:'Gehaltseffizienz',f:function(p){return p.wageScore;}},
+    {l:'Alter',f:function(p){return p.ageScore;}},
+    {l:'Verlässlichkeit',f:function(p){return p.relScore;}},
+    {l:'Risiko (invers)',f:function(p){return 100-p.riskScore;}}
+  ];
+  var verdCol=function(p){return p.dealScore>=85?'var(--accent-green)':p.dealScore>=70?'var(--accent-cyan)':p.dealScore>=55?'var(--accent-amber)':'var(--accent-red)';};
+
+  el.innerHTML='<div class="card"><div class="card-header"><span class="card-title">Top '+top.length+' Spieler im Vergleich</span><span class="card-title-badge">nach Deal Score</span></div>'+
+  '<div style="overflow-x:auto;padding:12px 14px 14px">'+
+  '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+  /* header */
+  '<thead><tr>'+
+    '<th style="text-align:left;padding:6px 10px;color:var(--text-muted);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid var(--border-dim)">Kennzahl</th>'+
+    top.map(function(p){
+      return '<th style="text-align:center;padding:6px 10px;border-bottom:1px solid var(--border-dim)">'+
+        '<div style="font-size:12px;font-weight:800;color:'+verdCol(p)+'">'+p.name+'</div>'+
+        '<div style="font-size:9px;color:var(--text-muted)">'+p.pos+' &bull; '+p.age+' J.</div>'+
+        '<div style="font-size:10px;font-weight:700;color:'+verdCol(p)+';margin-top:3px">'+p.verdict+'</div>'+
+      '</th>';
+    }).join('')+
+  '</tr></thead>'+
+  /* rows */
+  '<tbody>'+
+  metrics.map(function(m,ri){
+    var vals=top.map(function(p){return m.f(p);});
+    var maxV=Math.max.apply(null,vals);
+    return '<tr style="background:'+(ri%2===0?'rgba(255,255,255,0.02)':'transparent')+'">'+
+      '<td style="padding:7px 10px;color:var(--text-muted);font-size:10px;border-bottom:1px solid var(--border-dim)">'+m.l+'</td>'+
+      top.map(function(p,ci){
+        var v=m.f(p);
+        var isBest=v===maxV&&maxV>0;
+        return '<td style="text-align:center;padding:7px 10px;border-bottom:1px solid var(--border-dim)">'+
+          '<div style="font-size:12px;font-weight:'+(isBest?'800':'600')+';color:'+(isBest?'var(--accent-green)':'var(--text-secondary)')+'">'+v+'</div>'+
+          (isBest?'<div style="font-size:8px;color:var(--accent-green)">&#9650; Bester</div>':'')+
+        '</td>';
+      }).join('')+
+    '</tr>';
+  }).join('')+
+  /* price row */
+  '<tr>'+
+    '<td style="padding:7px 10px;color:var(--text-muted);font-size:10px;border-bottom:1px solid var(--border-dim)">Empf. Abl\u00f6se</td>'+
+    top.map(function(p){
+      var rf=p.fee>0?fmtMoney(p.fee*0.85):fmtMoney(p.estVal*0.32);
+      return '<td style="text-align:center;padding:7px 10px;border-bottom:1px solid var(--border-dim)"><span style="font-size:11px;font-weight:700;color:var(--accent-green)">'+rf+'</span></td>';
+    }).join('')+
+  '</tr>'+
+  /* scout report buttons as final row — aligned under each player */
+  '<tr>'+
+    '<td style="padding:10px 10px;color:var(--text-muted);font-size:10px"></td>'+
+    top.map(function(p){
+      var realIdx=FILTERED.indexOf(p);
+      return '<td style="text-align:center;padding:10px 10px">'+
+        '<button onclick="window.selectPlayerAndView('+realIdx+',\'scout-reports\')" '+
+        'style="padding:5px 10px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:5px;'+
+        'color:var(--accent-blue);font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap">'+
+        p.name.split(' ').pop()+' &#8594; Report</button></td>';
+    }).join('')+
+  '</tr>'+
+  '</tbody></table></div></div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SELECT PLAYER (global so list rows can call it)
+══════════════════════════════════════════════════════════════ */
+window.selectPlayer=function(idx,targetView){
+  SELECTED_IDX=idx;
+  var p=FILTERED[idx];
+  if(!p)return;
+
+  renderDashboard(p);
+
+  /* highlight row */
+  document.querySelectorAll('.list-row').forEach(function(r,i){
+    r.style.background=i===idx?'rgba(59,130,246,0.08)':'';
+    r.style.borderLeft=i===idx?'2px solid var(--accent-blue)':'';
+  });
+
+  /* always update scout report view with new player */
+  renderScoutReportView(p);
+
+  /* hidden gems and compare only need re-render when navigating to them,
+     NOT on every player click — avoids DOM thrash and broken state */
+  var dest=targetView||'dashboard';
+  document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  var navLink=document.querySelector('[data-view="'+dest+'"]');
+  if(navLink)navLink.classList.add('active');
+  var viewEl=document.getElementById('view-'+dest);
+  if(viewEl)viewEl.classList.add('active');
+};
+
+/* convenience for exec card buttons going to scout-reports */
+window.selectPlayerAndView=function(idx,view){
+  window.selectPlayer(idx,view||'scout-reports');
+};
+
+/* ══════════════════════════════════════════════════════════════
+   LOAD FILE
+══════════════════════════════════════════════════════════════ */
+function loadFile(file){
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var raw=e.target.result;
+    var rows=parseCSV(raw);
+    if(rows.length===0){
+      alert('CSV konnte nicht gelesen werden.\nBitte FM26 View als CSV exportieren (Semikolon oder Komma als Trennzeichen).');
+      return;
+    }
+    ALL_PLAYERS=rows.map(scorePlayer).filter(function(p){return p.name&&p.ovs>0;});
+    ALL_PLAYERS.sort(function(a,b){return b.dealScore-a.dealScore;});
+
+    /* show dashboard */
+    document.getElementById('dashboard-empty').classList.add('hidden');
+    document.getElementById('dashboard-content').classList.remove('hidden');
+
+    applyFilters();
+  };
+  reader.onerror=function(){alert('Datei konnte nicht gelesen werden.');};
+  reader.readAsText(file,'UTF-8');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI WIRING
+══════════════════════════════════════════════════════════════ */
+  /* Nav */
+  document.querySelectorAll('.nav-link').forEach(function(l){
+    l.addEventListener('click',function(){
+      document.querySelectorAll('.nav-link').forEach(function(x){x.classList.remove('active');});
+      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+      l.classList.add('active');
+      var v=document.getElementById('view-'+l.dataset.view);
+      if(v)v.classList.add('active');
+      /* refresh secondary views on navigate */
+      if(l.dataset.view==='scout-reports'&&FILTERED[SELECTED_IDX]) renderScoutReportView(FILTERED[SELECTED_IDX]);
+      if(l.dataset.view==='hidden-gems') renderHiddenGemsView();
+      if(l.dataset.view==='compare') renderCompareView();
+    });
+  });
+
+  /* Presets */
+  document.querySelectorAll('.btn-preset').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.btn-preset').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var show=document.getElementById('filter-show');
+      if(show){
+        var map={steals:'steal',wonderkids:'wonderkid',impact:'',resale:'wonderkid',value:'',lowrisk:''};
+        show.value=map[b.dataset.preset]||'';
+      }
+      if(ALL_PLAYERS.length)applyFilters();
+    });
+  });
+
+  /* Collapsible sidebar */
+  document.querySelectorAll('.sb-toggle').forEach(function(btn){
+    var id=btn.id.replace('toggle-','drawer-');
+    var d=document.getElementById(id);
+    if(!d)return;
+    btn.addEventListener('click',function(){
+      var o=d.classList.toggle('open');
+      btn.classList.toggle('open',o);
+    });
+  });
+
+  /* Sliders */
+  var aMin=document.getElementById('filter-age-min');
+  var aMax=document.getElementById('filter-age-max');
+  var aVal=document.getElementById('age-val');
+  function ua(){var mn=parseInt(aMin.value),mx=parseInt(aMax.value);if(mn>mx){var t=mn;mn=mx;mx=t;}aVal.textContent=mn+'\u2013'+mx;if(ALL_PLAYERS.length)applyFilters();}
+  aMin.addEventListener('input',ua);aMax.addEventListener('input',ua);
+
+  document.getElementById('filter-fee').addEventListener('input',function(){
+    var v=parseInt(this.value);
+    document.getElementById('fee-val').textContent=v>=200?'Kein Limit':'\u20AC'+v+'M';
+    if(ALL_PLAYERS.length)applyFilters();
+  });
+  var wSlider=document.getElementById('filter-wage');
+  if(wSlider)wSlider.addEventListener('input',function(){
+    var v=parseInt(this.value);
+    document.getElementById('wage-val').textContent=v>=500?'Kein Limit':'\u20AC'+v+'K/w';
+    if(ALL_PLAYERS.length)applyFilters();
+  });
+  document.getElementById('filter-pos').addEventListener('change',function(){if(ALL_PLAYERS.length)applyFilters();});
+
+  /* Reset */
+  var resetBtn=document.getElementById('btn-reset');
+  if(resetBtn)resetBtn.addEventListener('click',function(){
+    document.getElementById('filter-pos').value='';
+    document.getElementById('filter-age-min').value=16;
+    document.getElementById('filter-age-max').value=45;
+    document.getElementById('filter-fee').value=200;
+    if(wSlider)wSlider.value=500;
+    if(document.getElementById('filter-show'))document.getElementById('filter-show').value='';
+    document.getElementById('age-val').textContent='16\u201345';
+    document.getElementById('fee-val').textContent='Kein Limit';
+    if(document.getElementById('wage-val'))document.getElementById('wage-val').textContent='Kein Limit';
+    if(ALL_PLAYERS.length)applyFilters();
+  });
+
+  /* File input — THIS is the missing piece */
+  var fileInput=document.getElementById('file-input');
+  fileInput.addEventListener('change',function(){
+    if(this.files&&this.files[0])loadFile(this.files[0]);
+    this.value=''; /* reset so same file can be re-imported */
+  });
+
+  document.getElementById('btn-import').addEventListener('click',function(){fileInput.click();});
+
+  /* exec card IDs — add id attrs to existing exec cards */
+  var execCards=document.querySelectorAll('.exec-card');
+  var execIds=['exec-steal','exec-gem','exec-impact','exec-resale','exec-over','exec-wage'];
+  execCards.forEach(function(el,i){if(execIds[i])el.id=execIds[i];});
+
+  /* Static demo animations on empty state */
+  animateRing(document.getElementById('ovs-gauge-ring'),264,66,200);
+  animateRing(document.getElementById('conf-ring'),157,19,400);
+  animateRing(document.getElementById('risk-ring'),157,118,500);
+  animateRing(document.getElementById('gem-ring'),207,25,600);
+  var dsBar=document.getElementById('ds-bar');
+  var dsEl=document.getElementById('ds-num');
+  if(dsBar){setTimeout(function(){dsBar.style.transition='width .9s cubic-bezier(.4,0,.2,1)';dsBar.style.width='98%';},350);}
+  countUp(dsEl,98,350);
+
+})();
+</script>
+</body>
+</html>
