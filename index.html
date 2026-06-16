@@ -1270,10 +1270,13 @@ function normaliseAll(players){
     if(p.fee===0&&p.mv>0) p.fee=p.mv*0.8;
   });
 
-  /* detect if fee data is real or all synthetic (fee=mv*0.8 fallback) */
+  /* detect if fee data is real or synthetic
+     Real = fees differ from both mv*0.8 AND mv (FM often exports fee=mv or fee=mv*0.8) */
   var feeIsReal=players.filter(function(p){
-    return p.fee>0&&p.mv>0&&Math.abs(p.fee/p.mv-0.8)>0.05;
-  }).length > players.length*0.1; /* at least 10% have real fee data */
+    if(p.fee<=0||p.mv<=0)return false;
+    var r=p.fee/p.mv;
+    return Math.abs(r-0.8)>0.08&&Math.abs(r-1.0)>0.08; /* not the two common fallback ratios */
+  }).length > players.length*0.15;
 
   /* build ranking arrays */
   var caArr   =players.map(function(p){return p.ca*(p.lf||0.8);});
@@ -1595,8 +1598,14 @@ function whyNotReasons(p){
 ══════════════════════════════════════════════════════════════ */
 function renderDashboard(p){
   /* ── Fee helpers (used in multiple places) ── */
-  var recFee=p.fee>0?fmtMoney(p.fee*0.85):fmtMoney(p.estVal*0.32);
-  var maxFee=p.fee>0?fmtMoney(p.fee*1.15):fmtMoney(p.estVal*0.40);
+  /* Recommended fee: based on performance percentile vs market value
+     Top performers -> closer to MV, weaker -> bigger discount expected */
+  var perfFactor=p.perfScore/100;  /* 0-1 */
+  var recMulti=0.55+perfFactor*0.35;   /* 0.55 (weak) to 0.90 (elite) of MV */
+  var maxMulti=recMulti+0.12;          /* ~12% above recommended */
+  var baseVal=p.mv>0?p.mv:(p.fee>0?p.fee:50000);
+  var recFee=fmtMoney(Math.round(baseVal*recMulti/10000)*10000);
+  var maxFee=fmtMoney(Math.round(baseVal*maxMulti/10000)*10000);
 
   /* ── OVS gauge ── */
   var gaugeRing=document.getElementById('ovs-gauge-ring');
@@ -2200,8 +2209,14 @@ function whyNotReasons(p){
 function renderScoutReportView(p){
   var el=document.getElementById('view-scout-reports');
   if(!el||!p)return;
-  var recFee=p.fee>0?fmtMoney(p.fee*0.85):fmtMoney(p.estVal*0.32);
-  var maxFee=p.fee>0?fmtMoney(p.fee*1.15):fmtMoney(p.estVal*0.40);
+  /* Recommended fee: based on performance percentile vs market value
+     Top performers -> closer to MV, weaker -> bigger discount expected */
+  var perfFactor=p.perfScore/100;  /* 0-1 */
+  var recMulti=0.55+perfFactor*0.35;   /* 0.55 (weak) to 0.90 (elite) of MV */
+  var maxMulti=recMulti+0.12;          /* ~12% above recommended */
+  var baseVal=p.mv>0?p.mv:(p.fee>0?p.fee:50000);
+  var recFee=fmtMoney(Math.round(baseVal*recMulti/10000)*10000);
+  var maxFee=fmtMoney(Math.round(baseVal*maxMulti/10000)*10000);
   var isPos=p.dealScore>=55;
   var verdCol=p.dealScore>=85?'var(--accent-green)':p.dealScore>=70?'var(--accent-cyan)':p.dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
   var whyNow=whyNowReasons(p);
