@@ -1270,6 +1270,11 @@ function normaliseAll(players){
     if(p.fee===0&&p.mv>0) p.fee=p.mv*0.8;
   });
 
+  /* detect if fee data is real or all synthetic (fee=mv*0.8 fallback) */
+  var feeIsReal=players.filter(function(p){
+    return p.fee>0&&p.mv>0&&Math.abs(p.fee/p.mv-0.8)>0.05;
+  }).length > players.length*0.1; /* at least 10% have real fee data */
+
   /* build ranking arrays */
   var caArr   =players.map(function(p){return p.ca*(p.lf||0.8);});
   var wageArr =players.map(function(p){return p.wage>0?p.wage/Math.max(1,p.ca):9999;});
@@ -1283,10 +1288,10 @@ function normaliseAll(players){
     /* PERF percentile */
     var perfScore=pctRankVal(caArr,adjCA,true);
 
-    /* MKT percentile: fee/mv ratio — lower is better */
+    /* MKT percentile — only meaningful if real fee data exists */
     var feeRatio=p.mv>0&&p.fee>0?p.fee/p.mv:1.0;
-    var mktScore=pctRankVal(feeArr,feeRatio,false);
-    var mktIneff=p.mv>0&&p.fee>0?Math.round((1-(p.fee/p.mv))*100):0;
+    var mktScore=feeIsReal?pctRankVal(feeArr,feeRatio,false):50;
+    var mktIneff=p.mv>0&&p.fee>0&&feeIsReal?Math.round((1-(p.fee/p.mv))*100):0;
 
     /* WAGE percentile */
     var wageRatioVal=p.wage>0?p.wage/Math.max(1,p.ca):9999;
@@ -1312,17 +1317,25 @@ function normaliseAll(players){
                ageScore*OVS_W.age+relScore*OVS_W.rel+(100-riskScore)*OVS_W.risk;
     var ovs=Math.min(99,Math.max(1,Math.round(ovsRaw)));
 
-    /* DEAL SCORE */
+    /* DEAL SCORE — rebalanced weights based on data availability */
     var paBonus=p.pa>0&&p.ca>0?Math.min(20,Math.round((p.pa-p.ca)/Math.max(1,p.ca)*30)):0;
-    var dealRaw=perfScore*0.35+mktScore*0.30+(100-riskScore)*0.15+
-                Math.min(100,wageScore)*0.10+Math.min(100,paBonus*5)*0.10;
+    var dealRaw;
+    if(feeIsReal){
+      /* real fee data: market price matters a lot */
+      dealRaw=perfScore*0.35+mktScore*0.25+(100-riskScore)*0.15+
+              wageScore*0.10+ageScore*0.10+Math.min(100,paBonus*5)*0.05;
+    } else {
+      /* no real fee data: performance, age, wage efficiency carry the score */
+      dealRaw=perfScore*0.45+ageScore*0.20+wageScore*0.15+
+              (100-riskScore)*0.12+Math.min(100,paBonus*5)*0.08;
+    }
     var dealScore=Math.min(99,Math.max(1,Math.round(dealRaw)));
 
-    /* VERDICT — spread across dataset */
-    var verdict=dealScore>=80?'STRONG BUY':dealScore>=65?'BUY':
-                dealScore>=48?'WATCH':dealScore>=32?'HOLD':'AVOID';
-    var verdictColor=dealScore>=80?'var(--accent-green)':dealScore>=65?'var(--accent-cyan)':
-                     dealScore>=48?'var(--accent-amber)':'var(--accent-red)';
+    /* VERDICT — ~20% STRONG BUY, 25% BUY, 30% WATCH, 20% HOLD, 5% AVOID */
+    var verdict=dealScore>=75?'STRONG BUY':dealScore>=58?'BUY':
+                dealScore>=42?'WATCH':dealScore>=28?'HOLD':'AVOID';
+    var verdictColor=dealScore>=75?'var(--accent-green)':dealScore>=58?'var(--accent-cyan)':
+                     dealScore>=42?'var(--accent-amber)':'var(--accent-red)';
 
     /* FLAGS */
     var isSteal=mktScore>=75&&dealScore>=60;
