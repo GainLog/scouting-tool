@@ -1284,7 +1284,9 @@ function scorePlayer(raw){
   var verdictColor=dealScore>=85?'var(--accent-green)':dealScore>=70?'var(--accent-cyan)':dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
 
   var isSteal=mktIneff>=30&&dealScore>=60;
-  var isGem=mktIneff>=20&&lf<0.88&&dealScore>=55;
+  var isGem=mktIneff>=15&&lf<0.92&&dealScore>=50;
+  /* also flag as gem if very young + high potential + lower league */
+  if(!isGem&&age<=22&&pa>ca&&lf<0.90&&dealScore>=45) isGem=true;
   var isWonderkid=age<=21&&(pa>ca||pa===0)&&dealScore>=50;
   var isImpact=perfScore>=70&&dealScore>=60;
   var confScore=Math.min(99,Math.round(50+mktIneff*0.3+dealScore*0.2+(lf<0.85?10:0)));
@@ -2236,10 +2238,21 @@ function renderScoutReportView(p){
 function renderHiddenGemsView(){
   var el=document.getElementById('view-hidden-gems');
   if(!el)return;
-  var gems=[].concat(FILTERED).filter(function(p){return p.isGem||p.mktIneff>=15;})
+  /* show isGem players first, then fill with best value players if few gems */
+  var gems=[].concat(FILTERED).filter(function(p){return p.isGem;})
     .sort(function(a,b){return b.confScore-a.confScore;});
+  /* if fewer than 3 gems, pad with top value players by dealScore */
+  if(gems.length<3){
+    var extras=[].concat(FILTERED)
+      .filter(function(p){return !p.isGem&&p.dealScore>=45;})
+      .sort(function(a,b){return b.dealScore-a.dealScore;})
+      .slice(0,Math.max(6,9-gems.length));
+    gems=gems.concat(extras);
+  }
   if(!gems||gems.length===0){
-    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Keine Hidden Gems</div><div class="empty-desc">In den aktuellen Daten wurden keine versteckten Talente gefunden. Filter anpassen oder mehr Spieler importieren.</div></div>';
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#128142;</div>'+
+      '<div class="empty-title">'+(LANG==='en'?'No Hidden Gems found':'Keine Hidden Gems gefunden')+'</div>'+
+      '<div class="empty-desc">'+(LANG==='en'?'No undervalued players detected in the current data. Try adjusting filters or importing more players.':'In den aktuellen Daten wurden keine unterbewerteten Spieler gefunden. Filter anpassen oder mehr Spieler importieren.')+'</div></div>';
     return;
   }
   el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+
