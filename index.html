@@ -1919,12 +1919,11 @@ function renderList(players){
     if(p.isGem)   tags+='<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(245,158,11,0.14);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.25)">&#128142;</span> ';
     if(p.isWonderkid) tags+='<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(139,92,246,0.14);color:#c4b5fd;border:1px solid rgba(139,92,246,0.25)">&#11088;</span>';
 
-    return '<div onclick="window.selectPlayer('+i+')" '+
+    return '<div class="pl-row" data-idx="'+i+'" '+
       'style="display:grid;grid-template-columns:44px 1fr 54px 80px 40px 90px 90px 100px 110px;'+
       'gap:8px;padding:9px 16px;border-bottom:1px solid var(--border-dim);cursor:pointer;'+
       'transition:background .12s;align-items:center;'+
-      (isSel?'background:rgba(59,130,246,0.09);border-left:2px solid var(--accent-blue);':'background:transparent;')+
-      '" onmouseenter="if(!'+isSel+')this.style.background=\'rgba(255,255,255,0.025)\'" onmouseleave="if(!'+isSel+')this.style.background=\'transparent\'">'+
+      (isSel?'background:rgba(59,130,246,0.09);border-left:2px solid var(--accent-blue);':'background:transparent;')+'">'+
 
       /* OVS badge */
       '<div style="display:flex;justify-content:center">'+
@@ -1974,6 +1973,29 @@ function renderList(players){
   }).join('');
 
   body.innerHTML=hdr+rows;
+
+  /* Event delegation — one listener on container, survives innerHTML rewrites */
+  body.onclick=function(e){
+    var row=e.target.closest('.pl-row');
+    if(!row)return;
+    var idx=parseInt(row.dataset.idx);
+    if(isNaN(idx))return;
+    body.querySelectorAll('.pl-row').forEach(function(r){
+      r.style.background='transparent';
+      r.style.borderLeft='';
+    });
+    row.style.background='rgba(59,130,246,0.09)';
+    row.style.borderLeft='2px solid var(--accent-blue)';
+    window.selectPlayer(idx);
+  };
+  body.onmouseover=function(e){
+    var row=e.target.closest('.pl-row');
+    if(row&&row.style.background==='transparent')row.style.background='rgba(255,255,255,0.025)';
+  };
+  body.onmouseout=function(e){
+    var row=e.target.closest('.pl-row');
+    if(row&&row.style.background==='rgba(255, 255, 255, 0.025)')row.style.background='transparent';
+  };
 }
 
 /* ══════════════════════════════════════════════════════════════
