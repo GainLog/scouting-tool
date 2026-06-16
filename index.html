@@ -1212,7 +1212,8 @@ function rNum(p,keys){return parseVal(resolve(p,keys));}
 function rStr(p,keys){return resolve(p,keys)||'';}
 
 /* ══════════════════════════════════════════════════════════════
-   SCORE ENGINE
+   SCORE ENGINE — Phase 1: raw scores per player
+   Phase 2: normalise against dataset (called after all players scored)
 ══════════════════════════════════════════════════════════════ */
 function scorePlayer(raw){
   var name=rStr(raw,['Name','Spieler','Player','Naam']);
@@ -1228,94 +1229,129 @@ function scorePlayer(raw){
   var contract=parseDate(rStr(raw,['Vertrag','Contract','Contract Expiry','Vertragsende']));
   var inj =rNum(raw,['Verletzungsanfälligkeit','Injury Proneness','Injuries'])||5;
 
-  /* use CA as proxy for performance if no dedicated stat */
   if(ca===0)ca=rNum(raw,['Stärke','Overall','OVR','Rating'])||50;
-  if(fee===0)fee=mv*0.8;
-  if(mv===0&&ca>0)mv=ca*ca*800; /* rough estimate */
 
+  /* Store raw values for Phase 2 normalisation */
   var lf=leagueFactor(league||club);
-
-  /* ── COMPONENT SCORES (0-100 each) ── */
-  var perfScore=Math.min(100,ca*lf);
-
-  /* market efficiency: how cheap relative to estimated value */
-  var estVal=mv>0?mv:fee*1.3;
-  var mktScore=fee>0&&estVal>0?Math.min(100,Math.max(0,(1-(fee/estVal))*100+50)):50;
-
-  /* wage efficiency */
-  var wageScore=50;
-  if(wage>0&&ca>0){var wageRatio=wage/(ca*ca*8);wageScore=Math.min(100,Math.max(0,100-wageRatio*50));}
-
-  /* age curve — peak 24-28 */
-  var ageScore=age<=16?30:age<=20?55:age<=24?80:age<=28?100:age<=32?70:age<=35?40:20;
-
-  /* reliability */
-  var relScore=Math.min(100,Math.max(0,100-(inj-1)*10));
-
-  /* risk */
-  var riskScore=Math.min(100,Math.max(0,
-    (contract<12?30:contract<24?15:0)+
-    (inj>14?30:inj>10?20:inj>7?10:0)+
-    (lf<0.80?15:lf<0.85?8:0)
-  ));
-
-  /* ── OVS COMPOSITE ── */
-  var ovs=Math.round(
-    perfScore*OVS_W.perf+
-    mktScore*OVS_W.mkt+
-    wageScore*OVS_W.wage+
-    ageScore*OVS_W.age+
-    relScore*OVS_W.rel+
-    (100-riskScore)*OVS_W.risk
-  );
-  ovs=Math.min(99,Math.max(1,ovs));
-
-  /* ── DEAL SCORE ── */
-  var mktIneff=estVal>0&&fee>0?Math.max(0,Math.round((1-(fee/estVal))*100)):0;
-  var dealScore=Math.min(100,Math.round(
-    ovs*0.40+
-    Math.min(100,mktIneff)*0.30+
-    (100-riskScore)*0.15+
-    (pa>0&&ca>0?Math.min(100,(pa-ca)*2+50):50)*0.15
-  ));
-
-  /* ── VERDICT ── */
-  var verdict=dealScore>=85?'STRONG BUY':dealScore>=70?'BUY':dealScore>=55?'WATCH':dealScore>=40?'HOLD':'AVOID';
-  var verdictColor=dealScore>=85?'var(--accent-green)':dealScore>=70?'var(--accent-cyan)':dealScore>=55?'var(--accent-amber)':'var(--accent-red)';
-
-  var isSteal=mktIneff>=30&&dealScore>=60;
-  var isGem=mktIneff>=15&&lf<0.92&&dealScore>=50;
-  /* also flag as gem if very young + high potential + lower league */
-  if(!isGem&&age<=22&&pa>ca&&lf<0.90&&dealScore>=45) isGem=true;
-  var isWonderkid=age<=21&&(pa>ca||pa===0)&&dealScore>=50;
-  var isImpact=perfScore>=70&&dealScore>=60;
-  var confScore=Math.min(99,Math.round(50+mktIneff*0.3+dealScore*0.2+(lf<0.85?10:0)));
-
-  /* ── BREAKDOWN components — capped to human-readable scale (-20..+35) ── */
-  /* Each component = weight * normalised score, scaled to fixed max */
-  var bdPerf  = Math.min(35, Math.max(0,  Math.round(perfScore  * OVS_W.perf  * 1.17)));
-  var bdMkt   = Math.min(25, Math.max(0,  Math.round(mktScore   * OVS_W.mkt   * 1.13)));
-  var bdWage  = Math.min(20, Math.max(0,  Math.round(wageScore  * OVS_W.wage  * 1.11)));
-  var bdAge   = Math.min(16, Math.max(0,  Math.round(ageScore   * OVS_W.age   * 1.14)));
-  var bdRel   = Math.min(12, Math.max(0,  Math.round(relScore   * OVS_W.rel   * 1.20)));
-  var bdRisk  = Math.max(-15,Math.min(0, -Math.round(riskScore  * OVS_W.risk  * 2.50)));
-  var bdData  = lf<0.80?-5:lf<0.85?-3:0;
-
-  /* deal label */
-  var dealLabel=dealScore>=90?'NO-BRAINER DEAL':dealScore>=80?'STARKER DEAL':dealScore>=65?'GUTER DEAL':dealScore>=50?'SOLIDER DEAL':'RISIKO-DEAL';
+  var rawCA=ca;
+  var rawWage=wage;
+  var rawFee=fee>0?fee:(mv>0?mv*0.8:0);
+  var rawMV=mv>0?mv:(ca>0?ca*ca*800:0);
 
   return {
     raw:raw,name:name,pos:pos,club:club,league:league,age:age,
-    ca:ca,pa:pa,mv:mv,wage:wage,fee:fee,contract:contract,
-    perfScore:Math.round(perfScore),mktScore:Math.round(mktScore),
-    wageScore:Math.round(wageScore),ageScore:Math.round(ageScore),
-    relScore:Math.round(relScore),riskScore:Math.round(riskScore),
-    ovs:ovs,dealScore:dealScore,verdict:verdict,verdictColor:verdictColor,
-    isSteal:isSteal,isGem:isGem,isWonderkid:isWonderkid,isImpact:isImpact,
-    mktIneff:mktIneff,estVal:estVal,confScore:confScore,lf:lf,
-    bd:{perf:bdPerf,mkt:bdMkt,wage:bdWage,age:bdAge,rel:bdRel,risk:bdRisk,data:bdData},
-    dealLabel:dealLabel
+    ca:rawCA,pa:pa,mv:rawMV,wage:rawWage,fee:rawFee,contract:contract,inj:inj,lf:lf,
+    /* Phase 2 scores filled in by normaliseAll() */
+    perfScore:0,mktScore:0,wageScore:0,ageScore:0,relScore:0,riskScore:0,
+    ovs:0,dealScore:0,verdict:'',verdictColor:'',mktIneff:0,estVal:rawMV,
+    confScore:0,isSteal:false,isGem:false,isWonderkid:false,isImpact:false,
+    bd:{perf:0,mkt:0,wage:0,age:0,rel:0,risk:0,data:0},dealLabel:''
   };
+}
+
+/* ── Phase 2: normalise all players against the dataset ──── */
+function normaliseAll(players){
+  if(!players||players.length===0)return;
+  var n=players.length;
+
+  /* helper: percentile rank 0-100 of value v in array arr (higher=better) */
+  function pctRankVal(arr,v,higherBetter){
+    var below=arr.filter(function(x){return higherBetter?x<v:x>v;}).length;
+    return Math.round((below/(n-1||1))*100);
+  }
+
+  /* extract arrays for ranking */
+  var caArr=players.map(function(p){return p.ca*p.lf;});
+  var wageArr=players.map(function(p){return p.wage>0?p.wage/Math.max(1,p.ca):999;});
+  var feeArr=players.map(function(p){
+    return p.mv>0&&p.fee>0?(p.fee/p.mv):1.0;
+  });
+
+  players.forEach(function(p,i){
+    var lf=p.lf;
+
+    /* PERF: CA * league factor, percentile vs dataset */
+    var adjCA=p.ca*lf;
+    var perfScore=pctRankVal(caArr,adjCA,true);
+
+    /* MKT EFFICIENCY: fee vs market value ratio, percentile (lower ratio = better) */
+    var feeRatio=p.mv>0&&p.fee>0?(p.fee/p.mv):1.0;
+    var mktScore=pctRankVal(feeArr,feeRatio,false);
+
+    /* RAW market inefficiency for display */
+    var mktIneff=p.mv>0&&p.fee>0?Math.max(-99,Math.round((1-(p.fee/p.mv))*100)):0;
+
+    /* WAGE EFFICIENCY: wage/CA ratio, percentile (lower = better) */
+    var wageRatioVal=p.wage>0?p.wage/Math.max(1,p.ca):999;
+    var wageScore=p.wage>0?pctRankVal(wageArr,wageRatioVal,false):50;
+
+    /* AGE CURVE: absolute */
+    var age=p.age;
+    var ageScore=age<=16?20:age<=18?40:age<=20?58:age<=22?72:age<=24?86:
+                 age<=26?100:age<=28?95:age<=30?78:age<=32?55:age<=34?35:18;
+
+    /* RELIABILITY */
+    var relScore=Math.min(100,Math.max(0,100-(p.inj-1)*10));
+
+    /* RISK: absolute */
+    var riskScore=Math.min(100,Math.max(0,
+      (p.contract<12?35:p.contract<24?18:0)+
+      (p.inj>14?30:p.inj>10?18:p.inj>7?8:0)+
+      (lf<0.78?20:lf<0.84?10:0)
+    ));
+
+    /* OVS: weighted sum of percentile scores → spread 1-99 */
+    var ovsRaw=
+      perfScore*OVS_W.perf+
+      mktScore*OVS_W.mkt+
+      wageScore*OVS_W.wage+
+      ageScore*OVS_W.age+
+      relScore*OVS_W.rel+
+      (100-riskScore)*OVS_W.risk;
+    var ovs=Math.min(99,Math.max(1,Math.round(ovsRaw)));
+
+    /* DEAL SCORE: perf percentile + mkt percentile + youth bonus + risk */
+    var paBonus=p.pa>0&&p.ca>0?Math.min(20,Math.round((p.pa-p.ca)/p.ca*30)):0;
+    var dealRaw=
+      perfScore*0.35+
+      mktScore*0.30+
+      (100-riskScore)*0.15+
+      Math.min(100,wageScore)*0.10+
+      Math.min(100,paBonus*5)*0.10;
+    var dealScore=Math.min(100,Math.max(1,Math.round(dealRaw)));
+
+    /* VERDICT — spread thresholds based on dataset percentile */
+    var verdict=dealScore>=80?'STRONG BUY':dealScore>=65?'BUY':dealScore>=48?'WATCH':dealScore>=32?'HOLD':'AVOID';
+    var verdictColor=dealScore>=80?'var(--accent-green)':dealScore>=65?'var(--accent-cyan)':dealScore>=48?'var(--accent-amber)':'var(--accent-red)';
+
+    /* FLAGS */
+    var isSteal=mktScore>=75&&dealScore>=60;
+    var isGem=(mktScore>=65&&lf<0.92&&dealScore>=50)||(age<=22&&p.pa>p.ca&&dealScore>=45);
+    var isWonderkid=age<=21&&(p.pa>p.ca||p.pa===0)&&dealScore>=40;
+    var isImpact=perfScore>=70&&dealScore>=55;
+    var confScore=Math.min(99,Math.round(30+mktScore*0.35+dealScore*0.35+(lf<0.85?10:0)+(age<=23?5:0)));
+
+    /* BREAKDOWN — readable contributions */
+    var bdPerf =Math.min(35,Math.max(0, Math.round(perfScore *OVS_W.perf *1.17)));
+    var bdMkt  =Math.min(25,Math.max(-15,Math.round((mktScore-50)*OVS_W.mkt*0.9)));
+    var bdWage =Math.min(20,Math.max(0, Math.round(wageScore *OVS_W.wage *1.11)));
+    var bdAge  =Math.min(16,Math.max(0, Math.round(ageScore  *OVS_W.age  *1.14)));
+    var bdRel  =Math.min(12,Math.max(0, Math.round(relScore  *OVS_W.rel  *1.20)));
+    var bdRisk =Math.max(-15,Math.min(0,-Math.round(riskScore *OVS_W.risk *2.50)));
+    var bdData =lf<0.80?-5:lf<0.85?-3:0;
+
+    var dLabel=dealScore>=82?'NO-BRAINER DEAL':dealScore>=70?'STARKER DEAL':dealScore>=55?'GUTER DEAL':dealScore>=40?'SOLIDER DEAL':'RISIKO-DEAL';
+
+    /* Write back */
+    p.perfScore=perfScore; p.mktScore=mktScore; p.wageScore=wageScore;
+    p.ageScore=ageScore;   p.relScore=relScore;  p.riskScore=riskScore;
+    p.ovs=ovs; p.dealScore=dealScore; p.verdict=verdict; p.verdictColor=verdictColor;
+    p.mktIneff=mktIneff; p.estVal=p.mv||p.fee*1.3;
+    p.confScore=confScore;
+    p.isSteal=isSteal; p.isGem=isGem; p.isWonderkid=isWonderkid; p.isImpact=isImpact;
+    p.bd={perf:bdPerf,mkt:bdMkt,wage:bdWage,age:bdAge,rel:bdRel,risk:bdRisk,data:bdData};
+    p.dealLabel=dLabel;
+  });
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2438,7 +2474,10 @@ function loadFile(file){
       alert('CSV konnte nicht gelesen werden.\nBitte FM26 View als CSV exportieren (Semikolon oder Komma als Trennzeichen).');
       return;
     }
-    ALL_PLAYERS=rows.map(scorePlayer).filter(function(p){return p.name&&p.ovs>0;});
+    ALL_PLAYERS=rows.map(scorePlayer).filter(function(p){return p.name&&p.ca>0;});
+
+    /* Phase 2: normalise all scores against the full dataset */
+    normaliseAll(ALL_PLAYERS);
 
     /* populate league dropdown from actual data */
     var leagueEl=document.getElementById('filter-league');
