@@ -490,18 +490,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <div class="sidebar-section">
     <div class="section-label">Quick Presets</div>
     <div class="preset-grid">
-      <button class="btn-preset active" data-preset="steals"><span class="bico">&#9889;</span> Top Steals</button>
-      <button class="btn-preset" data-preset="wonderkids"><span class="bico">&#11088;</span> Wonderkids</button>
-      <button class="btn-preset" data-preset="impact"><span class="bico">&#128293;</span> Sofortimpact</button>
-      <button class="btn-preset" data-preset="resale"><span class="bico">&#128081;</span> Resale Kings</button>
-      <button class="btn-preset" data-preset="value"><span class="bico">&#128200;</span> High Value</button>
-      <button class="btn-preset" data-preset="lowrisk"><span class="bico">&#128737;</span> Low Risk</button>
+      <button class="btn-preset active" data-preset="steals"><span class="bico">&#9889;</span> <span data-i18n="pre.steals">Top Steals</span></button>
+      <button class="btn-preset" data-preset="wonderkids"><span class="bico">&#11088;</span> <span data-i18n="pre.wonderkids">Wonderkids</span></button>
+      <button class="btn-preset" data-preset="impact"><span class="bico">&#128293;</span> <span data-i18n="pre.impact">Sofortimpact</span></button>
+      <button class="btn-preset" data-preset="resale"><span class="bico">&#128081;</span> <span data-i18n="pre.resale">Resale Kings</span></button>
+      <button class="btn-preset" data-preset="value"><span class="bico">&#128200;</span> <span data-i18n="pre.value">High Value</span></button>
+      <button class="btn-preset" data-preset="lowrisk"><span class="bico">&#128737;</span> <span data-i18n="pre.lowrisk">Low Risk</span></button>
     </div>
   </div>
   <div class="sidebar-section">
-    <div class="section-label">Filter</div>
+    <div class="section-label" data-i18n="sb.filter.lbl">Filter</div>
     <div class="filter-group">
-      <div class="filter-label">Position</div>
+      <div class="filter-label" data-i18n="sb.pos.lbl">Position</div>
       <select class="filter-select" id="filter-pos">
         <option value="">Alle Positionen</option>
         <option>GK</option><option>CB</option><option>LB</option><option>RB</option>
@@ -509,13 +509,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
       </select>
     </div>
     <div class="filter-group">
-      <div class="filter-label">Alter</div>
+      <div class="filter-label" data-i18n="sb.age.lbl">Alter</div>
       <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">16</span><span class="slider-val" id="age-val">16&ndash;28</span><span style="font-size:10px;color:var(--text-muted)">45</span></div>
       <input type="range" id="filter-age-min" min="16" max="45" value="16">
       <input type="range" id="filter-age-max" min="16" max="45" value="28" style="margin-top:4px">
     </div>
     <div class="filter-group">
-      <div class="filter-label">Max. Budget</div>
+      <div class="filter-label" data-i18n="sb.budget.lbl">Max. Budget</div>
       <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">0</span><span class="slider-val" id="fee-val">Kein Limit</span><span style="font-size:10px;color:var(--text-muted)">200M</span></div>
       <input type="range" id="filter-fee" min="0" max="200" value="200">
     </div>
@@ -524,16 +524,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     <button class="sb-toggle" id="toggle-adv">&#9654; Erweiterte Filter<span class="sbt-arrow">&#8964;</span></button>
     <div class="sb-collapsible" id="drawer-adv">
       <div class="filter-group" style="margin-top:6px">
-        <div class="filter-label">Rolle</div>
+        <div class="filter-label" data-i18n="sb.role.lbl">Rolle</div>
         <select class="filter-select" id="filter-role"><option value="">Alle Rollen</option></select>
       </div>
       <div class="filter-group">
-        <div class="filter-label">Max. Gehalt</div>
+        <div class="filter-label" data-i18n="sb.wage.lbl">Max. Gehalt</div>
         <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">0</span><span class="slider-val" id="wage-val">Kein Limit</span><span style="font-size:10px;color:var(--text-muted)">500K</span></div>
         <input type="range" id="filter-wage" min="0" max="500" value="500">
       </div>
       <div class="filter-group">
-        <div class="filter-label">Anzeigen</div>
+        <div class="filter-label" data-i18n="sb.show.lbl">Anzeigen</div>
         <select class="filter-select" id="filter-show">
           <option value="">Alle Spieler</option>
           <option value="steal">Nur Steals</option>
@@ -551,15 +551,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <nav id="topnav">
   <div class="nav-links">
     <button class="nav-link active" data-view="dashboard">DASHBOARD</button>
-    <button class="nav-link" data-view="players">PLAYERS</button>
-    <button class="nav-link" data-view="scout-reports">SCOUT REPORTS</button>
-    <button class="nav-link" data-view="compare">COMPARE</button>
-    <button class="nav-link" data-view="hidden-gems">HIDDEN GEMS</button>
-    <button class="nav-link" data-view="settings">SETTINGS</button>
+    <button class="nav-link" data-view="players" data-i18n="nav.players">PLAYERS</button>
+    <button class="nav-link" data-view="scout-reports" data-i18n="nav.scout">SCOUT REPORTS</button>
+    <button class="nav-link" data-view="compare" data-i18n="nav.compare">COMPARE</button>
+    <button class="nav-link" data-view="hidden-gems" data-i18n="nav.gems">HIDDEN GEMS</button>
+    <button class="nav-link" data-view="settings" data-i18n="nav.settings">SETTINGS</button>
   </div>
   <div class="nav-right">
     <div class="player-count"><span class="cnum" id="player-count-num">0</span><span style="color:var(--text-muted)">Players</span></div>
-    <button class="btn-import" id="btn-import">&#8593; Import CSV</button>
+    <button class="btn-import" id="btn-import" data-i18n="btn.import">&#8593; Import CSV</button>
     <input type="file" id="file-input" accept=".csv" style="display:none">
   </div>
 </nav>
@@ -630,7 +630,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <!-- Player Overview (hero card) -->
   <div class="card hero" style="display:flex;flex-direction:column;">
     <div class="card-header">
-      <span class="card-title">Player Overview</span>
+      <span class="card-title" data-i18n="panel.overview">Player Overview</span>
       <span class="card-title-badge">OVS erkl&auml;rt &mdash; Hover f&uuml;r Details</span>
     </div>
     <div class="overview-top">
@@ -688,15 +688,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     <div class="card-header"><span class="card-title">OVS Aufschl&uuml;sselung</span></div>
     <div class="breakdown-list">
       <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Performance</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:100%"></div></div><div class="bd-val pos">+31</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">Marktwert</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">Gehaltseffizienz</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">Alter &amp; Potenzial</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">'+(LANG==\'en\'?\'Market Value\':\'Marktwert\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">'+(LANG==\'en\'?\'Wage Efficiency\':\'Gehaltseffizienz\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">'+(LANG==\'en\'?\'Age &amp; Potential\':\'Alter &amp; Potenzial\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
       <div class="breakdown-row"><div class="bd-icon">&#128737;</div><div class="bd-label">Verl&auml;sslichkeit</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:26%"></div></div><div class="bd-val pos">+8</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">Risikofaktor</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">'+(LANG==\'en\'?\'Risk Factor\':\'Risikofaktor\')+\'</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
       <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Datenqualit&auml;t</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:10%"></div></div><div class="bd-val neg">&minus;3</div></div>
     </div>
     <div class="ovs-tie-note">Starke Performance &amp; Marktchance treiben OVS. Minimales Risiko dr&uuml;ckt leicht.</div>
-    <div class="breakdown-total"><div class="breakdown-total-label">OVS Gesamt</div><div class="breakdown-total-val">+79</div></div>
+    <div class="breakdown-total"><div class="breakdown-total-label">'+(LANG==\'en\'?\'OVS Total\':\'OVS Gesamt\')+\'</div><div class="breakdown-total-val">+79</div></div>
   </div>
 
   <!-- P2+P3: SCOUT VERDICT — dominant hero -->
@@ -720,14 +720,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
           </svg>
           <div class="conf-num" id="conf-num">92</div>
         </div>
-        <div class="conf-label">KONFIDENZ</div>
+        <div class="conf-label" data-i18n="conf.label">KONFIDENZ</div>
       </div>
     </div>
     <div class="verdict-meta">
-      <div><div class="vmeta-label">Hidden Gem</div><div class="vmeta-val gn">JA</div></div>
-      <div><div class="vmeta-label">Sofortimpact</div><div class="vmeta-val cy">HOCH</div></div>
-      <div><div class="vmeta-label">Resale</div><div class="vmeta-val am">SEHR HOCH</div></div>
-      <div><div class="vmeta-label">Risiko</div><div class="vmeta-val gn"><span class="rdot low"></span>GERING</div></div>
+      <div><div class="vmeta-label" data-i18n="v.hidden">Hidden Gem</div><div class="vmeta-val gn">JA</div></div>
+      <div><div class="vmeta-label" data-i18n="v.impact">Sofortimpact</div><div class="vmeta-val cy">HOCH</div></div>
+      <div><div class="vmeta-label" data-i18n="v.resale">Resale</div><div class="vmeta-val am">SEHR HOCH</div></div>
+      <div><div class="vmeta-label" data-i18n="v.risk">Risiko</div><div class="vmeta-val gn"><span class="rdot low"></span>GERING</div></div>
     </div>
 
     <!-- P6: verdict quick reasons — filled by renderDashboard -->
@@ -746,7 +746,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
       </div>
       <div class="ds-verdict-row">
         <span class="ds-verdict">NO-BRAINER DEAL</span>
-        <span class="ds-ai-tag">Transferfazit</span>
+        <span class="ds-ai-tag" data-i18n="ds.tag">Transferfazit</span>
       </div>
       <div class="ds-quote">"Wenn heute nur ein Spieler verpflichtet werden kann &mdash; dann dieser. Chance-Risiko geh&ouml;rt zum Besten im gesamten Datensatz."</div>
     </div>
@@ -766,7 +766,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="dash-row dash-row-2">
 
   <div class="card">
-    <div class="card-header"><span class="card-title">Warum kaufen?</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.whybuy">Warum kaufen?</span></div>
     <div class="reason-list">
       <div class="reason-item"><div class="reason-icon-wrap pro">&#9650;</div><div class="reason-text"><div class="reason-main">Elite-Passspiel Top 3%</div><div class="reason-sub">Besser als 97% vergleichbarer Spieler</div></div></div>
       <div class="reason-item"><div class="reason-icon-wrap pro">&#128181;</div><div class="reason-text"><div class="reason-main">42% unter Marktwert</div><div class="reason-sub">Markt unterschätzt ihn massiv</div></div></div>
@@ -777,7 +777,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="card-title">Risiken</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.risks">Risiken</span></div>
     <div class="reason-list">
       <div class="reason-item"><div class="reason-icon-wrap con">&#8593;</div><div class="reason-text"><div class="reason-main">Kopfball unter Durchschnitt</div><div class="reason-sub">Nur 34% Kopfballduelle gewonnen</div></div></div>
       <div class="reason-item"><div class="reason-icon-wrap con">&#128680;</div><div class="reason-text"><div class="reason-main">Kleine Verletzungshistorie</div><div class="reason-sub">2 kurze Ausf&auml;lle letzte Saison</div></div></div>
@@ -789,10 +789,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 
   <!-- P9: Market Inefficiency — hero sizing -->
   <div class="card hero">
-    <div class="card-header"><span class="card-title">Marktineffizienz</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.mkt">Marktineffizienz</span></div>
     <div class="mkt-ineff">
       <div class="mkt-pct-big" id="mkt-pct">74%</div>
-      <div class="mkt-sub">unter Marktwert</div>
+      <div class="mkt-sub" data-i18n="mkt.under">'+(LANG==\'en\'?\'below market value\':\'unter Marktwert\')+\'</div>
       <div class="mkt-values">
         <div><div class="mkt-val-label">Gesch. Wert</div><div class="mkt-val-num" id="mkt-estimated">&#8364;12,5M</div></div>
         <div><div class="mkt-val-label">Aktueller Preis</div><div class="mkt-val-num" id="mkt-current">&#8364;3,2M</div></div>
@@ -802,7 +802,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 
   <div class="card">
-    <div class="card-header"><span class="card-title">Risikoanalyse</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.risk">Risikoanalyse</span></div>
     <div class="risk-total-banner">
       <div class="risk-total-dot"></div>
       <div class="risk-total-text">
@@ -822,18 +822,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
         <div class="risk-ring-label"><div class="risk-level-text">LOW<br>RISK</div></div>
       </div>
       <div class="risk-dots">
-        <div class="risk-dot-row"><span class="risk-dot-name">Verletzung</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name">Datenbasis</span><span class="risk-pill med">Mittel</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name">Altersrisiko</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name">Preisrisiko</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name">Gehaltsrisiko</span><span class="risk-pill med">Mittel</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.inj.lbl">Verletzung</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.data.lbl">Datenbasis</span><span class="risk-pill med">Mittel</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.age.lbl">Altersrisiko</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.price.lbl">Preisrisiko</span><span class="risk-pill low">Gering</span></div>
+        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.wage.lbl">Gehaltsrisiko</span><span class="risk-pill med">Mittel</span></div>
       </div>
     </div>
   </div>
 
   <!-- P5: Budget & Deal — all KPIs -->
   <div class="card">
-    <div class="card-header"><span class="card-title">Budget &amp; Transfer-Effizienz</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.budget">Budget &amp; Transfer-Effizienz</span></div>
     <div class="budget-panel">
       <div class="budget-rings">
         <div class="budget-ring-item">
@@ -863,12 +863,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
         </div>
       </div>
       <div class="budget-kpis">
-        <div class="budget-kpi-row"><span class="budget-kpi-label">Fair Value</span><span class="budget-kpi-val cy" id="bv-fv">&#8364;12,5M</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.fv.lbl">Fair Value</span><span class="budget-kpi-val cy" id="bv-fv">&#8364;12,5M</span></div>
         <div class="budget-kpi-row"><span class="budget-kpi-label">Empf. Abl&ouml;se</span><span class="budget-kpi-val gn" id="bv-rec">&#8364;3,8M</span></div>
         <div class="budget-kpi-row"><span class="budget-kpi-label">Niemals &uuml;ber</span><span class="budget-kpi-val rd" id="bv-max">&#8364;4,5M</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label">Break-Even</span><span class="budget-kpi-val cy" id="bv-be">ca. 14 Monate</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label">Resale-Potenzial</span><span class="budget-kpi-val am" id="bv-rs">&#8364;8&ndash;14M</span></div>
-        <div class="budget-kpi-row" style="border:none"><span class="budget-kpi-label">Transfereffizienz</span><span class="budget-kpi-val gn" id="bv-eff">EXZELLENT</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.be.lbl">Break-Even</span><span class="budget-kpi-val cy" id="bv-be">ca. 14 Monate</span></div>
+        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.rs.lbl">Resale-Potenzial</span><span class="budget-kpi-val am" id="bv-rs">&#8364;8&ndash;14M</span></div>
+        <div class="budget-kpi-row" style="border:none"><span class="budget-kpi-label" data-i18n="bud.eff.lbl">Transfereffizienz</span><span class="budget-kpi-val gn" id="bv-eff">EXZELLENT</span></div>
         <div class="budget-eff-bar"><div class="budget-eff-fill" id="bv-eff-bar" style="width:91%"></div></div>
       </div>
     </div>
@@ -880,7 +880,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="dash-row dash-row-3">
 
   <div class="card">
-    <div class="card-header"><span class="card-title">Spielertyp</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.type">Spielertyp</span></div>
     <div class="player-type-panel">
       <div class="player-type-badge">Box-to-Box Midfielder</div>
       <div class="radar-wrap">
@@ -906,7 +906,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 
   <!-- P7: Similar Players with rich diff chips -->
   <div class="card" style="display:flex;flex-direction:column;">
-    <div class="card-header"><span class="card-title">&#196;hnliche Spieler</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.similar">&#196;hnliche Spieler</span></div>
     <div class="similar-list">
       <div class="similar-item">
         <div class="similar-avatar">FV</div>
@@ -951,12 +951,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
         <div class="similar-right"><div class="similar-pct">85%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
       </div>
     </div>
-    <div class="view-all-link">Alle &auml;hnlichen Spieler &#8594;</div>
+    <div class="view-all-link" data-i18n="sim.viewall">Alle &auml;hnlichen Spieler &#8594;</div>
   </div>
 
   <!-- P6: SCOUT REPORT -->
   <div class="card hero">
-    <div class="card-header"><span class="card-title">Chefscout-Analyse</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.scout">Chefscout-Analyse</span></div>
     <div class="scout-report-panel">
       <div class="scout-verdict-tag">&#10003; Kaufempfehlung &mdash; Sofort handeln</div>
       <div class="scout-prose" id="scout-prose">
@@ -980,7 +980,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 
   <!-- P8: HIDDEN GEM — expanded with detailed reasons -->
   <div class="card">
-    <div class="card-header"><span class="card-title">Hidden Gem Analyse</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="panel.gem">Hidden Gem Analyse</span></div>
     <div class="gem-panel">
       <div class="gem-top">
         <div class="gem-ring-wrap">
@@ -1020,7 +1020,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="view" id="view-players">
   <div class="card" style="overflow:hidden">
     <div style="padding:12px 16px 0;display:flex;align-items:center;justify-content:space-between">
-      <span class="card-title">Alle Spieler</span>
+      <span class="card-title" data-i18n="pl.title">Alle Spieler</span>
       <span class="card-title-badge" id="players-count-badge">0 Spieler</span>
     </div>
     <div id="player-list-body" style="overflow-x:auto">
@@ -1034,7 +1034,39 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="view" id="view-scout-reports"><div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-title">Scout Reports</div><div class="empty-desc">Spieler aus dem Dashboard w&auml;hlen.</div></div></div>
 <div class="view" id="view-compare"><div class="empty-state"><div class="empty-icon">&#9878;</div><div class="empty-title">Spieler vergleichen</div></div></div>
 <div class="view" id="view-hidden-gems"><div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Hidden Gems</div><div class="empty-desc">CSV importieren und unterbewertete Spieler entdecken.</div></div></div>
-<div class="view" id="view-settings"><div class="card"><div class="card-header"><span class="card-title">Einstellungen</span></div><div style="padding:14px;color:var(--text-secondary);font-size:12px">Folgt in Phase 3.</div></div></div>
+<div class="view" id="view-settings">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Einstellungen / Settings</span></div>
+    <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:20px">
+
+      <!-- Language Toggle -->
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Sprache / Language</div>
+        <div style="display:flex;gap:8px">
+          <button id="lang-de" onclick="window.setLang('de')"
+            style="padding:8px 20px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:rgba(59,130,246,0.18);color:var(--accent-blue);border:1px solid rgba(59,130,246,0.4)">
+            🇩🇪 Deutsch
+          </button>
+          <button id="lang-en" onclick="window.setLang('en')"
+            style="padding:8px 20px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;background:rgba(255,255,255,0.04);color:var(--text-secondary);border:1px solid var(--border-dim)">
+            🇬🇧 English
+          </button>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text-muted)" id="lang-note">Aktive Sprache: Deutsch</div>
+      </div>
+
+      <!-- About -->
+      <div style="padding-top:16px;border-top:1px solid var(--border-dim)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Info</div>
+        <div style="font-size:11px;color:var(--text-secondary);line-height:1.7">
+          <strong style="color:var(--text-primary)">Moneyball Scout FM26</strong><br>
+          <span id="settings-info-text">Datenbasiertes Scouting-Dashboard für Football Manager 26. CSV aus FM exportieren, importieren und sofort die besten Transferentscheidungen treffen.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 </div></main></div>
 
@@ -1317,78 +1349,175 @@ function countUp(el,target,delay){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   TEXT HELPERS — professional scouting voice
+   TEXT HELPERS — bilingual DE/EN scouting voice
 ══════════════════════════════════════════════════════════════ */
 function scoutVerdictBadge(score){
+  if(LANG==='en'){
+    if(score>=90)return'A+ Recommendation';
+    if(score>=80)return'Strong Recommendation';
+    if(score>=65)return'Good Option';
+    if(score>=50)return'Monitor';
+    return'No Buy';
+  }
   if(score>=90)return'A+ Empfehlung';
   if(score>=80)return'Starke Empfehlung';
   if(score>=65)return'Gute Option';
   if(score>=50)return'Beobachten';
   return'Kein Kauf';
 }
+
+function dealLabel(score){
+  if(LANG==='en'){
+    if(score>=90)return'NO-BRAINER DEAL';
+    if(score>=80)return'STRONG DEAL';
+    if(score>=65)return'GOOD DEAL';
+    if(score>=50)return'SOLID DEAL';
+    return'RISK DEAL';
+  }
+  if(score>=90)return'NO-BRAINER DEAL';
+  if(score>=80)return'STARKER DEAL';
+  if(score>=65)return'GUTER DEAL';
+  if(score>=50)return'SOLIDER DEAL';
+  return'RISIKO-DEAL';
+}
+
 function dealQuote(p,recFee,maxFee){
-  if(p.dealScore>=85){
-    return'Unsere Analyse bewertet diesen Transfer als au\u00dfergew\u00f6hnliche Marktchance. Der Spieler ist zu '+p.mktIneff+'% unter seinem fairen Wert erh\u00e4ltlich \u2014 ein Niveau, das selten vorkommt.';
+  if(LANG==='en'){
+    if(p.dealScore>=85) return'Our analysis rates this transfer as an exceptional market opportunity. The player is available at '+p.mktIneff+'% below fair value — a level that rarely occurs.';
+    if(p.dealScore>=70) return'Transfer assessment is positive. Performance and price are well aligned. Recommendation: submit an offer while the fee stays below '+maxFee+'.';
+    if(p.dealScore>=55) return'Solid candidate with a positive value-for-money profile. Our assessment recommends closer review before committing.';
+    return'Our scouting assessment is cautious. The risk profile and price are not in a sufficiently favourable ratio.';
   }
-  if(p.dealScore>=70){
-    return'Die Transferbewertung f\u00e4llt positiv aus. Performance und Preis stehen in einem g\u00fcnstigen Verh\u00e4ltnis. Empfehlung: Angebot starten, solange die Ablöse unter '+maxFee+' bleibt.';
-  }
-  if(p.dealScore>=55){
-    return'Solider Kandidat mit positivem Preis-Leistungs-Verh\u00e4ltnis. Unsere Bewertung empfiehlt eine genauere Pr\u00fcfung, bevor eine Entscheidung getroffen wird.';
-  }
+  if(p.dealScore>=85) return'Unsere Analyse bewertet diesen Transfer als au\u00dfergew\u00f6hnliche Marktchance. Der Spieler ist zu '+p.mktIneff+'% unter seinem fairen Wert erh\u00e4ltlich \u2014 ein Niveau, das selten vorkommt.';
+  if(p.dealScore>=70) return'Die Transferbewertung f\u00e4llt positiv aus. Performance und Preis stehen in einem g\u00fcnstigen Verh\u00e4ltnis. Empfehlung: Angebot starten, solange die Abl\u00f6se unter '+maxFee+' bleibt.';
+  if(p.dealScore>=55) return'Solider Kandidat mit positivem Preis-Leistungs-Verh\u00e4ltnis. Unsere Bewertung empfiehlt eine genauere Pr\u00fcfung, bevor eine Entscheidung getroffen wird.';
   return'Die Scouting-Einsch\u00e4tzung f\u00e4llt zur\u00fcckhaltend aus. Das Risikoprofil und der Preis stehen nicht in einem ausreichend g\u00fcnstigen Verh\u00e4ltnis.';
 }
+
 function scoutReport(p,recFee,maxFee){
+  var en=LANG==='en';
   /* WHY BUY */
   var why='';
   if(p.mktIneff>=35){
-    why='Unsere Marktanalyse zeigt eine au\u00dfergew\u00f6hnliche Preisanomalie: Der aktuelle Marktwert von '+fmtMoney(p.fee||p.mv)+' liegt um '+p.mktIneff+'% unter dem von uns ermittelten fairen Wert. Der Markt bewertet aktuell die Liga \u2014 nicht die tats\u00e4chliche Leistungsf\u00e4higkeit des Spielers.';
+    why=en?
+      'Our market analysis reveals an exceptional pricing anomaly: the current transfer fee of '+fmtMoney(p.fee||p.mv)+' sits '+p.mktIneff+'% below the fair value our models calculate. The market is pricing the league — not the player\'s actual ability.':
+      'Unsere Marktanalyse zeigt eine au\u00dfergew\u00f6hnliche Preisanomalie: Der aktuelle Marktwert von '+fmtMoney(p.fee||p.mv)+' liegt um '+p.mktIneff+'% unter dem fairen Wert. Der Markt bewertet die Liga \u2014 nicht die tats\u00e4chliche Leistungsf\u00e4higkeit.';
   } else if(p.mktIneff>=15){
-    why='Unsere Analyse zeigt eine klare Marktineffizienz: Die Leistungsdaten liegen deutlich \u00fcber dem, was der aktuelle Preis widerspiegelt. Das Preis-Leistungs-Verh\u00e4ltnis geh\u00f6rt zu den st\u00e4rksten im gesamten Datensatz.';
+    why=en?
+      'Our analysis identifies a clear market inefficiency: performance data significantly exceed what the current price reflects. The value-for-money ratio ranks among the strongest in the entire dataset.':
+      'Unsere Analyse zeigt eine klare Marktineffizienz: Die Leistungsdaten liegen deutlich \u00fcber dem, was der aktuelle Preis widerspiegelt. Das Preis-Leistungs-Verh\u00e4ltnis geh\u00f6rt zu den st\u00e4rksten im Datensatz.';
   } else {
-    why='Unsere Scouting-Einsch\u00e4tzung bewertet diesen Spieler positiv. Der Mehrwert liegt nicht prim\u00e4r in einer Preisanomalie, sondern in der Qualit\u00e4t der Leistungsdaten und dem Entwicklungspotenzial.';
+    why=en?
+      'Our scouting assessment rates this player positively. The value lies not primarily in a price anomaly but in the quality of the performance data and development potential.':
+      'Unsere Scouting-Einsch\u00e4tzung bewertet diesen Spieler positiv. Der Mehrwert liegt nicht prim\u00e4r in einer Preisanomalie, sondern in der Qualit\u00e4t der Leistungsdaten und dem Entwicklungspotenzial.';
   }
   /* WHY NOW */
   var now='';
   if(p.contract<12){
-    now='Die Vertragssituation ist entscheidend: Vertragsende in weniger als einem Jahr. Der Verein ist unter Druck \u2014 die Verhandlungsposition ist derzeit so gut wie nie.';
+    now=en?
+      'The contract situation is decisive: expiry in under 12 months. The selling club is under pressure — the negotiating position is currently as strong as it will ever be.':
+      'Die Vertragssituation ist entscheidend: Vertragsende in weniger als einem Jahr. Der Verein ist unter Druck \u2014 die Verhandlungsposition ist derzeit so gut wie nie.';
   } else if(p.contract<24){
-    now='Das Transferfenster bietet eine klare Gelegenheit: Vertragsende in ca. '+Math.round(p.contract/12)+' Jahren. Die Ablöse d\u00fcrfte bei l\u00e4ngerem Zuwarten steigen.';
+    now=en?
+      'The transfer window presents a clear opportunity: contract expires in approx. '+Math.round(p.contract/12)+' year(s). Waiting longer will likely increase the asking price.':
+      'Das Transferfenster bietet eine klare Gelegenheit: Vertragsende in ca. '+Math.round(p.contract/12)+' Jahren. Die Abl\u00f6se d\u00fcrfte bei l\u00e4ngerem Zuwarten steigen.';
   } else {
-    now='Kein unmittelbarer Zeitdruck \u2014 der Vertrag l\u00e4uft noch ca. '+Math.round(p.contract/12)+' Jahre. Fr\u00fchzeitiges Handeln sichert jedoch den besten Preis, bevor andere Vereine aufmerksam werden.';
+    now=en?
+      'No immediate time pressure — contract runs for approx. '+Math.round(p.contract/12)+' more years. However, acting early secures the best price before other clubs take notice.':
+      'Kein unmittelbarer Zeitdruck \u2014 der Vertrag l\u00e4uft noch ca. '+Math.round(p.contract/12)+' Jahre. Fr\u00fchzeitiges Handeln sichert jedoch den besten Preis.';
   }
   /* SYSTEM FIT */
   var fit=p.perfScore>=80?
-    'Das Profil passt hervorragend in pressingorientierte Systeme (4-3-3, 4-2-3-1). Hohe Laufbereitschaft und taktische Intelligenz sind nachgewiesen.':
+    (en?'The profile is an excellent fit for high-pressing systems (4-3-3, 4-2-3-1). High work rate and tactical intelligence are well documented.':
+        'Das Profil passt hervorragend in pressingorientierte Systeme (4-3-3, 4-2-3-1). Hohe Laufbereitschaft und taktische Intelligenz sind nachgewiesen.'):
     p.perfScore>=65?
-    'Solides Leistungsprofil f\u00fcr kontrollbasierte Spielsysteme. Sofortige Einsatzf\u00e4higkeit ist gegeben.':
-    'Das Profil eignet sich eher f\u00fcr eine unterst\u00fctzende Rolle. Entwicklungspotenzial vorhanden.';
+    (en?'Solid performance profile for possession-based systems. Immediate readiness for first-team duty.':
+        'Solides Leistungsprofil f\u00fcr kontrollbasierte Spielsysteme. Sofortige Einsatzf\u00e4higkeit ist gegeben.'):
+    (en?'Profile better suited to a supporting role. Development potential remains.':
+        'Das Profil eignet sich eher f\u00fcr eine unterst\u00fctzende Rolle. Entwicklungspotenzial vorhanden.');
   /* RISK */
   var risk=p.riskScore<=25?
-    'Das Risikoprofil ist gering. Verletzungshistorie unproblematisch, Datenbasis solide.':
+    (en?'Risk profile is low. Injury history unproblematic, data foundation solid.':
+        'Das Risikoprofil ist gering. Verletzungshistorie unproblematisch, Datenbasis solide.'):
     p.riskScore<=55?
-    'Moderates Risikoprofil. Einzelne Faktoren \u2014 etwa Datenbasis oder Ligaabschlag \u2014 bed\u00fcrfen Beachtung.':
-    'Erh\u00f6htes Risikoprofil. Unsere Bewertung empfiehlt eine sorgf\u00e4ltige Pr\u00fcfung vor dem Transfer.';
-  return '<strong>Marktlage:</strong> '+why+'<br><br>'+
-         '<strong>Warum jetzt?</strong> '+now+'<br><br>'+
-         '<strong>Systemfit:</strong> '+fit+' Selbst bei konservativer Entwicklung sehen wir erhebliches Upside-Potenzial.<br><br>'+
-         '<strong>Risikobewertung:</strong> '+risk;
+    (en?'Moderate risk profile. Isolated factors — such as data quality or league discount — require attention.':
+        'Moderates Risikoprofil. Einzelne Faktoren \u2014 etwa Datenbasis oder Ligaabschlag \u2014 bed\u00fcrfen Beachtung.'):
+    (en?'Elevated risk profile. Our assessment recommends careful due diligence before committing to the transfer.':
+        'Erh\u00f6htes Risikoprofil. Unsere Bewertung empfiehlt eine sorgf\u00e4ltige Pr\u00fcfung vor dem Transfer.');
+  var h1=en?'Market Assessment':'Marktlage';
+  var h2=en?'Why Now?':'Warum jetzt?';
+  var h3=en?'System Fit':'Systemfit';
+  var h4=en?'Risk Assessment':'Risikobewertung';
+  var ups=en?'Even with a conservative development scenario, we see significant upside potential.':
+              'Selbst bei konservativer Entwicklung sehen wir erhebliches Upside-Potenzial.';
+  return '<strong>'+h1+':</strong> '+why+'<br><br>'+
+         '<strong>'+h2+'</strong> '+now+'<br><br>'+
+         '<strong>'+h3+':</strong> '+fit+' '+ups+'<br><br>'+
+         '<strong>'+h4+':</strong> '+risk;
 }
+
 function gemReasons(p){
+  var en=LANG==='en';
   var reasons=[];
-  if(p.lf<0.85) reasons.push({t:'Liga wird vom Markt untersch\u00e4tzt',d:'Ligafaktor '+p.lf.toFixed(2)+' \u2014 echtes Talent wird h\u00e4ufig \u00fcbersehen'});
-  if(p.mktIneff>=20) reasons.push({t:'Markt ignoriert aktuelle Leistungen',d:'Preisgestaltung folgt Reputation, nicht Datenlage'});
-  if(p.confScore>=70) reasons.push({t:'Niedrige Medienpräsenz',d:'Aufmerksamkeit anderer Clubs bleibt bisher gering'});
-  if(p.wage<50000) reasons.push({t:'Attraktive Gehaltsstruktur',d:'Geringes Grundgehalt erm\u00f6glicht effizienten Einsatz des Budgets'});
-  if(p.contract<24) reasons.push({t:'G\u00fcnstige Vertragssituation',d:'Abl\u00f6se unter Marktwert durch auslaufenden Vertrag'});
-  if(p.riskScore<=35) reasons.push({t:'Geringe Konkurrenz auf dem Markt',d:'Kein bekanntes Bieterangebot \u2014 Zeitfenster ist offen'});
-  if(p.age<=23&&p.ageScore>=70) reasons.push({t:'Entwicklungspotenzial unterschätzt',d:'Leistungskurve zeigt klaren Aufwärtstrend'});
-  /* always at least 3 */
-  if(reasons.length<3) reasons.push({t:'Sehr gutes Preis-Leistungs-Verh\u00e4ltnis',d:'Unsere Bewertung z\u00e4hlt diesen Deal zu den st\u00e4rksten im Datensatz'});
-  if(reasons.length<4) reasons.push({t:'Marktbewertung unter fairem Wert',d:'Abl\u00f6se entspricht nicht der tats\u00e4chlichen St\u00e4rke'});
+  if(p.lf<0.85) reasons.push({
+    t:en?'League undervalued by the market':'Liga wird vom Markt untersch\u00e4tzt',
+    d:en?'League factor '+p.lf.toFixed(2)+' — genuine talent is frequently overlooked':'Ligafaktor '+p.lf.toFixed(2)+' \u2014 echtes Talent wird h\u00e4ufig \u00fcbersehen'});
+  if(p.mktIneff>=20) reasons.push({
+    t:en?'Market ignores current performance':'Markt ignoriert aktuelle Leistungen',
+    d:en?'Pricing follows reputation, not data':'Preisgestaltung folgt Reputation, nicht Datenlage'});
+  if(p.confScore>=70) reasons.push({
+    t:en?'Low media exposure':'Niedrige Medienpr\u00e4senz',
+    d:en?'Other clubs have largely ignored this player':'Aufmerksamkeit anderer Clubs bleibt bisher gering'});
+  if(p.wage<50000) reasons.push({
+    t:en?'Attractive wage structure':'Attraktive Gehaltsstruktur',
+    d:en?'Low base salary enables efficient budget use':'Geringes Grundgehalt erm\u00f6glicht effizienten Budgeteinsatz'});
+  if(p.contract<24) reasons.push({
+    t:en?'Favourable contract situation':'G\u00fcnstige Vertragssituation',
+    d:en?'Fee below market value due to expiring contract':'Abl\u00f6se unter Marktwert durch auslaufenden Vertrag'});
+  if(p.riskScore<=35) reasons.push({
+    t:en?'Little competition in the market':'Geringe Konkurrenz auf dem Markt',
+    d:en?'No known competing bids — window is open':'Kein bekanntes Bieterangebot \u2014 Zeitfenster ist offen'});
+  if(p.age<=23&&p.ageScore>=70) reasons.push({
+    t:en?'Development potential underestimated':'Entwicklungspotenzial untersch\u00e4tzt',
+    d:en?'Performance curve shows a clear upward trend':'Leistungskurve zeigt klaren Aufw\u00e4rtstrend'});
+  if(reasons.length<3) reasons.push({
+    t:en?'Excellent value for money':'Sehr gutes Preis-Leistungs-Verh\u00e4ltnis',
+    d:en?'Our assessment ranks this deal among the strongest in the dataset':'Unsere Bewertung z\u00e4hlt diesen Deal zu den st\u00e4rksten im Datensatz'});
+  if(reasons.length<4) reasons.push({
+    t:en?'Market price below fair value':'Marktbewertung unter fairem Wert',
+    d:en?'Fee does not reflect actual ability':'Abl\u00f6se entspricht nicht der tats\u00e4chlichen St\u00e4rke'});
   return reasons.slice(0,6);
 }
 
+function whyNowReasons(p){
+  var en=LANG==='en';
+  var r=[];
+  if(p.contract<12)  r.push(en?'Contract expires in under 12 months — club under selling pressure':'Vertrag l\u00e4uft in unter 12 Monaten aus \u2014 Verein unter Verkaufsdruck');
+  else if(p.contract<24) r.push(en?'Contract expiring soon — negotiating position currently optimal':'Vertrag l\u00e4uft bald aus \u2014 Verhandlungsposition aktuell optimal');
+  if(p.mktIneff>=20) r.push(en?'Market value not yet adjusted to performance data':'Marktwert wurde noch nicht an die Leistungsdaten angepasst');
+  if(p.lf<0.85)      r.push(en?'League switch would immediately increase market value significantly':'Ligawechsel w\u00fcrde Marktwert sofort erheblich steigern');
+  if(p.riskScore<=30)r.push(en?'Little competition — no known competing bid':'Kaum Konkurrenz \u2014 kein bekanntes Bieterangebot');
+  if(p.isGem)        r.push(en?'Hidden Gem: other clubs have not yet discovered this player':'Hidden Gem: andere Clubs haben diesen Spieler noch nicht entdeckt');
+  if(p.mktIneff>=15&&p.fee>0) r.push(en?'Value-for-money ratio currently at peak':'Preis-Leistungs-Verh\u00e4ltnis aktuell auf H\u00f6chststand');
+  if(p.age<=23)      r.push(en?'Development curve trending sharply upward — ideal entry point':'Entwicklungskurve zeigt klar aufw\u00e4rts \u2014 idealer Einstiegszeitpunkt');
+  if(r.length<3)     r.push(en?'Acting early secures the best price before others take notice':'Fr\u00fchzeitiges Handeln sichert den besten Preis');
+  return r.slice(0,5);
+}
+
+function whyNotReasons(p){
+  var en=LANG==='en';
+  var r=[];
+  if(p.mktIneff<5&&p.mktIneff>-10) r.push(en?'Market price already reflects fair value — no Moneyball advantage':'Marktpreis entspricht bereits dem fairen Wert \u2014 kein Moneyball-Vorteil');
+  if(p.mktIneff<=-10) r.push(en?Math.abs(p.mktIneff)+'% above fair value — premium over comparable alternatives':Math.abs(p.mktIneff)+'% \u00fcber fairem Wert \u2014 Preisaufschlag gegen\u00fcber vergleichbaren Alternativen');
+  if(p.riskScore>60)  r.push(en?'Risk profile too high — injury history or data quality problematic':'Risikoprofil zu hoch \u2014 Verletzungshistorie oder Datenbasis problematisch');
+  if(p.wageScore<45)  r.push(en?'Wage demands disproportionate to performance':'Gehaltsforderung in keinem angemessenen Verh\u00e4ltnis zur Leistung');
+  if(p.mktIneff<=0)   r.push(en?'No price advantage — market is fairly efficient here':'Kein Preisvorteil \u2014 Markt hier weitgehend effizient');
+  if(p.dealScore<50)  r.push(en?'Limited resale potential':'Begrenztes Resale-Potenzial');
+  if(p.lf>=0.95&&p.mktIneff<15) r.push(en?'Top-league player — market already largely efficient':'Top-Liga-Spieler \u2014 Marktpreise bereits weitgehend effizient');
+  if(r.length<2) r.push(en?'Deal Score of '+p.dealScore+'/100 is below the buy threshold':'Deal Score von '+p.dealScore+'/100 liegt unter der Kaufempfehlungsgrenze');
+  if(r.length<3) r.push(en?'Better alternatives available in the dataset':'Bessere Alternativen im Datensatz vorhanden');
+  return r.slice(0,4);
+}
 /* ══════════════════════════════════════════════════════════════
    RENDER DASHBOARD for one player
 ══════════════════════════════════════════════════════════════ */
@@ -1414,14 +1543,14 @@ function renderDashboard(p){
       return '<div class="ovs-tt-row"><span class="ovs-tt-label">'+label+'</span>'+
         '<span class="ovs-tt-val '+(pos?'pos':'neg')+'">'+val+'</span></div>';
     };
-    tt.innerHTML='<div class="ovs-tt-title">OVS Aufschl\u00fcsselung</div>'+
+    tt.innerHTML='<div class="ovs-tt-title">'+(LANG==='en'?'OVS Breakdown':'OVS Aufschl\u00fcsselung')+'</div>'+
       trow('Performance',sign(p.bd.perf),p.bd.perf>=0)+
-      trow('Marktwert',sign(p.bd.mkt),p.bd.mkt>=0)+
-      trow('Gehaltseffizienz',sign(p.bd.wage),p.bd.wage>=0)+
-      trow('Alter & Potenzial',sign(p.bd.age),p.bd.age>=0)+
-      trow('Verl\u00e4sslichkeit',sign(p.bd.rel),p.bd.rel>=0)+
-      trow('Risikofaktor',sign(p.bd.risk),p.bd.risk>=0)+
-      trow('Datenqualit\u00e4t',sign(p.bd.data),p.bd.data>=0)+
+      trow(LANG==='en'?'Market Value':'Marktwert',sign(p.bd.mkt),p.bd.mkt>=0)+
+      trow(LANG==='en'?'Wage Efficiency':'Gehaltseffizienz',sign(p.bd.wage),p.bd.wage>=0)+
+      trow(LANG==='en'?'Age & Potential':'Alter & Potenzial',sign(p.bd.age),p.bd.age>=0)+
+      trow(LANG==='en'?'Reliability':'Verl\u00e4sslichkeit',sign(p.bd.rel),p.bd.rel>=0)+
+      trow(LANG==='en'?'Risk Factor':'Risikofaktor',sign(p.bd.risk),p.bd.risk>=0)+
+      trow(LANG==='en'?'Data Quality':'Datenqualit\u00e4t',sign(p.bd.data),p.bd.data>=0)+
       '<div class="ovs-tt-sep"></div>'+
       '<div class="ovs-tt-total"><span class="lbl">OVS Score</span><span class="val">'+p.ovs+' \u2014 '+pctRank(p.ovs)+'</span></div>';
   }
@@ -1429,11 +1558,11 @@ function renderDashboard(p){
   /* ── OVS bars (P11 — animated) ── */
   var bars=[
     {label:'Performance',val:p.perfScore,cls:'g'},
-    {label:'Kosteneffizienz',val:p.mktScore,cls:''},
-    {label:'Marktchance',val:p.mktIneff>0?Math.min(100,p.mktIneff+50):50,cls:'c'},
-    {label:'Verl\u00e4sslichkeit',val:p.relScore,cls:''},
-    {label:'Alterskurve',val:p.ageScore,cls:'a'},
-    {label:'Potenzial',val:p.pa>0&&p.ca>0?Math.min(100,Math.round((p.pa/p.ca)*60+20)):p.ageScore,cls:'g'},
+    {label:LANG==='en'?'Cost Efficiency':'Kosteneffizienz',val:p.mktScore,cls:''},
+    {label:LANG==='en'?'Market Opportunity':'Marktchance',val:p.mktIneff>0?Math.min(100,p.mktIneff+50):50,cls:'c'},
+    {label:LANG==='en'?'Reliability':'Verl\u00e4sslichkeit',val:p.relScore,cls:''},
+    {label:LANG==='en'?'Age Curve':'Alterskurve',val:p.ageScore,cls:'a'},
+    {label:LANG==='en'?'Potential':'Potenzial',val:p.pa>0&&p.ca>0?Math.min(100,Math.round((p.pa/p.ca)*60+20)):p.ageScore,cls:'g'},
     {label:'Risiko',val:100-p.riskScore,cls:'r'}
   ];
   var bw=document.getElementById('ovs-bars');
@@ -1530,9 +1659,9 @@ function renderDashboard(p){
   var vmHidden=document.querySelectorAll('.vmeta-val')[0];
   var vmImpact=document.querySelectorAll('.vmeta-val')[1];
   var vmResale=document.querySelectorAll('.vmeta-val')[2];
-  if(vmHidden)vmHidden.textContent=p.isGem?'JA':'NEIN';
-  if(vmImpact)vmImpact.textContent=p.isImpact?'HOCH':'MITTEL';
-  if(vmResale)vmResale.textContent=p.dealScore>=80?'SEHR HOCH':p.dealScore>=65?'HOCH':'MITTEL';
+  if(vmHidden)vmHidden.textContent=p.isGem?(LANG==='en'?'YES':'JA'):(LANG==='en'?'NO':'NEIN');
+  if(vmImpact)vmImpact.textContent=p.isImpact?(LANG==='en'?'HIGH':'HOCH'):(LANG==='en'?'MEDIUM':'MITTEL');
+  if(vmResale)vmResale.textContent=p.dealScore>=80?(LANG==='en'?'VERY HIGH':'SEHR HOCH'):p.dealScore>=65?(LANG==='en'?'HIGH':'HOCH'):(LANG==='en'?'MEDIUM':'MITTEL');
 
   /* ── P4: Deal Score — brand piece ── */
   var dsBar=document.getElementById('ds-bar');
@@ -1541,7 +1670,7 @@ function renderDashboard(p){
   var dsQuote=document.querySelector('.ds-quote');
   if(dsBar){dsBar.style.width='0%';setTimeout(function(){dsBar.style.transition='width .9s cubic-bezier(.4,0,.2,1)';dsBar.style.width=p.dealScore+'%';},350);}
   countUp(dsEl,p.dealScore,350);
-  if(dsVerdict)dsVerdict.textContent=p.dealLabel;
+  if(dsVerdict)dsVerdict.textContent=dealLabel(p.dealScore);
   if(dsQuote)dsQuote.textContent=dealQuote(p,recFee,maxFee);
   /* fee boxes */
   var feeRec=document.getElementById('fee-rec');
@@ -1571,10 +1700,10 @@ function renderDashboard(p){
   var rtLevel=document.querySelector('.risk-total-level');
   var rtScore=document.querySelector('.risk-total-score');
   var rtDot=document.querySelector('.risk-total-dot');
-  var rLabel=p.riskScore<=30?'GERING':p.riskScore<=60?'MITTEL':'HOCH';
+  var rLabel=p.riskScore<=30?(LANG==='en'?'LOW':'GERING'):p.riskScore<=60?(LANG==='en'?'MEDIUM':'MITTEL'):(LANG==='en'?'HIGH':'HOCH');
   var rSafe=(Math.round((100-p.riskScore)/10)).toFixed(1);
   if(rtLevel){rtLevel.textContent=rLabel;rtLevel.style.color=rCol;}
-  if(rtScore)rtScore.textContent=rSafe+' / 10 Sicherheit';
+  if(rtScore)rtScore.textContent=rSafe+' / 10 '+(LANG==='en'?'Safety':'Sicherheit');
   if(rtDot){rtDot.style.background=rCol;rtDot.style.boxShadow='0 0 8px '+rCol;}
 
   /* ── P5: Budget panel — named IDs + highlighted KPIs ── */
@@ -1582,7 +1711,7 @@ function renderDashboard(p){
   var resaleLo=fmtMoney(p.estVal*0.65);
   var resaleHi=fmtMoney(p.estVal*1.1);
   var breakEven=p.wage>0&&p.fee>0?Math.round((p.fee/p.wage/12)*10)/10:null;
-  var vfm=p.dealScore>=85?'EXZELLENT':p.dealScore>=70?'SEHR GUT':p.dealScore>=55?'GUT':'BEFRIEDIGEND';
+  var vfm=p.dealScore>=85?(LANG==='en'?'EXCELLENT':'EXZELLENT'):p.dealScore>=70?(LANG==='en'?'VERY GOOD':'SEHR GUT'):p.dealScore>=55?(LANG==='en'?'GOOD':'GUT'):(LANG==='en'?'FAIR':'BEFRIEDIGEND');
   var vfmRank='Top '+Math.max(1,Math.round((100-p.dealScore)/2))+'%';
   var effPct=Math.min(99,Math.max(5,p.dealScore));
   /* highlighted boxes */
@@ -1632,7 +1761,7 @@ function renderDashboard(p){
     if(reasons.length>0){
       var col={'gn':'var(--accent-green)','cy':'var(--accent-cyan)','am':'var(--accent-amber)','rd':'var(--accent-red)'};
       var icon=isPos?'&#10003;':'&#10007;';
-      vqr.innerHTML='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:5px">'+(isPos?'Warum kaufen?':'Warum nicht?')+'</div>'+
+      vqr.innerHTML='<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:5px">'+(isPos?(LANG==='en'?'Why buy?':'Warum kaufen?'):(LANG==='en'?'Why not?':'Warum nicht?'))+'</div>'+
         reasons.slice(0,4).map(function(r){
           return '<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:2px">'+
             '<span style="color:'+col[r.c]+';flex-shrink:0">'+icon+'</span>'+
@@ -1664,7 +1793,7 @@ function renderDashboard(p){
   }
   var gemVerdictEl=document.querySelector('.gem-verdict-val');
   if(gemVerdictEl){
-    var gv=p.confScore>=80?'SEHR HOCH\nKONFIDENT':p.confScore>=65?'HOCH\nKONFIDENT':'MODERAT\nKONFIDENT';
+    var gv=p.confScore>=80?(LANG==='en'?'VERY HIGH\nCONFIDENCE':'SEHR HOCH\nKONFIDENT'):p.confScore>=65?(LANG==='en'?'HIGH\nCONFIDENCE':'HOCH\nKONFIDENT'):(LANG==='en'?'MODERATE\nCONFIDENCE':'MODERAT\nKONFIDENT');
     gemVerdictEl.innerHTML=gv.replace('\n','<br>');
   }
 
@@ -1834,28 +1963,28 @@ function renderExec(players){
 
   if(bestSteal) setCard('exec-steal',bestSteal,
     bestSteal.mktIneff+'% unter Marktwert',
-    'Unsere Analyse empfiehlt sofortigen Transfer \u2022 '+bestSteal.age+' J. \u2022 '+bestSteal.pos,
-    '\u2192 Sofort verpflichten');
+    (LANG==='en'?'Our analysis recommends immediate signing \u2022 ':'Unsere Analyse empfiehlt sofortigen Transfer \u2022 ')+bestSteal.age+' J. \u2022 '+bestSteal.pos,
+    LANG==='en'?'\u2192 Sign immediately':'\u2192 Sofort verpflichten');
   if(bestGem)   setCard('exec-gem',bestGem,
     'Bewertung: '+bestGem.confScore+'% \u2014 Markt unterschätzt ihn',
-    'Scouting-Einsch\u00e4tzung: Klare Marktanomalie \u2022 '+bestGem.age+' J.',
-    '\u2192 Scout Report \u00f6ffnen');
+    (LANG==='en'?'Scouting assessment: clear market anomaly \u2022 ':'Scouting-Einsch\u00e4tzung: Klare Marktanomalie \u2022 ')+bestGem.age+' J.',
+    LANG==='en'?'\u2192 Open Scout Report':'\u2192 Scout Report \u00f6ffnen');
   if(bestImpact)setCard('exec-impact',bestImpact,
     'Sofortimpact gesichert \u2022 Performance '+pctRank(bestImpact.perfScore),
-    'Bereit f\u00fcr erste Elf \u2022 '+bestImpact.age+' J. \u2022 '+bestImpact.pos,
-    '\u2192 Deal pr\u00fcfen');
+    (LANG==='en'?'Ready for first team \u2022 ':'Bereit f\u00fcr erste Elf \u2022 ')+bestImpact.age+' J. \u2022 '+bestImpact.pos,
+    LANG==='en'?'\u2192 Check deal':'\u2192 Deal pr\u00fcfen');
   if(bestResale)setCard('exec-resale',bestResale,
     'Resale-Potenzial: '+fmtMoney(bestResale.estVal*1.0)+'+',
-    'Entwicklungsperspektive exzellent \u2022 '+bestResale.age+' J. \u2022 '+bestResale.pos,
-    '\u2192 Als Investment analysieren');
+    (LANG==='en'?'Development outlook excellent \u2022 ':'Entwicklungsperspektive exzellent \u2022 ')+bestResale.age+' J. \u2022 '+bestResale.pos,
+    LANG==='en'?'\u2192 Analyse as investment':'\u2192 Als Investment analysieren');
   if(bestOver)  setCard('exec-over',bestOver,
     Math.abs(bestOver.mktIneff)+'% \u00fcber fairem Wert',
-    'Transferbewertung: Nicht empfohlen \u2022 '+bestOver.age+' J. \u2022 OVS '+bestOver.ovs,
-    '\u2192 Finger weg');
+    (LANG==='en'?'Transfer assessment: not recommended \u2022 ':'Transferbewertung: Nicht empfohlen \u2022 ')+bestOver.age+' J. \u2022 OVS '+bestOver.ovs,
+    LANG==='en'?'\u2192 Avoid':'\u2192 Finger weg');
   if(bestWage)  setCard('exec-wage',bestWage,
     'Gehaltseffizienz: '+pctRank(bestWage.wageScore),
-    'Bestes Preis-Leistungs-Verh\u00e4ltnis im Datensatz \u2022 '+bestWage.age+' J.',
-    '\u2192 Sofort analysieren');
+    (LANG==='en'?'Best value-for-money in the dataset \u2022 ':'Bestes Preis-Leistungs-Verh\u00e4ltnis im Datensatz \u2022 ')+bestWage.age+' J.',
+    LANG==='en'?'\u2192 Analyse now':'\u2192 Sofort analysieren');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2281,13 +2410,13 @@ function loadFile(file){
 
   document.getElementById('filter-fee').addEventListener('input',function(){
     var v=parseInt(this.value);
-    document.getElementById('fee-val').textContent=v>=200?'Kein Limit':'\u20AC'+v+'M';
+    document.getElementById('fee-val').textContent=v>=200?(LANG==='en'?'No Limit':'Kein Limit'):'\u20AC'+v+'M';
     if(ALL_PLAYERS.length)applyFilters();
   });
   var wSlider=document.getElementById('filter-wage');
   if(wSlider)wSlider.addEventListener('input',function(){
     var v=parseInt(this.value);
-    document.getElementById('wage-val').textContent=v>=500?'Kein Limit':'\u20AC'+v+'K/w';
+    document.getElementById('wage-val').textContent=v>=500?(LANG==='en'?'No Limit':'Kein Limit'):'\u20AC'+v+'K/w';
     if(ALL_PLAYERS.length)applyFilters();
   });
   document.getElementById('filter-pos').addEventListener('change',function(){if(ALL_PLAYERS.length)applyFilters();});
@@ -2301,8 +2430,8 @@ function loadFile(file){
     document.getElementById('filter-fee').value=200;
     if(wSlider)wSlider.value=500;
     if(document.getElementById('filter-show'))document.getElementById('filter-show').value='';
-    document.getElementById('age-val').textContent='16\u201345';
-    document.getElementById('fee-val').textContent='Kein Limit';
+    document.getElementById('age-val').textContent=LANG==='en'?'16\u201345':'16\u201345';
+    document.getElementById('fee-val').textContent=LANG==='en'?'No Limit':'Kein Limit';
     if(document.getElementById('wage-val'))document.getElementById('wage-val').textContent='Kein Limit';
     if(ALL_PLAYERS.length)applyFilters();
   });
@@ -2332,6 +2461,138 @@ function loadFile(file){
   countUp(dsEl,98,350);
 
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   i18n — DE / EN  (outside IIFE so setLang is global)
+══════════════════════════════════════════════════════════════ */
+var LANG='de';
+
+var STRINGS={
+  'nav.players':    {de:'PLAYERS',          en:'PLAYERS'},
+  'nav.scout':      {de:'SCOUT REPORTS',    en:'SCOUT REPORTS'},
+  'nav.compare':    {de:'COMPARE',          en:'COMPARE'},
+  'nav.gems':       {de:'HIDDEN GEMS',      en:'HIDDEN GEMS'},
+  'nav.settings':   {de:'SETTINGS',         en:'SETTINGS'},
+  'sb.filter.lbl':  {de:'Filter',           en:'Filters'},
+  'sb.pos.lbl':     {de:'Position',         en:'Position'},
+  'sb.age.lbl':     {de:'Alter',            en:'Age'},
+  'sb.budget.lbl':  {de:'Max. Budget',      en:'Max. Budget'},
+  'sb.adv.lbl':     {de:'▶ Erweiterte Filter', en:'▶ Advanced Filters'},
+  'sb.role.lbl':    {de:'Rolle',            en:'Role'},
+  'sb.wage.lbl':    {de:'Max. Gehalt',      en:'Max. Wage'},
+  'sb.show.lbl':    {de:'Anzeigen',         en:'Show'},
+  'sb.reset.lbl':   {de:'↺ Filter zurücksetzen', en:'↺ Reset Filters'},
+  'btn.import':     {de:'↑ Import CSV',     en:'↑ Import CSV'},
+  'empty.title':    {de:'Keine Daten geladen',  en:'No Data Loaded'},
+  'empty.desc':     {de:'FM26 CSV importieren — sofort wissen wen kaufen, warum jetzt, welcher Preis.',
+                     en:'Import your FM26 CSV — instantly know who to buy, why now, and at what price.'},
+  'empty.btn':      {de:'↑ CSV importieren', en:'↑ Import CSV'},
+  'pre.steals':     {de:'Top Steals',       en:'Top Steals'},
+  'pre.wonderkids': {de:'Wonderkids',       en:'Wonderkids'},
+  'pre.impact':     {de:'Sofortimpact',     en:'Imm. Impact'},
+  'pre.resale':     {de:'Resale Kings',     en:'Resale Kings'},
+  'pre.value':      {de:'High Value',       en:'High Value'},
+  'pre.lowrisk':    {de:'Low Risk',         en:'Low Risk'},
+  'panel.overview': {de:'Player Overview',  en:'Player Overview'},
+  'panel.breakdown':{de:'OVS Aufschlüsselung', en:'OVS Breakdown'},
+  'panel.verdict':  {de:'Scout Verdict',    en:'Scout Verdict'},
+  'panel.whybuy':   {de:'Warum kaufen?',    en:'Why Buy?'},
+  'panel.risks':    {de:'Risiken',          en:'Risks'},
+  'panel.mkt':      {de:'Marktineffizienz', en:'Market Inefficiency'},
+  'panel.risk':     {de:'Risikoanalyse',    en:'Risk Analysis'},
+  'panel.budget':   {de:'Budget & Transfer-Effizienz', en:'Budget & Transfer Efficiency'},
+  'panel.type':     {de:'Spielertyp',       en:'Player Type'},
+  'panel.similar':  {de:'Ähnliche Spieler', en:'Similar Players'},
+  'panel.scout':    {de:'Chefscout-Analyse',en:'Head Scout Analysis'},
+  'panel.gem':      {de:'Hidden Gem Analyse',en:'Hidden Gem Analysis'},
+  'conf.label':     {de:'KONFIDENZ',        en:'CONFIDENCE'},
+  'v.hidden':       {de:'Hidden Gem',       en:'Hidden Gem'},
+  'v.impact':       {de:'Sofortimpact',     en:'Imm. Impact'},
+  'v.resale':       {de:'Resale',           en:'Resale'},
+  'v.risk':         {de:'Risiko',           en:'Risk'},
+  'ds.tag':         {de:'Transferfazit',    en:'Transfer Verdict'},
+  'bud.roi.lbl':    {de:'Gesch. ROI',       en:'Est. ROI'},
+  'bud.vfm.lbl':    {de:'Value for Money',  en:'Value for Money'},
+  'bud.fv.lbl':     {de:'Fair Value',       en:'Fair Value'},
+  'bud.rec.lbl':    {de:'Empf. Ablöse',     en:'Rec. Fee'},
+  'bud.max.lbl':    {de:'Niemals über',     en:'Never Above'},
+  'bud.be.lbl':     {de:'Break-Even',       en:'Break-Even'},
+  'bud.rs.lbl':     {de:'Resale-Potenzial', en:'Resale Potential'},
+  'bud.eff.lbl':    {de:'Transfereffizienz',en:'Transfer Efficiency'},
+  'mkt.under':      {de:'unter Marktwert',  en:'below market value'},
+  'mkt.est.lbl':    {de:'Gesch. Wert',      en:'Est. Value'},
+  'mkt.cur.lbl':    {de:'Aktueller Preis',  en:'Current Price'},
+  'risk.total.lbl': {de:'Gesamtrisiko',     en:'Overall Risk'},
+  'risk.inj.lbl':   {de:'Verletzung',       en:'Injury'},
+  'risk.data.lbl':  {de:'Datenbasis',       en:'Data Quality'},
+  'risk.age.lbl':   {de:'Altersrisiko',     en:'Age Risk'},
+  'risk.price.lbl': {de:'Preisrisiko',      en:'Price Risk'},
+  'risk.wage.lbl':  {de:'Gehaltsrisiko',    en:'Wage Risk'},
+  'risk.low':       {de:'Gering',           en:'Low'},
+  'risk.med':       {de:'Mittel',           en:'Medium'},
+  'risk.hi':        {de:'Hoch',             en:'High'},
+  'sim.viewall':    {de:'Alle ähnlichen Spieler →', en:'View all similar players →'},
+  'sim.sim.lbl':    {de:'Ähnlichkeit',      en:'Similarity'},
+  'pl.title':       {de:'Alle Spieler',     en:'All Players'},
+  'pl.pos':         {de:'Position',         en:'Position'},
+  'pl.age':         {de:'Alter',            en:'Age'},
+  'pl.mv':          {de:'Marktwert',        en:'Market Value'},
+  'pl.fee':         {de:'Ablöse',           en:'Fee'},
+  'set.active':     {de:'Aktive Sprache: Deutsch', en:'Active language: English'},
+  'footer.txt':     {de:'Moneyball Scout FM26 v4',  en:'Moneyball Scout FM26 v4'},
+};
+
+function t(key){var s=STRINGS[key];return s?(s[LANG]||s.de):key;}
+
+window.setLang=function(lang){
+  LANG=lang;
+  /* toggle button styles */
+  ['de','en'].forEach(function(l){
+    var btn=document.getElementById('lang-'+l);
+    if(!btn)return;
+    var active=l===lang;
+    btn.style.background=active?'rgba(59,130,246,0.18)':'rgba(255,255,255,0.04)';
+    btn.style.color=active?'var(--accent-blue)':'var(--text-secondary)';
+    btn.style.borderColor=active?'rgba(59,130,246,0.4)':'var(--border-dim)';
+  });
+  var note=document.getElementById('lang-note');
+  if(note)note.textContent=t('set.active');
+  document.documentElement.lang=lang;
+
+  /* swap all data-i18n elements */
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    el.textContent=t(el.getAttribute('data-i18n'));
+  });
+
+  /* slider labels */
+  var feeEl=document.getElementById('fee-val');
+  var wageEl=document.getElementById('wage-val');
+  var feeSlider=document.getElementById('filter-fee');
+  var wageSlider=document.getElementById('filter-wage');
+  if(feeEl&&feeSlider){
+    var fv=parseInt(feeSlider.value);
+    feeEl.textContent=fv>=200?(lang==='de'?'Kein Limit':'No Limit'):'\u20AC'+fv+'M';
+  }
+  if(wageEl&&wageSlider){
+    var wv=parseInt(wageSlider.value);
+    wageEl.textContent=wv>=500?(lang==='de'?'Kein Limit':'No Limit'):'\u20AC'+wv+'K/w';
+  }
+
+  /* re-render dynamic content */
+  if(typeof FILTERED!=='undefined'&&FILTERED&&FILTERED.length>0){
+    renderList(FILTERED);
+    renderExec(FILTERED);
+    var sel=(typeof SELECTED_IDX!=='undefined'?SELECTED_IDX:0);
+    if(FILTERED[sel]){
+      renderDashboard(FILTERED[sel]);
+      renderScoutReportView(FILTERED[sel]);
+    }
+    renderHiddenGemsView();
+    renderCompareView();
+  }
+};
+/* boot in German */
+window.setLang('de');
 </script>
 </body>
 </html>
