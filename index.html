@@ -524,8 +524,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     <button class="sb-toggle" id="toggle-adv">&#9654; Erweiterte Filter<span class="sbt-arrow">&#8964;</span></button>
     <div class="sb-collapsible" id="drawer-adv">
       <div class="filter-group" style="margin-top:6px">
-        <div class="filter-label" data-i18n="sb.role.lbl">Rolle</div>
-        <select class="filter-select" id="filter-role"><option value="">Alle Rollen</option></select>
+        <div class="filter-label">Liga / League</div>
+        <select class="filter-select" id="filter-league"><option value="">Alle Ligen</option></select>
       </div>
       <div class="filter-group">
         <div class="filter-label" data-i18n="sb.wage.lbl">Max. Gehalt</div>
@@ -688,15 +688,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     <div class="card-header"><span class="card-title">OVS Aufschl&uuml;sselung</span></div>
     <div class="breakdown-list">
       <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Performance</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:100%"></div></div><div class="bd-val pos">+31</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">'+(LANG==\'en\'?\'Market Value\':\'Marktwert\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">'+(LANG==\'en\'?\'Wage Efficiency\':\'Gehaltseffizienz\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">'+(LANG==\'en\'?\'Age &amp; Potential\':\'Alter &amp; Potenzial\')+\'</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">Marktwert</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">Gehaltseffizienz</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">Alter &amp; Potenzial</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
       <div class="breakdown-row"><div class="bd-icon">&#128737;</div><div class="bd-label">Verl&auml;sslichkeit</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:26%"></div></div><div class="bd-val pos">+8</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">'+(LANG==\'en\'?\'Risk Factor\':\'Risikofaktor\')+\'</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
+      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">Risikofaktor</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
       <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Datenqualit&auml;t</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:10%"></div></div><div class="bd-val neg">&minus;3</div></div>
     </div>
     <div class="ovs-tie-note">Starke Performance &amp; Marktchance treiben OVS. Minimales Risiko dr&uuml;ckt leicht.</div>
-    <div class="breakdown-total"><div class="breakdown-total-label">'+(LANG==\'en\'?\'OVS Total\':\'OVS Gesamt\')+\'</div><div class="breakdown-total-val">+79</div></div>
+    <div class="breakdown-total"><div class="breakdown-total-label">OVS Gesamt</div><div class="breakdown-total-val">+79</div></div>
   </div>
 
   <!-- P2+P3: SCOUT VERDICT — dominant hero -->
@@ -765,25 +765,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <!-- ═══ ROW 2: Why Buy | Risks | Market | Risk | Budget ═══ -->
 <div class="dash-row dash-row-2">
 
-  <div class="card">
-    <div class="card-header"><span class="card-title" data-i18n="panel.whybuy">Warum kaufen?</span></div>
-    <div class="reason-list">
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#9650;</div><div class="reason-text"><div class="reason-main">Elite-Passspiel Top 3%</div><div class="reason-sub">Besser als 97% vergleichbarer Spieler</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#128181;</div><div class="reason-text"><div class="reason-main">42% unter Marktwert</div><div class="reason-sub">Markt unterschätzt ihn massiv</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#9889;</div><div class="reason-text"><div class="reason-main">Sofort erste Elf</div><div class="reason-sub">Kein Eingewöhnungsbedarf</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#128200;</div><div class="reason-text"><div class="reason-main">Perfekte Alterskurve</div><div class="reason-sub">Noch 5&ndash;7 Jahre Top-Niveau</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#128181;</div><div class="reason-text"><div class="reason-main">Gehaltseffizienz Top 8%</div><div class="reason-sub">Au&szlig;ergew&ouml;hnliches Preis-Leistungs-Verh&auml;ltnis</div></div></div>
+  <div class="card" id="card-why-buy">
+    <div class="card-header"><span class="card-title" id="why-buy-title" data-i18n="panel.whybuy">Warum kaufen?</span></div>
+    <div class="reason-list" id="pros-list">
+      <div class="reason-item"><div class="reason-icon-wrap pro">&#9650;</div><div class="reason-text"><div class="reason-main">Lade Daten...</div></div></div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="card-risks">
     <div class="card-header"><span class="card-title" data-i18n="panel.risks">Risiken</span></div>
-    <div class="reason-list">
-      <div class="reason-item"><div class="reason-icon-wrap con">&#8593;</div><div class="reason-text"><div class="reason-main">Kopfball unter Durchschnitt</div><div class="reason-sub">Nur 34% Kopfballduelle gewonnen</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap con">&#128680;</div><div class="reason-text"><div class="reason-main">Kleine Verletzungshistorie</div><div class="reason-sub">2 kurze Ausf&auml;lle letzte Saison</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap con">&#127758;</div><div class="reason-text"><div class="reason-main">Kleinere Liga</div><div class="reason-sub">Ligafaktor 0.76 &mdash; Abschlag n&ouml;tig</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap con">&#128202;</div><div class="reason-text"><div class="reason-main">Datenbasis begrenzt</div><div class="reason-sub">Nur 22 Spiele in der Datenbank</div></div></div>
-      <div class="reason-item"><div class="reason-icon-wrap con">&#128081;</div><div class="reason-text"><div class="reason-main">Resale entwicklungsabh&auml;ngig</div><div class="reason-sub">Nur bei Sprung zur Top-Liga</div></div></div>
+    <div class="reason-list" id="cons-list">
+      <div class="reason-item"><div class="reason-icon-wrap con">&#8593;</div><div class="reason-text"><div class="reason-main">Lade Daten...</div></div></div>
     </div>
   </div>
 
@@ -792,7 +784,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     <div class="card-header"><span class="card-title" data-i18n="panel.mkt">Marktineffizienz</span></div>
     <div class="mkt-ineff">
       <div class="mkt-pct-big" id="mkt-pct">74%</div>
-      <div class="mkt-sub" data-i18n="mkt.under">'+(LANG==\'en\'?\'below market value\':\'unter Marktwert\')+\'</div>
+      <div class="mkt-sub" data-i18n="mkt.under">unter Marktwert</div>
       <div class="mkt-values">
         <div><div class="mkt-val-label">Gesch. Wert</div><div class="mkt-val-num" id="mkt-estimated">&#8364;12,5M</div></div>
         <div><div class="mkt-val-label">Aktueller Preis</div><div class="mkt-val-num" id="mkt-current">&#8364;3,2M</div></div>
@@ -1735,6 +1727,33 @@ function renderDashboard(p){
   if(bvEff)bvEff.textContent=vfm;
   if(bvEffBar)bvEffBar.style.width=effPct+'%';
 
+  /* ── Dynamic Why Buy / Risks panels ── */
+  var enL=LANG==='en';
+  var prosList=document.getElementById('pros-list');
+  var consList=document.getElementById('cons-list');
+  var whyBuyTitle=document.getElementById('why-buy-title');
+  if(whyBuyTitle)whyBuyTitle.textContent=enL?'Why Buy?':'Warum kaufen?';
+  var pros=[];
+  if(p.mktIneff>=20) pros.push({icon:'&#128181;',m:(enL?p.mktIneff+'% below market value':p.mktIneff+'% unter Marktwert'),s:(enL?'Our analysis confirms a significant price anomaly':'Markt unterschätzt ihn massiv')});
+  if(p.perfScore>=75) pros.push({icon:'&#9650;',m:(enL?'Elite performance '+pctRank(p.perfScore):'Elite-Performance '+pctRank(p.perfScore)),s:(enL?'Better than '+(100-p.perfScore)+'% of comparable players':'Besser als '+(100-p.perfScore)+'% vergleichbarer Spieler')});
+  if(p.isImpact) pros.push({icon:'&#9889;',m:(enL?'Immediate first-team impact':'Sofort erste Elf'),s:(enL?'No settling-in period required':'Kein Eingewöhnungsbedarf')});
+  if(p.ageScore>=80) pros.push({icon:'&#128200;',m:(enL?'Ideal age curve':'Perfekte Alterskurve'),s:(enL?'5–7 more years at top level':'Noch 5–7 Jahre Top-Niveau')});
+  if(p.wageScore>=70) pros.push({icon:'&#128181;',m:(enL?'Wage efficiency '+pctRank(p.wageScore):'Gehaltseffizienz '+pctRank(p.wageScore)),s:(enL?'Exceptional value for money':'Außergewöhnliches Preis-Leistungs-Verhältnis')});
+  if(p.isGem) pros.push({icon:'&#128142;',m:(enL?'Hidden Gem — market overlooking him':'Hidden Gem — Markt ignoriert ihn'),s:(enL?'Low competition, high upside':'Geringe Konkurrenz, hohes Potenzial')});
+  if(p.riskScore<=25) pros.push({icon:'&#128737;',m:(enL?'Very low risk profile':'Sehr geringes Risikoprofil'),s:(enL?'Injury history unproblematic':'Verletzungshistorie unproblematisch')});
+  if(pros.length===0) pros.push({icon:'&#128202;',m:(enL?'Solid performance data':'Solide Leistungsdaten'),s:(enL?'Meets baseline criteria':'Grundlegende Kriterien erfüllt')});
+  var cons=[];
+  if(p.riskScore>50) cons.push({icon:'&#128680;',m:(enL?'Elevated risk profile':'Erhöhtes Risikoprofil'),s:(enL?'Requires careful due diligence':'Sorgfältige Prüfung nötig')});
+  if(p.lf<0.82) cons.push({icon:'&#127758;',m:(enL?'Smaller league (factor '+p.lf.toFixed(2)+')':'Kleinere Liga (Faktor '+p.lf.toFixed(2)+')'),s:(enL?'Performance discount applied':'Ligaabschlag wird berücksichtigt')});
+  if(p.mktIneff<5&&p.mktIneff>-15) cons.push({icon:'&#128202;',m:(enL?'Limited price advantage':'Begrenzter Preisvorteil'),s:(enL?'Market fairly efficient here':'Markt weitgehend effizient')});
+  if(p.wageScore<45) cons.push({icon:'&#128181;',m:(enL?'Wage disproportionate to output':'Gehalt unverhältnismäßig'),s:(enL?'Budget impact is notable':'Budgetbelastung ist spürbar')});
+  if(p.ageScore<40) cons.push({icon:'&#128200;',m:(enL?'Age curve declining':'Alterskurve rückläufig'),s:(enL?'Limited resale window':'Begrenztes Resale-Fenster')});
+  if(p.mktIneff<=-10) cons.push({icon:'&#128683;',m:(enL?Math.abs(p.mktIneff)+'% above fair value':Math.abs(p.mktIneff)+'% über fairem Wert'),s:(enL?'Overpriced vs comparable alternatives':'Teurer als vergleichbare Alternativen')});
+  if(cons.length===0) cons.push({icon:'&#9888;',m:(enL?'Limited data available':'Begrenzte Datenbasis'),s:(enL?'Assess with additional scouting':'Weitere Sichtungen empfohlen')});
+  function mkRI(item,cls){return '<div class="reason-item"><div class="reason-icon-wrap '+cls+'">'+item.icon+'</div><div class="reason-text"><div class="reason-main">'+item.m+'</div>'+(item.s?'<div class="reason-sub">'+item.s+'</div>':'')+'</div></div>';}
+  if(prosList)prosList.innerHTML=pros.slice(0,5).map(function(x){return mkRI(x,'pro');}).join('');
+  if(consList)consList.innerHTML=cons.slice(0,5).map(function(x){return mkRI(x,'con');}).join('');
+
   /* ── P6: Verdict quick-reasons summary ── */
   var vqr=document.getElementById('verdict-quick-reasons');
   if(vqr){
@@ -1995,22 +2014,36 @@ function applyFilters(){
   var ageMin=parseInt(document.getElementById('filter-age-min').value)||16;
   var ageMax=parseInt(document.getElementById('filter-age-max').value)||45;
   var feeMax=parseInt(document.getElementById('filter-fee').value)||200;
-  var wageMax=parseInt(document.getElementById('filter-wage')?document.getElementById('filter-wage').value:500)||500;
+  var wageEl=document.getElementById('filter-wage');
+  var wageMax=parseInt(wageEl?wageEl.value:500)||500;
   var show=document.getElementById('filter-show')?document.getElementById('filter-show').value:'';
+  var leagueEl=document.getElementById('filter-league');
+  var league=(leagueEl?leagueEl.value:'').toLowerCase();
 
   FILTERED=ALL_PLAYERS.filter(function(p){
-    if(pos&&p.pos.toLowerCase().indexOf(pos)<0&&pos!==''){}
     if(pos){var pm=p.pos.toLowerCase();if(pm.indexOf(pos)<0&&pos.indexOf(pm)<0)return false;}
     if(p.age<ageMin||p.age>ageMax)return false;
     if(feeMax<200&&p.fee>feeMax*1000000)return false;
     if(wageMax<500&&p.wage>wageMax*1000)return false;
+    if(league&&(p.league||p.club||'').toLowerCase().indexOf(league)<0)return false;
     if(show==='steal'&&!p.isSteal)return false;
     if(show==='gem'&&!p.isGem)return false;
     if(show==='wonderkid'&&!p.isWonderkid)return false;
     return true;
   });
 
-  FILTERED.sort(function(a,b){return b.dealScore-a.dealScore;});
+  /* sort by active preset */
+  var activePreset=document.querySelector('.btn-preset.active');
+  var preset=activePreset?activePreset.dataset.preset:'';
+  FILTERED.sort(function(a,b){
+    if(preset==='steals')   return b.mktIneff-a.mktIneff;
+    if(preset==='wonderkids')return a.age-b.age;
+    if(preset==='impact')  return b.perfScore-a.perfScore;
+    if(preset==='resale')  return (a.age-b.age)*0.5+(b.dealScore-a.dealScore)*0.5;
+    if(preset==='value')   return b.ovs-a.ovs;
+    if(preset==='lowrisk') return a.riskScore-b.riskScore;
+    return b.dealScore-a.dealScore;
+  });
   SELECTED_IDX=0;
   renderList(FILTERED);
   renderExec(FILTERED);
@@ -2346,6 +2379,21 @@ function loadFile(file){
       return;
     }
     ALL_PLAYERS=rows.map(scorePlayer).filter(function(p){return p.name&&p.ovs>0;});
+
+    /* populate league dropdown from actual data */
+    var leagueEl=document.getElementById('filter-league');
+    if(leagueEl){
+      var leagues=[...new Set(ALL_PLAYERS.map(function(p){return p.league||'';}).filter(Boolean))].sort();
+      leagueEl.innerHTML='<option value="">'+(LANG==='en'?'All Leagues':'Alle Ligen')+'</option>'+
+        leagues.map(function(l){return '<option value="'+l+'">'+l+'</option>';}).join('');
+    }
+    /* populate position dropdown from actual data */
+    var posEl=document.getElementById('filter-pos');
+    if(posEl){
+      var positions=[...new Set(ALL_PLAYERS.map(function(p){return p.pos||'';}).filter(Boolean))].sort();
+      posEl.innerHTML='<option value="">'+(LANG==='en'?'All Positions':'Alle Positionen')+'</option>'+
+        positions.map(function(pos){return '<option value="'+pos+'">'+pos+'</option>';}).join('');
+    }
     ALL_PLAYERS.sort(function(a,b){return b.dealScore-a.dealScore;});
 
     /* show dashboard */
@@ -2376,15 +2424,24 @@ function loadFile(file){
     });
   });
 
-  /* Presets */
+  /* Presets — set show filter and re-apply */
   document.querySelectorAll('.btn-preset').forEach(function(b){
     b.addEventListener('click',function(){
       document.querySelectorAll('.btn-preset').forEach(function(x){x.classList.remove('active');});
       b.classList.add('active');
       var show=document.getElementById('filter-show');
       if(show){
-        var map={steals:'steal',wonderkids:'wonderkid',impact:'',resale:'wonderkid',value:'',lowrisk:''};
-        show.value=map[b.dataset.preset]||'';
+        var map={steals:'steal',wonderkids:'wonderkid',impact:'',resale:'',value:'',lowrisk:''};
+        show.value=map[b.dataset.preset]!==undefined?map[b.dataset.preset]:'';
+      }
+      /* also reset age range for wonderkids */
+      if(b.dataset.preset==='wonderkids'){
+        document.getElementById('filter-age-max').value=23;
+        document.getElementById('age-val').textContent='16\u201323';
+      } else if(b.dataset.preset==='impact'){
+        document.getElementById('filter-age-min').value=16;
+        document.getElementById('filter-age-max').value=45;
+        document.getElementById('age-val').textContent='16\u201345';
       }
       if(ALL_PLAYERS.length)applyFilters();
     });
@@ -2420,6 +2477,8 @@ function loadFile(file){
     if(ALL_PLAYERS.length)applyFilters();
   });
   document.getElementById('filter-pos').addEventListener('change',function(){if(ALL_PLAYERS.length)applyFilters();});
+  var leagueDropdown=document.getElementById('filter-league');
+  if(leagueDropdown)leagueDropdown.addEventListener('change',function(){if(ALL_PLAYERS.length)applyFilters();});
 
   /* Reset */
   var resetBtn=document.getElementById('btn-reset');
@@ -2430,9 +2489,13 @@ function loadFile(file){
     document.getElementById('filter-fee').value=200;
     if(wSlider)wSlider.value=500;
     if(document.getElementById('filter-show'))document.getElementById('filter-show').value='';
-    document.getElementById('age-val').textContent=LANG==='en'?'16\u201345':'16\u201345';
+    if(document.getElementById('filter-league'))document.getElementById('filter-league').value='';
+    document.getElementById('age-val').textContent='16\u201345';
     document.getElementById('fee-val').textContent=LANG==='en'?'No Limit':'Kein Limit';
-    if(document.getElementById('wage-val'))document.getElementById('wage-val').textContent='Kein Limit';
+    if(document.getElementById('wage-val'))document.getElementById('wage-val').textContent=LANG==='en'?'No Limit':'Kein Limit';
+    document.querySelectorAll('.btn-preset').forEach(function(x){x.classList.remove('active');});
+    var defPreset=document.querySelector('[data-preset="steals"]');
+    if(defPreset)defPreset.classList.add('active');
     if(ALL_PLAYERS.length)applyFilters();
   });
 
