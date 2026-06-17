@@ -469,6 +469,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .empty-desc{font-size:13px;line-height:1.6;max-width:340px;}
 .empty-btn{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent-blue);border:none;border-radius:var(--radius-md);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
 .empty-btn:hover{background:#2563eb;}
+
+/* ══════════════════════════════════════════════════════════════
+   LANDING PAGE — premium pre-import hero + feature grid
+══════════════════════════════════════════════════════════════ */
+.landing-page{display:flex;flex-direction:column;gap:0;padding:0 0 40px;}
+
+/* ── HERO ── */
+.landing-hero{position:relative;display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:56px 24px 44px;overflow:hidden;}
+.landing-hero-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:600px;height:400px;background:radial-gradient(ellipse,rgba(59,130,246,0.16),rgba(6,182,212,0.08) 45%,transparent 75%);
+  filter:blur(20px);pointer-events:none;z-index:0;}
+.landing-logo{position:relative;z-index:1;margin-bottom:18px;animation:floatLogo 5s ease-in-out infinite;}
+@keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.landing-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;
+  padding:5px 14px;border-radius:20px;background:rgba(59,130,246,0.10);
+  border:1px solid rgba(59,130,246,0.25);color:var(--accent-cyan);
+  font-size:11px;font-weight:700;letter-spacing:0.04em;margin-bottom:18px;}
+.landing-headline{position:relative;z-index:1;font-size:38px;font-weight:900;line-height:1.15;
+  letter-spacing:-0.01em;margin:0 0 14px;color:var(--text-primary);}
+.grad-text{background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.landing-sub{position:relative;z-index:1;font-size:14px;line-height:1.7;color:var(--text-secondary);
+  max-width:520px;margin:0 0 28px;}
+.landing-cta{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;
+  padding:14px 32px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));
+  border:none;border-radius:var(--radius-md);color:#fff;font-family:inherit;
+  font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 8px 28px rgba(59,130,246,0.35);
+  transition:transform .2s,box-shadow .2s;}
+.landing-cta:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(59,130,246,0.45);}
+.landing-cta-icon{font-size:16px;}
+.landing-cta-hint{position:relative;z-index:1;font-size:11px;color:var(--text-muted);
+  margin-top:10px;max-width:380px;}
+.landing-trust{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:18px;margin-top:26px;}
+.landing-trust-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);font-weight:500;}
+.lt-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-green);
+  box-shadow:0 0 6px var(--accent-green);flex-shrink:0;}
+
+/* ── FEATURE GRID ── */
+.landing-features{padding:8px 24px 0;}
+.landing-features-label{text-align:center;font-size:10px;font-weight:700;letter-spacing:0.18em;
+  color:var(--text-muted);margin-bottom:20px;}
+.feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:1100px;margin:0 auto;}
+@media (max-width:900px){.feature-grid{grid-template-columns:repeat(2,1fr);}}
+.feature-card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius-md);
+  padding:18px 16px;display:flex;flex-direction:column;gap:8px;transition:transform .2s,border-color .2s,box-shadow .2s;}
+.feature-card:hover{transform:translateY(-3px);border-color:rgba(59,130,246,0.30);
+  box-shadow:0 8px 24px rgba(0,0,0,0.35);}
+.feature-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;margin-bottom:2px;}
+.fi-blue{background:rgba(59,130,246,0.14);color:var(--accent-blue);}
+.fi-cyan{background:rgba(6,182,212,0.14);color:var(--accent-cyan);}
+.fi-green{background:rgba(16,185,129,0.14);color:var(--accent-green);}
+.fi-amber{background:rgba(245,158,11,0.14);color:var(--accent-amber);}
+.fi-red{background:rgba(239,68,68,0.14);color:var(--accent-red);}
+.fi-purple{background:rgba(139,92,246,0.14);color:#a78bfa;}
+.feature-title{font-size:13px;font-weight:700;color:var(--text-primary);}
+.feature-desc{font-size:11px;line-height:1.5;color:var(--text-muted);}
+
+/* ── FOOTER ── */
+.landing-footer{display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:36px 24px 0;margin-top:8px;border-top:1px solid var(--border-dim);}
+.landing-footer-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+  font-size:11px;color:var(--text-muted);padding-top:24px;}
+.lf-sep{opacity:0.4;}
+.landing-kofi{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;
+  background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.25);
+  border-radius:var(--radius-md);color:var(--accent-amber);font-size:12px;font-weight:700;
+  text-decoration:none;transition:all .2s;}
+.landing-kofi:hover{background:rgba(245,158,11,0.18);transform:translateY(-1px);}
+
+/* ── ANIMATIONS ── */
+.anim-fade-in{opacity:0;animation:fadeInUp .6s ease forwards;}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.anim-fade-up{opacity:0;animation:fadeInUp .5s ease forwards;}
 .view{display:none;}
 .view.active{display:flex;flex-direction:column;gap:12px;}
 .list-header-row{display:grid;grid-template-columns:32px 1fr 60px 70px 70px 80px 60px 80px;gap:10px;padding:6px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border-dim);}
@@ -569,11 +645,118 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <div class="main-inner">
 <div class="view active" id="view-dashboard">
 
-<div id="dashboard-empty" class="empty-state">
-  <div class="empty-icon">&#128202;</div>
-  <div class="empty-title">Keine Daten geladen</div>
-  <div class="empty-desc">FM26 CSV importieren — sofort wissen wen kaufen, warum jetzt, welcher Preis.</div>
-  <button class="empty-btn" onclick="document.getElementById('file-input').click()">&#8593; CSV importieren</button>
+<div id="dashboard-empty" class="landing-page">
+
+  <!-- ═══ HERO SECTION ═══ -->
+  <div class="landing-hero">
+    <div class="landing-hero-glow"></div>
+    <div class="landing-logo">
+      <svg width="64" height="64" viewBox="0 0 64 64" style="filter:drop-shadow(0 0 20px rgba(59,130,246,0.5))">
+        <defs>
+          <linearGradient id="lgLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#06b6d4"/>
+            <stop offset="100%" stop-color="#3b82f6"/>
+          </linearGradient>
+        </defs>
+        <path d="M32 4 L58 16 L58 36 C58 48 46 56 32 60 C18 56 6 48 6 36 L6 16 Z" fill="none" stroke="url(#lgLogoGrad)" stroke-width="3"/>
+        <circle cx="32" cy="28" r="11" fill="#0a1628" stroke="#fff" stroke-width="1.5"/>
+        <path d="M24 28 L28 28 M36 28 L40 28 M32 20 L32 24 M32 32 L32 36 M26 22 L29 25 M38 22 L35 25 M26 34 L29 31 M38 34 L35 31" stroke="#fff" stroke-width="1.2" opacity="0.7"/>
+        <rect x="20" y="42" width="4" height="8" fill="url(#lgLogoGrad)" rx="1"/>
+        <rect x="26" y="38" width="4" height="12" fill="url(#lgLogoGrad)" rx="1"/>
+        <rect x="32" y="34" width="4" height="16" fill="url(#lgLogoGrad)" rx="1"/>
+        <rect x="38" y="30" width="4" height="20" fill="url(#lgLogoGrad)" rx="1"/>
+      </svg>
+    </div>
+    <div class="landing-badge anim-fade-in">&#9889; <span data-i18n="land.badge">Powered by data, not guesswork</span></div>
+    <h1 class="landing-headline anim-fade-in" style="animation-delay:.05s">
+      <span data-i18n="land.h1a">Find Value.</span> <span class="grad-text" data-i18n="land.h1b">Win Titles.</span>
+    </h1>
+    <p class="landing-sub anim-fade-in" style="animation-delay:.1s" data-i18n="land.sub">
+      Moneyball Scout identifies undervalued players the market has overlooked, and delivers professional-grade transfer analysis &mdash; built for Football Manager 26.
+    </p>
+
+    <button class="landing-cta anim-fade-in" style="animation-delay:.15s" onclick="document.getElementById('file-input').click()">
+      <span class="landing-cta-icon">&#8593;</span> <span data-i18n="land.cta">Import CSV File</span>
+    </button>
+    <div class="landing-cta-hint anim-fade-in" style="animation-delay:.18s" data-i18n="land.cta_hint">Export your player data from Football Manager and upload your CSV file.</div>
+
+    <div class="landing-trust anim-fade-in" style="animation-delay:.2s">
+      <div class="landing-trust-item"><span class="lt-dot"></span><span data-i18n="land.trust1">Your data stays local</span></div>
+      <div class="landing-trust-item"><span class="lt-dot"></span><span data-i18n="land.trust2">Nothing is uploaded or stored</span></div>
+      <div class="landing-trust-item"><span class="lt-dot"></span><span data-i18n="land.trust3">Optimized for Football Manager</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ FEATURE GRID ═══ -->
+  <div class="landing-features">
+    <div class="landing-features-label" data-i18n="land.features_label">WHAT YOU GET</div>
+    <div class="feature-grid">
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.05s">
+        <div class="feature-icon fi-blue">&#9878;</div>
+        <div class="feature-title" data-i18n="land.f1_t">Deal Score</div>
+        <div class="feature-desc" data-i18n="land.f1_d">Evaluates every transfer 0&ndash;100 in one final number.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.08s">
+        <div class="feature-icon fi-amber">&#128142;</div>
+        <div class="feature-title" data-i18n="land.f2_t">Hidden Gems</div>
+        <div class="feature-desc" data-i18n="land.f2_d">Surfaces undervalued talent the market has overlooked.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.11s">
+        <div class="feature-icon fi-cyan">&#128200;</div>
+        <div class="feature-title" data-i18n="land.f3_t">Market Inefficiency</div>
+        <div class="feature-desc" data-i18n="land.f3_d">Finds price gaps in the market the moment you import.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.14s">
+        <div class="feature-icon fi-green">&#128176;</div>
+        <div class="feature-title" data-i18n="land.f4_t">Fair Transfer Value</div>
+        <div class="feature-desc" data-i18n="land.f4_d">A defensible price point grounded in scouting data.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.17s">
+        <div class="feature-icon fi-red">&#128721;</div>
+        <div class="feature-title" data-i18n="land.f5_t">Maximum Recommended Fee</div>
+        <div class="feature-desc" data-i18n="land.f5_d">Know exactly where to stop negotiating.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.20s">
+        <div class="feature-icon fi-blue">&#128203;</div>
+        <div class="feature-title" data-i18n="land.f6_t">Scout Reports</div>
+        <div class="feature-desc" data-i18n="land.f6_d">Professional-grade analysis for every player.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.23s">
+        <div class="feature-icon fi-purple">&#128081;</div>
+        <div class="feature-title" data-i18n="land.f7_t">Resale Projections</div>
+        <div class="feature-desc" data-i18n="land.f7_d">Forecasts long-term resale potential and ROI.</div>
+      </div>
+
+      <div class="feature-card anim-fade-up" style="animation-delay:.26s">
+        <div class="feature-icon fi-amber">&#9888;</div>
+        <div class="feature-title" data-i18n="land.f8_t">Risk Assessment</div>
+        <div class="feature-desc" data-i18n="land.f8_d">A detailed risk breakdown before you commit to a deal.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER TRUST + SUPPORT ═══ -->
+  <div class="landing-footer">
+    <div class="landing-footer-row">
+      <span>&#128274; <span data-i18n="land.foot1">100% processed locally</span></span>
+      <span class="lf-sep">&bull;</span>
+      <span>&#128683; <span data-i18n="land.foot2">No data is ever stored</span></span>
+      <span class="lf-sep">&bull;</span>
+      <span>&#9989; <span data-i18n="land.foot3">Optimized for FM26</span></span>
+    </div>
+    <a href="https://ko-fi.com/moneyballscout" target="_blank" class="landing-kofi">
+      &#9749; <span data-i18n="land.kofi">Support development on Ko-fi</span>
+    </a>
+  </div>
+
 </div>
 
 <div id="dashboard-content" class="hidden">
@@ -1475,7 +1658,7 @@ function scoutReport(p,recFee,maxFee){
   var why='';
   if(p.mktIneff>=35){
     why=en?
-      'Our market analysis reveals an exceptional pricing anomaly: the current transfer fee of '+fmtMoney(p.fee||p.mv)+' sits '+p.mktIneff+'% below the fair value our models calculate. The market is pricing the league — not the player\'s actual ability.':
+      'Our market analysis reveals an exceptional pricing anomaly: the current transfer fee of '+fmtMoney(p.fee||p.mv)+' sits '+p.mktIneff+'% below the fair value identified by our scouting evaluation. The market is pricing the league — not the player\'s actual ability.':
       'Unsere Marktanalyse zeigt eine au\u00dfergew\u00f6hnliche Preisanomalie: Der aktuelle Marktwert von '+fmtMoney(p.fee||p.mv)+' liegt um '+p.mktIneff+'% unter dem fairen Wert. Der Markt bewertet die Liga \u2014 nicht die tats\u00e4chliche Leistungsf\u00e4higkeit.';
   } else if(p.mktIneff>=15){
     why=en?
@@ -2662,6 +2845,38 @@ function loadFile(file){
 var LANG='de';
 
 var STRINGS={
+  'land.badge':        {de:'Datenbasiert statt Bauchgefühl', en:'Powered by data, not guesswork'},
+  'land.h1a':          {de:'Wert erkennen.', en:'Find Value.'},
+  'land.h1b':          {de:'Titel gewinnen.', en:'Win Titles.'},
+  'land.sub':          {de:'Moneyball Scout findet unterbewertete Spieler, die der Markt übersehen hat, und liefert professionelle Transferanalysen — gebaut für Football Manager 26.',
+                         en:'Moneyball Scout identifies undervalued players the market has overlooked, and delivers professional-grade transfer analysis — built for Football Manager 26.'},
+  'land.cta':          {de:'CSV-Datei importieren', en:'Import CSV File'},
+  'land.cta_hint':     {de:'Exportiere deine Spielerdaten aus Football Manager und lade die CSV-Datei hoch.',
+                         en:'Export your player data from Football Manager and upload your CSV file.'},
+  'land.trust1':       {de:'Deine Daten bleiben lokal', en:'Your data stays local'},
+  'land.trust2':       {de:'Nichts wird hochgeladen oder gespeichert', en:'Nothing is uploaded or stored'},
+  'land.trust3':       {de:'Optimiert für Football Manager', en:'Optimized for Football Manager'},
+  'land.features_label':{de:'WAS DU BEKOMMST', en:'WHAT YOU GET'},
+  'land.f1_t':         {de:'Deal Score', en:'Deal Score'},
+  'land.f1_d':         {de:'Bewertet jeden Transfer 0–100 in einer finalen Zahl.', en:'Evaluates every transfer 0–100 in one final number.'},
+  'land.f2_t':         {de:'Hidden Gems', en:'Hidden Gems'},
+  'land.f2_d':         {de:'Findet unterbewertete Talente, die der Markt übersehen hat.', en:'Surfaces undervalued talent the market has overlooked.'},
+  'land.f3_t':         {de:'Marktineffizienz', en:'Market Inefficiency'},
+  'land.f3_d':         {de:'Findet Preislücken im Markt direkt nach dem Import.', en:'Finds price gaps in the market the moment you import.'},
+  'land.f4_t':         {de:'Faire Transferablöse', en:'Fair Transfer Value'},
+  'land.f4_d':         {de:'Ein begründbarer Preis, gestützt auf Scouting-Daten.', en:'A defensible price point grounded in scouting data.'},
+  'land.f5_t':         {de:'Maximale Empfehlungsablöse', en:'Maximum Recommended Fee'},
+  'land.f5_d':         {de:'Wisse genau, wo die Verhandlung enden sollte.', en:'Know exactly where to stop negotiating.'},
+  'land.f6_t':         {de:'Scout Reports', en:'Scout Reports'},
+  'land.f6_d':         {de:'Professionelle Analyse für jeden Spieler.', en:'Professional-grade analysis for every player.'},
+  'land.f7_t':         {de:'Resale-Prognosen', en:'Resale Projections'},
+  'land.f7_d':         {de:'Prognostiziert langfristiges Wiederverkaufspotenzial und ROI.', en:'Forecasts long-term resale potential and ROI.'},
+  'land.f8_t':         {de:'Risikobewertung', en:'Risk Assessment'},
+  'land.f8_d':         {de:'Eine detaillierte Risikoaufschlüsselung vor jedem Deal.', en:'A detailed risk breakdown before you commit to a deal.'},
+  'land.foot1':        {de:'100% lokal verarbeitet', en:'100% processed locally'},
+  'land.foot2':        {de:'Keine Daten werden gespeichert', en:'No data is ever stored'},
+  'land.foot3':        {de:'Optimiert für FM26', en:'Optimized for FM26'},
+  'land.kofi':         {de:'Entwicklung auf Ko-fi unterstützen', en:'Support development on Ko-fi'},
   'nav.players':    {de:'PLAYERS',          en:'PLAYERS'},
   'nav.scout':      {de:'SCOUT REPORTS',    en:'SCOUT REPORTS'},
   'nav.compare':    {de:'COMPARE',          en:'COMPARE'},
