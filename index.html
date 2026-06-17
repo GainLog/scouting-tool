@@ -1290,6 +1290,51 @@ var LEAGUE_STRENGTH={
 var OVS_W={perf:0.30,mkt:0.22,wage:0.18,age:0.14,rel:0.10,risk:0.06};
 
 /* ══════════════════════════════════════════════════════════════
+   POSITION GROUPS — 8 groups, each with its own weight profile.
+   Same metrics everywhere (CA/MV/Wage/Age/Contract/Injury — that's
+   all the CSV gives us), but age curves, risk tolerance and the
+   perf/mkt/wage balance shift per group because what matters for
+   a 34-year-old CB is not what matters for a 34-year-old winger.
+══════════════════════════════════════════════════════════════ */
+var POS_GROUPS={
+  GK:{label:'Torwart',           weights:{perf:0.32,mkt:0.20,wage:0.16,age:0.18,rel:0.10,risk:0.04}},
+  CB:{label:'Innenverteidiger',  weights:{perf:0.30,mkt:0.22,wage:0.17,age:0.17,rel:0.09,risk:0.05}},
+  FB:{label:'Außenverteidiger',  weights:{perf:0.30,mkt:0.23,wage:0.17,age:0.13,rel:0.10,risk:0.07}},
+  DM:{label:'Defensives Mittelfeld',weights:{perf:0.31,mkt:0.22,wage:0.17,age:0.13,rel:0.10,risk:0.07}},
+  CM:{label:'Zentrales Mittelfeld', weights:{perf:0.30,mkt:0.22,wage:0.18,age:0.13,rel:0.10,risk:0.07}},
+  AM:{label:'Offensives Mittelfeld',weights:{perf:0.32,mkt:0.21,wage:0.17,age:0.11,rel:0.09,risk:0.10}},
+  WG:{label:'Flügelspieler',     weights:{perf:0.31,mkt:0.21,wage:0.17,age:0.10,rel:0.09,risk:0.12}},
+  ST:{label:'Stürmer',           weights:{perf:0.33,mkt:0.21,wage:0.17,age:0.10,rel:0.09,risk:0.10}}
+};
+/* age curve shift per group: positive = peak shifted later, negative = earlier.
+   CBs/GKs mature later and decline slower; wingers/strikers peak earlier and
+   lose pace-dependent value sooner. */
+var POS_AGE_SHIFT={GK:3,CB:2,FB:0,DM:1,CM:0,AM:-1,WG:-2,ST:-1};
+
+/* map a raw FM position string to one of the 8 canonical groups.
+   FM exports often contain multi-position strings like "D (RLC), WB (RL)"
+   or "M (C), AM (C)" — we scan for the strongest/first signal and fall
+   back to a generic group rather than crashing. */
+function posGroup(posStr){
+  var s=(posStr||'').toUpperCase();
+  if(s.indexOf('GK')>-1||s.indexOf('TW')>-1||s.indexOf('KEEPER')>-1||s.indexOf('TORWART')>-1) return 'GK';
+  if(s.indexOf('WB')>-1||s.indexOf('FB')>-1) return 'FB';
+  if(/\bD\s*\(/.test(s)||/^D\b/.test(s)||s.indexOf('CB')>-1||s.indexOf('IV')>-1) return 'CB';
+  if(s.indexOf('DM')>-1) return 'DM';
+  /* wide (RL-only, no C) midfield/attacking-mid tags are wingers — must be
+     checked BEFORE the generic central-mid fallback below, otherwise
+     "M (RL)" gets caught by the ^M\b pattern and miscoded as CM */
+  if((s.indexOf('M (RL')>-1||s.indexOf('M(RL')>-1||s.indexOf('AM (RL')>-1||s.indexOf('WING')>-1)) return 'WG';
+  /* central-mid signal — a dual "M (C), AM (C)" tag registers as a
+     box-to-box CM rather than being swallowed into pure AM */
+  if(/\bM\s*\(C/.test(s)||/^M\b/.test(s)) return 'CM';
+  if(s.indexOf('AM')>-1||s.indexOf('OM')>-1) return 'AM';
+  if(s.indexOf('M')>-1) return 'CM';
+  if(s.indexOf('ST')>-1||s.indexOf('FW')>-1||s.indexOf('STK')>-1) return 'ST';
+  return 'CM'; /* generic fallback — most neutral weight profile */
+}
+
+/* ══════════════════════════════════════════════════════════════
    GLOBAL STATE
 ══════════════════════════════════════════════════════════════ */
 var ALL_PLAYERS=[];
@@ -1437,11 +1482,17 @@ function normaliseAll(players){
   if(!players||players.length===0)return;
   var n=players.length;
 
-  /* helper: percentile rank 0-100 of value v in sorted array */
+  /* helper: percentile rank 0-100 of value v in sorted array.
+     CRITICAL: uses arr.length, not the dataset-wide n — pre-existing
+     bug here used the outer n unconditionally, which was harmless
+     before per-position-group arrays existed (arr.length===n always)
+     but produces wrong/extreme percentiles now that group arrays can
+     be much smaller than the full dataset. */
   function pctRankVal(arr,v,higherBetter){
-    if(n<=1)return 50;
+    var an=arr.length;
+    if(an<=1)return 50;
     var below=arr.filter(function(x){return higherBetter?x<v:x>v;}).length;
-    return Math.round((below/(n-1))*100);
+    return Math.round((below/(an-1))*100);
   }
 
   /* Use MV as CA fallback if CA missing */
@@ -1461,7 +1512,26 @@ function normaliseAll(players){
     return Math.abs(r-0.8)>0.08&&Math.abs(r-1.0)>0.08; /* not the two common fallback ratios */
   }).length > players.length*0.15;
 
-  /* build ranking arrays */
+  /* assign position group to every player first — everything downstream
+     (ranking arrays, weights, age curve) is computed per group */
+  players.forEach(function(p){ p.posGrp=posGroup(p.pos); });
+
+  /* build ranking arrays PER POSITION GROUP — a CB's CA percentile must be
+     measured against other CBs, not against the whole dataset including
+     strikers. Falls back to the full dataset if a group has <3 players
+     (too small a sample to rank meaningfully on its own). */
+  var groupArrs={};
+  Object.keys(POS_GROUPS).forEach(function(g){
+    var inGrp=players.filter(function(p){return p.posGrp===g;});
+    if(inGrp.length>=3){
+      groupArrs[g]={
+        ca:inGrp.map(function(p){return p.ca*(p.lf||0.8);}),
+        wage:inGrp.map(function(p){return p.wage>0?p.wage/Math.max(1,p.ca):9999;}),
+        fee:inGrp.map(function(p){return p.mv>0&&p.fee>0?p.fee/p.mv:1.0;})
+      };
+    }
+  });
+  /* dataset-wide fallback arrays for small/edge-case groups */
   var caArr   =players.map(function(p){return p.ca*(p.lf||0.8);});
   var wageArr =players.map(function(p){return p.wage>0?p.wage/Math.max(1,p.ca):9999;});
   var feeArr  =players.map(function(p){return p.mv>0&&p.fee>0?p.fee/p.mv:1.0;});
@@ -1470,21 +1540,24 @@ function normaliseAll(players){
   players.forEach(function(p){
     var lf=p.lf||0.8;
     var adjCA=p.ca*lf;
+    var grp=p.posGrp||'CM';
+    var ga=groupArrs[grp]; /* group-specific arrays, or undefined if sample too small */
 
-    /* PERF percentile */
-    var perfScore=pctRankVal(caArr,adjCA,true);
+    /* PERF percentile — ranked within position group when sample allows */
+    var perfScore=pctRankVal(ga?ga.ca:caArr,adjCA,true);
 
     /* MKT percentile — only meaningful if real fee data exists */
     var feeRatio=p.mv>0&&p.fee>0?p.fee/p.mv:1.0;
-    var mktScore=feeIsReal?pctRankVal(feeArr,feeRatio,false):50;
+    var mktScore=feeIsReal?pctRankVal(ga?ga.fee:feeArr,feeRatio,false):50;
     var mktIneff=p.mv>0&&p.fee>0&&feeIsReal?Math.round((1-(p.fee/p.mv))*100):0;
 
-    /* WAGE percentile */
+    /* WAGE percentile — ranked within position group */
     var wageRatioVal=p.wage>0?p.wage/Math.max(1,p.ca):9999;
-    var wageScore=p.wage>0?pctRankVal(wageArr,wageRatioVal,false):50;
+    var wageScore=p.wage>0?pctRankVal(ga?ga.wage:wageArr,wageRatioVal,false):50;
 
-    /* AGE CURVE absolute */
-    var age=p.age;
+    /* AGE CURVE — shifted per position group (CBs/GKs peak later and decline
+       slower; wingers/strikers peak earlier and lose pace-dependent value sooner) */
+    var age=p.age-( POS_AGE_SHIFT[grp]||0 );
     var ageScore=age<=16?20:age<=18?40:age<=20?58:age<=22?72:age<=24?86:
                  age<=26?100:age<=28?95:age<=30?78:age<=32?55:age<=34?35:18;
 
@@ -1498,9 +1571,10 @@ function normaliseAll(players){
       (lf<0.78?20:lf<0.84?10:0)
     ));
 
-    /* OVS */
-    var ovsRaw=perfScore*OVS_W.perf+mktScore*OVS_W.mkt+wageScore*OVS_W.wage+
-               ageScore*OVS_W.age+relScore*OVS_W.rel+(100-riskScore)*OVS_W.risk;
+    /* OVS — position-group-specific weights instead of one flat profile */
+    var w=(POS_GROUPS[grp]&&POS_GROUPS[grp].weights)||OVS_W;
+    var ovsRaw=perfScore*w.perf+mktScore*w.mkt+wageScore*w.wage+
+               ageScore*w.age+relScore*w.rel+(100-riskScore)*w.risk;
     var ovs=Math.min(99,Math.max(1,Math.round(ovsRaw)));
 
     /* DEAL SCORE — rebalanced weights based on data availability */
@@ -1533,13 +1607,15 @@ function normaliseAll(players){
     /* ESTIMATED VALUE — use actual MV */
     var estVal=p.mv>0?p.mv:p.fee*1.3;
 
-    /* BREAKDOWN */
-    var bdPerf=Math.min(35,Math.max(0,Math.round(perfScore*OVS_W.perf*1.17)));
-    var bdMkt=Math.min(25,Math.max(-15,Math.round((mktScore-50)*OVS_W.mkt*0.9)));
-    var bdWage=Math.min(20,Math.max(0,Math.round(wageScore*OVS_W.wage*1.11)));
-    var bdAge=Math.min(16,Math.max(0,Math.round(ageScore*OVS_W.age*1.14)));
-    var bdRel=Math.min(12,Math.max(0,Math.round(relScore*OVS_W.rel*1.20)));
-    var bdRisk=Math.max(-15,Math.min(0,-Math.round(riskScore*OVS_W.risk*2.50)));
+    /* BREAKDOWN — uses the SAME position-group weights (w) as the OVS calc
+       above, so the displayed contribution per category always matches
+       what was actually used to score this specific player */
+    var bdPerf=Math.min(35,Math.max(0,Math.round(perfScore*w.perf*1.17)));
+    var bdMkt=Math.min(25,Math.max(-15,Math.round((mktScore-50)*w.mkt*0.9)));
+    var bdWage=Math.min(20,Math.max(0,Math.round(wageScore*w.wage*1.11)));
+    var bdAge=Math.min(16,Math.max(0,Math.round(ageScore*w.age*1.14)));
+    var bdRel=Math.min(12,Math.max(0,Math.round(relScore*w.rel*1.20)));
+    var bdRisk=Math.max(-15,Math.min(0,-Math.round(riskScore*w.risk*2.50)));
     var bdData=lf<0.80?-5:lf<0.85?-3:0;
 
     var dLabel=dealScore>=82?'NO-BRAINER DEAL':dealScore>=70?'STARKER DEAL':
@@ -1714,38 +1790,6 @@ function scoutReport(p,recFee,maxFee){
          '<strong>'+h4+':</strong> '+risk;
 }
 
-function gemReasons(p){
-  var en=LANG==='en';
-  var reasons=[];
-  if(p.lf<0.85) reasons.push({
-    t:en?'League undervalued by the market':'Liga wird vom Markt untersch\u00e4tzt',
-    d:en?'League factor '+p.lf.toFixed(2)+' — genuine talent is frequently overlooked':'Ligafaktor '+p.lf.toFixed(2)+' \u2014 echtes Talent wird h\u00e4ufig \u00fcbersehen'});
-  if(p.mktIneff>=20) reasons.push({
-    t:en?'Market ignores current performance':'Markt ignoriert aktuelle Leistungen',
-    d:en?'Pricing follows reputation, not data':'Preisgestaltung folgt Reputation, nicht Datenlage'});
-  if(p.confScore>=70) reasons.push({
-    t:en?'Low media exposure':'Niedrige Medienpr\u00e4senz',
-    d:en?'Other clubs have largely ignored this player':'Aufmerksamkeit anderer Clubs bleibt bisher gering'});
-  if(p.wage<50000) reasons.push({
-    t:en?'Attractive wage structure':'Attraktive Gehaltsstruktur',
-    d:en?'Low base salary enables efficient budget use':'Geringes Grundgehalt erm\u00f6glicht effizienten Budgeteinsatz'});
-  if(p.contract<24) reasons.push({
-    t:en?'Favourable contract situation':'G\u00fcnstige Vertragssituation',
-    d:en?'Fee below market value due to expiring contract':'Abl\u00f6se unter Marktwert durch auslaufenden Vertrag'});
-  if(p.riskScore<=35) reasons.push({
-    t:en?'Little competition in the market':'Geringe Konkurrenz auf dem Markt',
-    d:en?'No known competing bids — window is open':'Kein bekanntes Bieterangebot \u2014 Zeitfenster ist offen'});
-  if(p.age<=23&&p.ageScore>=70) reasons.push({
-    t:en?'Development potential underestimated':'Entwicklungspotenzial untersch\u00e4tzt',
-    d:en?'Performance curve shows a clear upward trend':'Leistungskurve zeigt klaren Aufw\u00e4rtstrend'});
-  if(reasons.length<3) reasons.push({
-    t:en?'Excellent value for money':'Sehr gutes Preis-Leistungs-Verh\u00e4ltnis',
-    d:en?'Our assessment ranks this deal among the strongest in the dataset':'Unsere Bewertung z\u00e4hlt diesen Deal zu den st\u00e4rksten im Datensatz'});
-  if(reasons.length<4) reasons.push({
-    t:en?'Market price below fair value':'Marktbewertung unter fairem Wert',
-    d:en?'Fee does not reflect actual ability':'Abl\u00f6se entspricht nicht der tats\u00e4chlichen St\u00e4rke'});
-  return reasons.slice(0,6);
-}
 
 function whyNowReasons(p){
   var en=LANG==='en';
@@ -1776,6 +1820,174 @@ function whyNotReasons(p){
   if(r.length<3) r.push(en?'Better alternatives available in the dataset':'Bessere Alternativen im Datensatz vorhanden');
   return r.slice(0,4);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   OVS TRANSPARENCY — exact contributors behind the score.
+   Pulls straight from p.bd, which was already computed in
+   normaliseAll() but never rendered until now.
+══════════════════════════════════════════════════════════════ */
+function ovsBreakdownRows(p){
+  var en=LANG==='en';
+  var grp=POS_GROUPS[p.posGrp]||POS_GROUPS.CM;
+  var w=grp.weights;
+  var rows=[
+    {key:'perf',label:en?'Performance (CA vs. position group)':'Leistung (CA vs. Positionsgruppe)',val:p.bd.perf,weight:w.perf,raw:p.perfScore},
+    {key:'mkt', label:en?'Market efficiency (fee vs. value)':'Markteffizienz (Ablöse vs. Wert)',val:p.bd.mkt,weight:w.mkt,raw:p.mktScore},
+    {key:'wage',label:en?'Wage efficiency':'Gehaltseffizienz',val:p.bd.wage,weight:w.wage,raw:p.wageScore},
+    {key:'age', label:en?'Age curve':'Alterskurve',val:p.bd.age,weight:w.age,raw:p.ageScore},
+    {key:'rel', label:en?'Reliability (injury history)':'Zuverlässigkeit (Verletzungshistorie)',val:p.bd.rel,weight:w.rel,raw:p.relScore},
+    {key:'risk',label:en?'Risk deduction':'Risikoabzug',val:p.bd.risk,weight:w.risk,raw:100-p.riskScore}
+  ];
+  if(p.bd.data!==0) rows.push({key:'data',label:en?'League data confidence':'Liga-Datenvertrauen',val:p.bd.data,weight:0,raw:null});
+  return rows;
+}
+
+function renderOvsBreakdown(p){
+  var en=LANG==='en';
+  var rows=ovsBreakdownRows(p);
+  var grpLabel=(POS_GROUPS[p.posGrp]||{}).label||p.posGrp;
+  var maxAbs=Math.max.apply(null,rows.map(function(r){return Math.abs(r.val);}))||1;
+  return '<div class="card" style="grid-column:1/-1">'+
+    '<div class="card-header"><span class="card-title">'+(en?'OVS Breakdown':'OVS-Aufschlüsselung')+'</span>'+
+      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">'+(en?'Scored as: ':'Bewertet als: ')+grpLabel+'</span></div>'+
+    '<div style="padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px">'+
+      rows.map(function(r){
+        var pos=r.val>=0;
+        var barColor=pos?'var(--accent-green)':'var(--accent-red)';
+        var widthPct=Math.min(100,Math.round(Math.abs(r.val)/maxAbs*100));
+        var weightTxt=r.weight>0?' &bull; '+(en?'weight':'Gewicht')+' '+Math.round(r.weight*100)+'%':'';
+        var rawTxt=r.raw!==null?' &bull; '+(en?'percentile':'Perzentil')+' '+Math.round(r.raw):'';
+        return '<div style="display:flex;flex-direction:column;gap:3px">'+
+          '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+            '<span style="font-size:11px;color:var(--text-secondary)">'+r.label+'</span>'+
+            '<span style="font-size:12px;font-weight:800;color:'+barColor+'">'+(pos?'+':'')+r.val+'</span>'+
+          '</div>'+
+          '<div style="height:6px;background:var(--border-dim);border-radius:3px;overflow:hidden;position:relative">'+
+            '<div style="position:absolute;'+(pos?'left:50%':'right:50%')+';top:0;bottom:0;width:'+(widthPct/2)+'%;background:'+barColor+';border-radius:3px"></div>'+
+            '<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--text-muted);opacity:0.3"></div>'+
+          '</div>'+
+          '<div style="font-size:9px;color:var(--text-muted)">'+weightTxt.replace(/^ &bull; /,'')+rawTxt+'</div>'+
+        '</div>';
+      }).join('')+
+      '<div style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border-dim);display:flex;justify-content:space-between;align-items:center">'+
+        '<span style="font-size:10px;font-weight:700;color:var(--text-muted)">'+(en?'OVS TOTAL':'OVS GESAMT')+'</span>'+
+        '<span style="font-size:16px;font-weight:900;color:var(--accent-cyan)">'+p.ovs+' / 99</span>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVIDENCE LAYER — turns percentile data into a single sourced
+   sentence instead of a vague verdict. "Great signing" becomes
+   "Top 8% of his position group on performance, 61% below MV."
+══════════════════════════════════════════════════════════════ */
+function evidenceLine(p){
+  var en=LANG==='en';
+  var grpLabel=(POS_GROUPS[p.posGrp]||{}).label||p.posGrp;
+  var perfPct=100-p.perfScore; /* convert "beats X%" into "top X%" framing */
+  var perfTop=Math.max(1,Math.round(perfPct));
+  var parts=[];
+  parts.push(en?
+    'Ranks in the top '+perfTop+'% of '+grpLabel+'-type players in this dataset for performance'
+    :'Liegt unter den Top '+perfTop+'% der Spieler vom Typ '+grpLabel+' im Datensatz bei der Leistung');
+  if(p.mktIneff>0){
+    parts.push(en?
+      'while priced '+p.mktIneff+'% below estimated market value'
+      :'bei einer Ablöse '+p.mktIneff+'% unter dem geschätzten Marktwert');
+  } else if(p.mktIneff<0){
+    parts.push(en?
+      'but priced '+Math.abs(p.mktIneff)+'% above estimated market value'
+      :'jedoch bei einer Ablöse '+Math.abs(p.mktIneff)+'% über dem geschätzten Marktwert');
+  }
+  return parts.join(en?', ':', ')+'.';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RED FLAG SYSTEM — "Reasons NOT to Buy", restricted to signals
+   that actually exist in the CSV export. No injury-history detail,
+   no opposition-strength splits, no resale-market data — none of
+   that is in an FM player export, so none of it gets invented here.
+══════════════════════════════════════════════════════════════ */
+function redFlags(p){
+  var en=LANG==='en';
+  var flags=[];
+  /* wage concern — wage relative to CA within position group */
+  if(p.wageScore<40){
+    flags.push({cat:en?'Wage':'Gehalt',
+      t:en?'Wage is disproportionate to output — ranks in the bottom '+Math.round(p.wageScore)+'% on wage efficiency for this position group':
+           'Gehalt steht in keinem angemessenen Verhältnis zur Leistung \u2014 untere '+Math.round(p.wageScore)+'% bei Gehaltseffizienz für diese Positionsgruppe'});
+  }
+  /* age concern — only flagged for players past their group-adjusted peak */
+  var effAge=p.age-(POS_AGE_SHIFT[p.posGrp]||0);
+  if(effAge>=31){
+    flags.push({cat:en?'Age':'Alter',
+      t:en?'Past peak for this position group (age curve already declining)':
+           'Jenseits des Leistungshöhepunkts für diese Positionsgruppe (Alterskurve bereits fallend)'});
+  }
+  /* contract / sample-size concern */
+  if(p.contract>0&&p.contract<6){
+    flags.push({cat:en?'Contract':'Vertrag',
+      t:en?'Contract expires in under 6 months — limited time to negotiate, may push for emergency terms':
+           'Vertrag läuft in unter 6 Monaten aus \u2014 wenig Verhandlungsspielraum, ggf. Eilbedingungen nötig'});
+  }
+  /* injury proneness — only the actual field, not invented detail */
+  if(p.inj>10){
+    flags.push({cat:en?'Injury':'Verletzungsanfälligkeit',
+      t:en?'Injury proneness rating elevated ('+p.inj+'/20 in source data) — reliability score reduced accordingly':
+           'Verletzungsanfälligkeit erhöht ('+p.inj+'/20 in den Quelldaten) \u2014 Zuverlässigkeits-Score entsprechend reduziert'});
+  }
+  /* small-sample / low-confidence league data */
+  if(p.lf<0.78){
+    flags.push({cat:en?'Data confidence':'Datenvertrauen',
+      t:en?'Source league rated low-strength — CA may not translate directly to a stronger league':
+           'Herkunftsliga niedrig eingestuft \u2014 CA übersetzt sich möglicherweise nicht direkt in eine stärkere Liga'});
+  }
+  /* resale outlook — derivable proxy: old + already at/above market value = limited resale upside */
+  if(effAge>=29&&p.mktIneff<=5){
+    flags.push({cat:en?'Resale':'Weiterverkauf',
+      t:en?'Limited resale upside — already near fair value at an age where value typically declines further':
+           'Begrenztes Weiterverkaufspotenzial \u2014 bereits nahe am fairen Wert in einem Alter, in dem der Wert i.d.R. weiter sinkt'});
+  }
+  if(flags.length===0){
+    flags.push({cat:en?'None':'Keine',
+      t:en?'No material red flags detected in the available data for this player.':
+           'Keine wesentlichen Risikofaktoren in den verfügbaren Daten zu diesem Spieler erkannt.'});
+  }
+  return flags;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HIDDEN GEM EVIDENCE — replaces invented "low media exposure" /
+   "no known competing bids" claims with what the data actually
+   supports: market value gap, statistical outlier, league-relative
+   performance, and a confidence basis that's traceable to a number.
+══════════════════════════════════════════════════════════════ */
+function gemEvidence(p){
+  var en=LANG==='en';
+  var grpLabel=(POS_GROUPS[p.posGrp]||{}).label||p.posGrp;
+  var ev=[];
+  /* market value gap — only stated if fee data is real */
+  if(p.mktIneff>0){
+    ev.push({label:en?'Market value gap':'Marktwert-Lücke',
+      t:en?'Priced '+p.mktIneff+'% below estimated market value ('+fmtMoney(p.fee)+' vs. est. '+fmtMoney(p.estVal)+')':
+           'Preis '+p.mktIneff+'% unter geschätztem Marktwert ('+fmtMoney(p.fee)+' vs. gesch. '+fmtMoney(p.estVal)+')'});
+  }
+  /* statistical outlier — performance percentile within position group */
+  ev.push({label:en?'Statistical outlier':'Statistischer Ausreißer',
+    t:en?'Performance percentile '+Math.round(p.perfScore)+'/100 among '+grpLabel+'-type players':
+         'Leistungs-Perzentil '+Math.round(p.perfScore)+'/100 unter Spielern vom Typ '+grpLabel});
+  /* league-relative performance */
+  ev.push({label:en?'League-relative strength':'Liga-relative Stärke',
+    t:en?'Source league strength factor '+p.lf.toFixed(2)+' (1.00 = Premier League) — CA is league-discounted before ranking':
+         'Liga-Stärkefaktor der Herkunftsliga '+p.lf.toFixed(2)+' (1,00 = Premier League) \u2014 CA wird vor dem Ranking liga-bereinigt'});
+  /* confidence — tied directly to confScore, explained rather than asserted */
+  ev.push({label:en?'Confidence':'Konfidenz',
+    t:en?p.confScore+'% — derived from market inefficiency ('+Math.round(p.mktIneff)+'%) and overall deal score ('+p.dealScore+'/100), not a separate guess':
+         p.confScore+'% \u2014 abgeleitet aus Marktineffizienz ('+Math.round(p.mktIneff)+'%) und Deal Score ('+p.dealScore+'/100), keine separate Schätzung'});
+  return ev;
+}
+
 /* ══════════════════════════════════════════════════════════════
    RENDER DASHBOARD for one player
 ══════════════════════════════════════════════════════════════ */
@@ -2072,7 +2284,7 @@ function renderDashboard(p){
   if(gemPct)gemPct.textContent=p.confScore+'%';
   var gemReasonEl=document.querySelector('.gem-reasons');
   if(gemReasonEl){
-    var reasons=gemReasons(p);
+    var reasons=gemEvidence(p).map(function(e){return {t:e.label,d:e.t};});
     gemReasonEl.innerHTML=reasons.map(function(r){
       return '<div class="gem-reason-row">'+
         '<div class="gem-reason-icon">&#10003;</div>'+
@@ -2355,37 +2567,9 @@ function applyFilters(){
 /* ══════════════════════════════════════════════════════════════
    WHY NOW — dynamic urgency reasons
 ══════════════════════════════════════════════════════════════ */
-function whyNowReasons(p){
-  var r=[];
-  if(p.contract<12) r.push('Vertrag läuft in unter 12 Monaten aus — Verein unter Verkaufsdruck');
-  else if(p.contract<24) r.push('Vertrag läuft bald aus — Verhandlungsposition aktuell optimal');
-  if(p.mktIneff>=20) r.push('Marktwert wurde noch nicht an die Leistungsdaten angepasst');
-  if(p.lf<0.85) r.push('Ligawechsel würde Marktwert sofort erheblich steigern');
-  if(p.riskScore<=30) r.push('Kaum Konkurrenz — kein bekanntes Bieterangebot');
-  if(p.isGem) r.push('Hidden Gem: andere Clubs haben diesen Spieler noch nicht entdeckt');
-  if(p.mktIneff>=15&&p.fee>0) r.push('Preis-Leistungs-Verhältnis aktuell auf Höchststand');
-  if(p.age<=23) r.push('Entwicklungskurve zeigt klar aufwärts — jetzt ist der ideale Einstiegszeitpunkt');
-  if(r.length<3) r.push('Frühzeitiges Handeln sichert den besten Preis, bevor andere Clubs aufmerksam werden');
-  return r.slice(0,5);
-}
-
 /* ══════════════════════════════════════════════════════════════
    WHY HOLD/AVOID — explain negative verdict clearly
 ══════════════════════════════════════════════════════════════ */
-function whyNotReasons(p){
-  var r=[];
-  if(p.mktIneff<5&&p.mktIneff>-10) r.push('Marktpreis entspricht bereits dem fairen Wert — kein Moneyball-Vorteil');
-  if(p.mktIneff<=-10) r.push(Math.abs(p.mktIneff)+'% über fairem Wert — Preisaufschlag gegenüber vergleichbaren Alternativen');
-  if(p.riskScore>60) r.push('Risikoprofil zu hoch — Verletzungshistorie oder Datenbasis problematisch');
-  if(p.wageScore<40) r.push('Gehaltsforderung in keinem angemessenen Verhältnis zur Leistung');
-  if(p.ageScore<40) r.push('Alterskurve lässt keine nachhaltige Wertentwicklung erwarten');
-  if(p.perfScore<50) r.push('Leistungsdaten reichen für den angestrebten Transfer nicht aus');
-  if(p.lf>=0.95&&p.mktIneff<15) r.push('Top-Liga-Spieler — Marktpreise bereits weitgehend effizient');
-  if(r.length<2) r.push('Deal Score von '+p.dealScore+'/100 liegt unter der Kaufempfehlungsgrenze');
-  if(r.length<3) r.push('Bessere Alternativen im Datensatz vorhanden');
-  return r.slice(0,4);
-}
-
 /* ══════════════════════════════════════════════════════════════
    RENDER SCOUT REPORT VIEW (full page for a player)
 ══════════════════════════════════════════════════════════════ */
@@ -2405,6 +2589,8 @@ function renderScoutReportView(p){
   var whyNow=whyNowReasons(p);
   var whyNot=whyNotReasons(p);
   var roi=p.estVal>0&&p.fee>0?Math.round((p.estVal-p.fee)/p.fee*100):0;
+  var evidence=evidenceLine(p);
+  var flags=redFlags(p);
 
   el.innerHTML='<div style="display:flex;flex-direction:column;gap:14px;padding-bottom:24px">'+
 
@@ -2421,6 +2607,7 @@ function renderScoutReportView(p){
         '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Deal Score: <strong style="color:'+verdCol+'">'+p.dealScore+'/100</strong></div>'+
       '</div>'+
     '</div>'+
+    '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border-dim);font-size:11px;font-weight:600;color:var(--text-secondary);line-height:1.6">'+evidence+'</div>'+
   '</div>'+
 
   /* 2-col grid */
@@ -2439,6 +2626,21 @@ function renderScoutReportView(p){
         '<div style="margin:0 14px 14px;padding:8px 12px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:10px;font-weight:600;color:var(--accent-red)">'+
           '&#8856; Empfehlung: Zurückhaltung. Aktuell bessere Optionen im Datensatz vorhanden.</div>'
       )+
+    '</div>'+
+
+    /* OVS TRANSPARENCY — full contributor breakdown */
+    renderOvsBreakdown(p)+
+
+    /* RED FLAGS — "Reasons NOT to Buy", structured, data-grounded */
+    '<div class="card" style="grid-column:1/-1;border-color:rgba(239,68,68,0.18)">'+
+      '<div class="card-header"><span class="card-title" style="color:var(--accent-red)">&#9888; '+(LANG==='en'?'Reasons NOT to Buy':'Gründe gegen einen Kauf')+'</span></div>'+
+      '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:6px">'+
+        flags.map(function(f){
+          return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:6px 8px;border-radius:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12)">'+
+            '<span style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-red);flex-shrink:0;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);margin-top:1px">'+f.cat+'</span>'+
+            '<span style="color:var(--text-secondary)">'+f.t+'</span></div>';
+        }).join('')+
+      '</div>'+
     '</div>'+
 
     /* Why Now */
@@ -2532,7 +2734,7 @@ function renderHiddenGemsView(){
     gems.map(function(p){
       var realIdx=FILTERED.indexOf(p);
       var verdCol=p.confScore>=70?'var(--accent-amber)':'var(--accent-cyan)';
-      var reasons=gemReasons(p);
+      var evidence=gemEvidence(p);
       return '<div class="card" style="cursor:pointer;border-color:rgba(245,158,11,0.2);transition:all .2s" onclick="window.selectPlayerAndView('+realIdx+')" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,0.3)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'\'">'+
         '<div style="padding:12px 14px 0;display:flex;align-items:flex-start;justify-content:space-between">'+
           '<div>'+
@@ -2547,10 +2749,11 @@ function renderHiddenGemsView(){
         '</div>'+
         '<div style="padding:8px 14px 4px">'+
           '<div style="font-size:10px;font-weight:700;color:var(--accent-amber);margin-bottom:6px">'+p.mktIneff+'% unter Marktwert &bull; Deal Score '+p.dealScore+'/100</div>'+
-          '<div style="display:flex;flex-direction:column;gap:3px">'+
-            reasons.slice(0,4).map(function(r){
-              return '<div style="display:flex;align-items:flex-start;gap:6px;font-size:10px;color:var(--text-secondary)">'+
-                '<span style="color:var(--accent-green);flex-shrink:0">&#10003;</span>'+r.t+'</div>';
+          '<div style="display:flex;flex-direction:column;gap:5px">'+
+            evidence.map(function(e){
+              return '<div style="display:flex;flex-direction:column;gap:1px;font-size:10px;color:var(--text-secondary)">'+
+                '<span style="font-size:8px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--accent-cyan)">'+e.label+'</span>'+
+                '<span>'+e.t+'</span></div>';
             }).join('')+
           '</div>'+
         '</div>'+
