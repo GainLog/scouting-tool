@@ -1463,24 +1463,31 @@ var PERF_PROFILES={
     secondary:{passQ:0.15,progPasses:0.10},
     label:'Torwart'
   },
-  CB:{
-    primary:{tackles90:0.20,interceptions90:0.20,duelWin:0.20},
-    secondary:{progPasses:0.20,passQ:0.20},
+  CB:{ /* tackles90 (=ballRec90 pseudo-metric) removed per audit —
+          replaced with entscheidendeZwk90 (Ent Zwk/90, decisive duels,
+          verified as a genuine subset of all duels, not a duplicate —
+          mean ratio 9.6% with high variance across players) and
+          klaer90 (clearances, verified near-zero correlation with
+          interceptions90, so not redundant with it either) */
+    primary:{entscheidendeZwk90:0.20,interceptions90:0.20,duelWin:0.20},
+    secondary:{klaer90:0.20,passQ:0.20},
     label:'Innenverteidiger'
   },
   FB:{
     primary:{xA90:0.20,keyPasses90:0.20,progPasses:0.20},
-    secondary:{tackles90:0.15,interceptions90:0.10,dribbles90:0.15},
+    secondary:{entscheidendeZwk90:0.15,interceptions90:0.10,dribbles90:0.15},
     label:'Außen-/Flügelverteidiger'
   },
-  DM:{
-    primary:{tackles90:0.20,interceptions90:0.20,ballRec90:0.20},
+  DM:{ /* ballRec90 kept as its own distinct metric (no longer aliased
+          to "tackles90"); entscheidendeZwk90 added as the primary
+          duel-winning signal */
+    primary:{entscheidendeZwk90:0.20,interceptions90:0.20,ballRec90:0.20},
     secondary:{progPasses:0.20,passQ:0.20},
     label:'Defensives Mittelfeld'
   },
   CM:{
     primary:{progPasses:0.20,keyPasses90:0.20,passQ:0.15},
-    secondary:{tackles90:0.15,interceptions90:0.15,xG90:0.15},
+    secondary:{entscheidendeZwk90:0.15,interceptions90:0.15,xG90:0.15},
     label:'Zentrales Mittelfeld'
   },
   AM:{
@@ -1562,11 +1569,14 @@ function scorePlayerV2(raw){
   var xSvPct=parseDeNum(raw['xsv__']); /* expected save percentage */
   var savesMade=parseDeNum(raw['sgh']); /* "Schüsse gehalten" — saves made, absolute */
   var shotsFaced=parseDeNum(raw['spa']); /* "Schüsse passiert" — shots faced, absolute; sample-size anchor for GK */
-  /* no direct "tackles" column in this export — approximate using
-     ball recoveries as the closest defensive-actions proxy until a
-     dedicated tackles/90 column is confirmed available. Flagged in
-     the metric label, not silently substituted. */
-  var tackles90=ballRec90;
+  /* tackles90 pseudo-metric (=ballRec90) removed per audit decision —
+     FM26's export has no literal "Tackle"/"Tck" column (confirmed by
+     user directly checking the export column picker). Replaced with
+     three genuinely independent, verified metrics: */
+  var entscheidendeZwk90=parseDeNum(raw['ent_zwk_90']); /* decisive duels — verified subset of all duels (mean ratio 9.6%, high variance, not a fixed fraction) */
+  var klaer90=parseDeNum(raw['klär_90']); /* clearances — verified near-zero correlation with interceptions90 (r=-0.14), not redundant */
+  var pressV90=parseDeNum(raw['prsv_90']); /* pressing attempts — available but not yet weighted into any profile */
+  var pressErf90=parseDeNum(raw['prserf_90']); /* successful pressing — verified subset of pressV90 (0 violations across 1730 players) */
 
   var conf=sampleConfidence(minutes);
 
@@ -1582,10 +1592,11 @@ function scorePlayerV2(raw){
     keyPasses90:keyPasses90,chancesCreated90:chancesCreated90,
     progPasses:progPasses90,passQ:passQ,
     ballRec90:ballRec90,duelWin:duelWinPct,duelsTotal:duelsTotal,
-    interceptions90:interceptions90,dribbles90:dribbles90,tackles90:tackles90,
+    interceptions90:interceptions90,dribbles90:dribbles90,
+    entscheidendeZwk90:entscheidendeZwk90,klaer90:klaer90,pressV90:pressV90,pressErf90:pressErf90,
     confidence:conf,
     /* filled by normalisation pass */
-    perfScore:0,valueScore:0,moneyballScore:0,verdict:'',
+    perfScore:0,costEfficiency:0,moneyballScore:0,verdict:'',
     bd:{} /* breakdown, filled later */
   };
 }
@@ -1605,10 +1616,12 @@ var METRIC_ACCESSORS={
   goals90:function(p){return p.goals90;}, keyPasses90:function(p){return p.keyPasses90;},
   chancesCreated90:function(p){return p.chancesCreated90;},
   progPasses:function(p){return p.progPasses;}, passQ:function(p){return p.passQ;},
-  tackles90:function(p){return p.tackles90;}, interceptions90:function(p){return p.interceptions90;},
+  interceptions90:function(p){return p.interceptions90;},
   duelWin:function(p){return p.duelWin;}, dribbles90:function(p){return p.dribbles90;},
   ballRec90:function(p){return p.ballRec90;}, minutes:function(p){return p.minutes;},
-  xgp90:function(p){return p.xgp90;}, parPct:function(p){return p.parPct;}
+  xgp90:function(p){return p.xgp90;}, parPct:function(p){return p.parPct;},
+  entscheidendeZwk90:function(p){return p.entscheidendeZwk90;},
+  klaer90:function(p){return p.klaer90;}, pressErf90:function(p){return p.pressErf90;}
 };
 
 function normaliseV2(players){
@@ -1665,38 +1678,78 @@ function normaliseV2(players){
     p.perfScoreAdj=perfScoreAdj;
     p.bd=bd;
 
-    /* value score: performance per euro of wage. Requires a KNOWN wage
-       (always present in this export) — transfer value is separate and
-       only used for the "value vs market" evidence line, not the core
-       value score, since 60% of players had no transfer value at all. */
-    if(p.wageKnown&&p.wage>0){
-      var wageArr=groupArr.filter(function(x){return x.wageKnown&&x.wage>0;})
-                           .map(function(x){return x.perfScoreAdj/Math.max(1,x.wage/1000);});
-      var thisRatio=p.perfScoreAdj/Math.max(1,p.wage/1000);
-      p.valueScore=pctRankV2(wageArr,thisRatio,true);
-      p.valueKnown=true;
+    /* COST EFFICIENCY — replaces the old wage-only Value Score per
+       user decision. TotalCost = transfer cost + annual wage, kept
+       SEPARATE from contract duration (which only affects riskPenalty
+       below, never this ratio — mixing contract economics into a cost
+       metric was the flaw in the prior wage-only AND the rejected
+       contract-amortised draft).
+       Transfer cost source: a real "Ablöseforderung" (actual asking
+       fee) field would take priority if present in the export; this
+       dataset only has FM's own estimated Transferwert (market value),
+       so that is used as-is, not as a fallback from a missing field —
+       flagged here so a future export with a real fee field plugs in
+       without restructuring this logic. */
+    var transferCost=p.tvKnown?p.transferValue:null; /* TODO: prefer a real "askingFee" field over transferValue once that column exists in the export */
+    var annualWage=p.wageKnown?p.wage:null;
+
+    if(transferCost===null&&annualWage===null){
+      p.costEfficiency=null;
+      p.costUnknown=true;
+    } else if(transferCost===null){
+      /* wage known, no transfer cost at all (neither fee nor market
+         value) — per user instruction, no neutral placeholder, mark
+         unknown rather than rank on wage alone */
+      p.costEfficiency=null;
+      p.costUnknown=true;
     } else {
-      p.valueScore=null;
-      p.valueKnown=false;
+      p.totalCost=transferCost+(annualWage||0);
+      p.costUnknown=false;
+      /* percentile computed in a second pass below, once totalCost is
+         set for every player in the group (can't rank against group
+         until all values are known) */
     }
 
-    /* Moneyball score: the headline number. Combines performance
-       (confidence-adjusted) and value (wage efficiency). Age and
-       contract risk pull it down, never CA/PA — which are not used
-       anywhere in this calculation. */
+    /* Moneyball score: the headline number. Performance and Cost
+       Efficiency kept strictly separate, never CA/PA. */
     var ageGroup=p.posGrp;
     var ageScore=ageCurveScore(p.age,ageGroup);
     var riskPenalty=0;
     if(p.contractMonths<6)riskPenalty+=10;
     else if(p.contractMonths<12)riskPenalty+=5;
     if(p.minutes<450)riskPenalty+=8; /* low sample size risk, separate from the display confidence tier */
+    p.riskPenalty=riskPenalty;
+    p.ageScore=ageScore;
+  });
 
-    var valueComponent=p.valueKnown?p.valueScore:50; /* neutral if wage data missing too, though rare */
+  /* SECOND PASS: Cost Efficiency percentile, computed per group now
+     that totalCost is known for every player. Only players with a
+     known totalCost are ranked against each other; the rest stay null. */
+  Object.keys(byGroup).forEach(function(g){
+    var grp=byGroup[g];
+    var withCost=grp.filter(function(p){return !p.costUnknown;});
+    var ratios=withCost.map(function(p){return p.perfScoreAdj/Math.max(1,p.totalCost/1000);});
+    withCost.forEach(function(p){
+      var thisRatio=p.perfScoreAdj/Math.max(1,p.totalCost/1000);
+      p.costEfficiency=pctRankV2(ratios,thisRatio,true);
+    });
+  });
+
+  /* THIRD PASS: final Moneyball score. No neutral placeholder when
+     costEfficiency is null — per user instruction, those players get
+     no Moneyball score and must be surfaced in the UI as "Kosten
+     unbekannt" rather than silently ranked on performance alone. */
+  players.forEach(function(p){
+    if(p.costUnknown){
+      p.moneyballScore=null;
+      p.verdict='UNKNOWN_COST';
+      return;
+    }
     var mb=Math.round(
-      perfScoreAdj*0.45+
-      valueComponent*0.30+
-      ageScore*0.15+
-      (100-riskPenalty)*0.10
+      p.perfScoreAdj*0.50+
+      p.costEfficiency*0.30+
+      p.ageScore*0.12+
+      (100-p.riskPenalty)*0.08
     );
     p.moneyballScore=Math.max(1,Math.min(99,mb));
 
@@ -1804,10 +1857,12 @@ var GROUP_LABELS={GK:'Torwart',CB:'Innenverteidiger',FB:'Außen-/Flügelverteidi
 var METRIC_LABELS={
   xG90:'xG/90',xA90:'xA/90',goals90:'Tore/90',keyPasses90:'Key Passes/90',
   chancesCreated90:'Chancen kreiert/90',progPasses:'Progressive Pässe/90',
-  passQ:'Passquote',tackles90:'Ballgewinne/90 (Tackle-Proxy)',
+  passQ:'Passquote',
   interceptions90:'Abgefangene Bälle/90',duelWin:'Zweikampfquote',
   dribbles90:'Dribblings/90',ballRec90:'Ballgewinne/90',minutes:'Minuten',
-  xgp90:'xG verhindert/90',parPct:'Paradenquote'
+  xgp90:'xG verhindert/90',parPct:'Paradenquote',
+  entscheidendeZwk90:'Entscheidende Zweikämpfe/90',klaer90:'Klärungen/90',
+  pressErf90:'Erfolgreiches Pressing/90'
 };
 
 function evidenceLineV2(p){
@@ -1820,9 +1875,11 @@ function evidenceLineV2(p){
     var topPct=100-top.pct;
     parts.push('Top '+Math.max(1,topPct)+'% seiner Positionsgruppe ('+grpLabel+') bei '+(METRIC_LABELS[top.key]||top.key));
   }
-  if(p.valueKnown){
-    if(p.valueScore>=70)parts.push('Top '+(100-p.valueScore)+'% bei Leistung pro Gehalts-Euro in dieser Gruppe');
-    else if(p.valueScore<=30)parts.push('unterdurchschnittliche Leistung pro Gehalts-Euro (untere '+p.valueScore+'%)');
+  if(!p.costUnknown){
+    if(p.costEfficiency>=70)parts.push('Top '+(100-p.costEfficiency)+'% bei Leistung pro Gesamtkosten-Euro (Marktwert+Gehalt) in dieser Gruppe');
+    else if(p.costEfficiency<=30)parts.push('unterdurchschnittliche Leistung pro Gesamtkosten-Euro (untere '+p.costEfficiency+'%)');
+  } else {
+    parts.push('Kosten unbekannt — kein Cost-Efficiency-Rang möglich');
   }
   if(p.confidence.tier==='low')parts.push('Datenbasis gering ('+p.minutes+' Min.) — Score mit Vorsicht zu lesen');
   return parts.join(', ')+'.';
@@ -1887,6 +1944,7 @@ function confidenceBadge(p){
 }
 
 function verdictColor(v){
+  if(v==='UNKNOWN_COST')return 'var(--text-muted)';
   return v==='BUY'?'var(--accent-green)':v==='WATCH'?'var(--accent-cyan)':v==='HOLD'?'var(--accent-amber)':'var(--accent-red)';
 }
 
@@ -1908,9 +1966,9 @@ function renderListV2(players){
       '<td style="padding:8px 10px;font-size:12px;font-weight:600">'+p.name+'</td>'+
       '<td style="padding:8px 10px;font-size:11px;color:var(--text-muted)">'+(GROUP_LABELS[p.posGrp]||p.posGrp)+'</td>'+
       '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+p.perfScoreAdj+'</td>'+
-      '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+(p.valueKnown?p.valueScore:'—')+'</td>'+
+      '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+(p.costUnknown?'—':p.costEfficiency)+'</td>'+
       '<td style="padding:8px 10px;text-align:center">'+confidenceBadge(p)+'</td>'+
-      '<td style="padding:8px 10px;text-align:center"><span style="font-weight:800;color:'+vCol+'">'+p.verdict+'</span></td>'+
+      '<td style="padding:8px 10px;text-align:center"><span style="font-weight:800;color:'+vCol+'">'+(p.verdict==='UNKNOWN_COST'?'? KOSTEN':p.verdict)+'</span></td>'+
     '</tr>';
   }).join('');
   el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'+
@@ -1947,7 +2005,7 @@ function renderScoutReportV2(p){
         '<div style="font-size:12px;color:var(--text-muted);margin-top:4px">'+(GROUP_LABELS[p.posGrp]||p.posGrp)+' &bull; '+p.age+' Jahre &bull; '+p.club+(p.league?' &bull; '+p.league:'')+'</div>'+
       '</div>'+
       '<div style="text-align:right;flex-shrink:0">'+
-        '<div style="font-size:32px;font-weight:900;color:'+vCol+';text-shadow:0 0 24px '+vCol+';line-height:1">'+p.verdict+'</div>'+
+        '<div style="font-size:32px;font-weight:900;color:'+vCol+';text-shadow:0 0 24px '+vCol+';line-height:1">'+(p.verdict==='UNKNOWN_COST'?'KOSTEN UNBEKANNT':p.verdict)+'</div>'+
         '<div style="margin-top:6px">'+confidenceBadge(p)+'</div>'+
       '</div>'+
     '</div>'+
@@ -1962,13 +2020,13 @@ function renderScoutReportV2(p){
       '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">vor Confidence-Anpassung: '+p.perfScore+'</div>'+
     '</div>'+
     '<div class="card" style="padding:14px;text-align:center">'+
-      '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Value Score</div>'+
-      '<div style="font-size:28px;font-weight:900;color:var(--accent-amber);margin-top:4px">'+(p.valueKnown?p.valueScore:'—')+'</div>'+
-      '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">'+(p.valueKnown?'Leistung pro Gehalts-Euro':'Gehalt nicht bekannt')+'</div>'+
+      '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Cost Efficiency</div>'+
+      '<div style="font-size:28px;font-weight:900;color:var(--accent-amber);margin-top:4px">'+(p.costUnknown?'—':p.costEfficiency)+'</div>'+
+      '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">'+(p.costUnknown?'Marktwert und Gehalt unbekannt':'Leistung pro Gesamtkosten (Marktwert+Gehalt)')+'</div>'+
     '</div>'+
     '<div class="card" style="padding:14px;text-align:center">'+
       '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Moneyball Score</div>'+
-      '<div style="font-size:28px;font-weight:900;color:'+vCol+';margin-top:4px">'+p.moneyballScore+'</div>'+
+      '<div style="font-size:28px;font-weight:900;color:'+vCol+';margin-top:4px">'+(p.moneyballScore===null?'—':p.moneyballScore)+'</div>'+
       '<div style="font-size:9px;color:var(--text-muted);margin-top:2px">Gesamtempfehlung</div>'+
     '</div>'+
   '</div>'+
