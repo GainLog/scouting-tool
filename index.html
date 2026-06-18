@@ -807,6 +807,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 </div>
 
+<!-- ═══ Player Overview / Score Breakdown / Scout Verdict panel ═══ -->
+<div id="dashboard-overview-panel"></div>
+
 <!-- ═══ Player list (table) + Scout Report detail ═══ -->
 <div class="card" style="margin-top:14px">
   <div class="card-header">
@@ -1628,6 +1631,9 @@ function applyFilters(){
   renderExecV2(FILTERED);
   if(FILTERED.length>0){
     renderScoutReportV2(FILTERED[0]);
+    renderOverviewPanelV2(FILTERED[0],FILTERED);
+  } else {
+    renderOverviewPanelV2(null,FILTERED);
   }
   var pcNum=document.getElementById('player-count-num');
   if(pcNum)pcNum.textContent=FILTERED.length;
@@ -1701,6 +1707,153 @@ function renderExecV2(players){
     'Beste Leistung pro Gehalts-Euro',
     bestWage.age+' J. \u2022 '+grpLabel(bestWage)+' \u2022 '+(bestWage.wageKnown?fmtMoney(bestWage.wage)+'/J.':'Gehalt unbekannt'),
     '\u2192 Scout Report \u00f6ffnen');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OVERVIEW PANEL — three-column header (Player Overview ring +
+   bars, Score Breakdown, Scout Verdict with confidence ring) plus
+   four lower tiles, restoring the old dashboard's visual layout but
+   built entirely on real v2 fields. Concepts with no v2 equivalent
+   (Marktchance, Potenzial/Alterskurve-percentile, Empf. Ablöse,
+   Marktineffizienz %) are omitted per explicit user decision rather
+   than approximated with invented numbers.
+══════════════════════════════════════════════════════════════ */
+function ringSvg(id,size,radius,strokeWidth,color){
+  var circumference=Math.round(2*Math.PI*radius);
+  var c=size/2;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+    '<circle cx="'+c+'" cy="'+c+'" r="'+radius+'" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="'+strokeWidth+'"/>'+
+    '<circle id="'+id+'" cx="'+c+'" cy="'+c+'" r="'+radius+'" fill="none" stroke="'+color+'" stroke-width="'+strokeWidth+'" '+
+      'stroke-dasharray="'+circumference+'" stroke-dashoffset="'+circumference+'" stroke-linecap="round" '+
+      'transform="rotate(-90 '+c+' '+c+')" style="filter:drop-shadow(0 0 6px '+color+')"/>'+
+  '</svg>';
+}
+
+function barRow(label,value,pctLabel,color){
+  return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+    '<span style="width:130px;font-size:11px;color:var(--text-secondary);flex-shrink:0">'+label+'</span>'+
+    '<div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden">'+
+      '<div style="height:100%;width:'+Math.max(2,value)+'%;background:'+color+';border-radius:3px"></div>'+
+    '</div>'+
+    '<span style="width:28px;text-align:right;font-size:12px;font-weight:700;flex-shrink:0">'+value+'</span>'+
+    '<span style="width:55px;text-align:right;font-size:9px;color:var(--text-muted);flex-shrink:0">'+pctLabel+'</span>'+
+  '</div>';
+}
+
+function renderOverviewPanelV2(p,allInGroup){
+  var el=document.getElementById('dashboard-overview-panel');
+  if(!el)return;
+  if(!p){ el.innerHTML=''; return; }
+
+  var vCol=verdictColor(p.verdict);
+  var mbDisplay=p.moneyballScore===null?'—':p.moneyballScore;
+
+  /* percentile-of-group text for the main ring, computed from the
+     already-sorted FILTERED array passed in as allInGroup */
+  var rankText='';
+  if(allInGroup&&allInGroup.length>1&&p.moneyballScore!==null){
+    var idx=allInGroup.indexOf(p);
+    var pctFromTop=Math.round((idx/(allInGroup.length-1))*100);
+    rankText='Top '+Math.max(1,pctFromTop)+'%';
+  }
+
+  var riskScore=100-p.riskPenalty;
+  var confPct={low:35,mid:60,high:85,veryhigh:97}[p.confidence.tier]||50;
+
+  var flags=redFlagsV2(p);
+  var evidence=evidenceLineV2(p);
+
+  el.innerHTML=
+  '<div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:14px;margin-bottom:14px">'+
+
+    /* COLUMN 1: Player Overview — ring + bars, real v2 fields only */
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:12px"><span class="card-title">Player Overview — '+p.name+'</span></div>'+
+      '<div style="display:flex;gap:18px;align-items:center">'+
+        '<div style="position:relative;flex-shrink:0">'+
+          ringSvg('overview-main-ring',100,42,8,vCol)+
+          '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'+
+            '<div style="font-size:9px;color:var(--text-muted);font-weight:700">SCORE</div>'+
+            '<div style="font-size:24px;font-weight:900;color:var(--text-primary)">'+mbDisplay+'</div>'+
+            '<div style="font-size:9px;color:var(--text-muted)">'+rankText+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="flex:1">'+
+          barRow('Performance',p.perfScoreAdj,'',  'var(--accent-cyan)')+
+          barRow('Kosteneffizienz',p.costUnknown?0:p.costEfficiency,p.costUnknown?'unbekannt':'','var(--accent-blue)')+
+          barRow('Verlässlichkeit',confPct,p.confidence.label,'var(--accent-green)')+
+          barRow('Risiko (invers)',riskScore,'','var(--accent-amber)')+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+
+    /* COLUMN 2: Score Breakdown — real weighted metrics, not invented OVS categories */
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:12px"><span class="card-title">Score Breakdown</span></div>'+
+      '<div style="max-height:220px;overflow-y:auto">'+renderScoreBreakdownV2(p)+'</div>'+
+    '</div>'+
+
+    /* COLUMN 3: Scout Verdict — confidence ring + verdict + real red flags */
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:12px"><span class="card-title">Scout Verdict</span></div>'+
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">'+
+        '<div style="flex:1">'+
+          '<div style="font-size:24px;font-weight:900;color:'+vCol+'">'+(p.verdict==='UNKNOWN_COST'?'KOSTEN UNBEKANNT':p.verdict)+'</div>'+
+        '</div>'+
+        '<div style="position:relative;flex-shrink:0">'+
+          ringSvg('overview-conf-ring',64,25,6,'var(--accent-cyan)')+
+          '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">'+
+            '<div style="font-size:16px;font-weight:900">'+confPct+'%</div>'+
+            '<div style="font-size:7px;color:var(--text-muted)">KONFIDENZ</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Warum?</div>'+
+      flags.map(function(f){
+        return '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">&#10007; '+f.t+'</div>';
+      }).join('')+
+    '</div>'+
+  '</div>'+
+
+  /* LOWER TILES: Warum kaufen / Risiken / Risikoanalyse / Budget.
+     "Marktineffizienz" tile omitted — no transfer-fee-vs-market-value
+     comparison exists in the v2 data model, so it is left out rather
+     than filled with a fabricated percentage. */
+  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px">'+
+    '<div class="card" style="padding:14px">'+
+      '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Warum kaufen?</div>'+
+      '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5">'+evidence+'</div>'+
+    '</div>'+
+    '<div class="card" style="padding:14px">'+
+      '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Risiken</div>'+
+      flags.slice(0,3).map(function(f){
+        return '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px"><span style="font-weight:700;color:var(--accent-red)">'+f.cat+':</span> '+f.t+'</div>';
+      }).join('')+
+    '</div>'+
+    '<div class="card" style="padding:14px">'+
+      '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Risikoanalyse</div>'+
+      '<div style="font-size:20px;font-weight:900;color:'+(riskScore>=80?'var(--accent-green)':riskScore>=60?'var(--accent-amber)':'var(--accent-red)')+'">'+riskScore+'/100</div>'+
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Vertragsrestlaufzeit: '+p.contractMonths+' Mon. &bull; Minuten: '+p.minutes+'</div>'+
+    '</div>'+
+    '<div class="card" style="padding:14px">'+
+      '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Budget</div>'+
+      '<div style="font-size:11px;color:var(--text-secondary)"><span style="color:var(--text-muted)">Marktwert: </span>'+(p.tvKnown?fmtMoney(p.transferValue):'unbekannt')+'</div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px"><span style="color:var(--text-muted)">Gehalt: </span>'+(p.wageKnown?fmtMoney(p.wage)+'/J.':'unbekannt')+'</div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px"><span style="color:var(--text-muted)">Gesamtkosten: </span>'+(p.costUnknown?'unbekannt':fmtMoney(p.totalCost))+'</div>'+
+    '</div>'+
+  '</div>';
+
+  /* animate the rings now that they're in the DOM */
+  setTimeout(function(){
+    if(p.moneyballScore!==null){
+      var mainCirc=Math.round(2*Math.PI*42);
+      var mainOffset=Math.round(mainCirc*(1-p.moneyballScore/100));
+      animateRing(document.getElementById('overview-main-ring'),mainCirc,mainOffset,150);
+    }
+    var confCirc=Math.round(2*Math.PI*25);
+    var confOffset=Math.round(confCirc*(1-confPct/100));
+    animateRing(document.getElementById('overview-conf-ring'),confCirc,confOffset,300);
+  },50);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1848,6 +2001,7 @@ window.selectPlayer=function(idx,targetView){
 
   /* always update scout report view with new player */
   renderScoutReportV2(p);
+  renderOverviewPanelV2(p,FILTERED);
 
   var dest=targetView||'dashboard';
   document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
