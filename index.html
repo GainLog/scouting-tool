@@ -807,388 +807,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 </div>
 
-<!-- ═══ ROW 1: Player Overview | OVS Breakdown | Scout Verdict ═══ -->
-<div class="dash-row dash-row-1">
-
-  <!-- Player Overview (hero card) -->
-  <div class="card hero" style="display:flex;flex-direction:column;">
-    <div class="card-header">
-      <span class="card-title" data-i18n="panel.overview">Player Overview</span>
-      <span class="card-title-badge">OVS erkl&auml;rt &mdash; Hover f&uuml;r Details</span>
-    </div>
-    <div class="overview-top">
-      <!-- OVS gauge with animated ring + hover tooltip -->
-      <div class="gauge-wrap">
-        <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-          <circle id="ovs-gauge-ring" cx="50" cy="50" r="42" fill="none"
-            stroke="var(--accent-cyan)" stroke-width="8" stroke-dasharray="264"
-            stroke-dashoffset="264" stroke-linecap="round" transform="rotate(-90 50 50)"
-            style="--ring-full:264;--ring-offset:66;filter:drop-shadow(0 0 7px var(--accent-cyan))"/>
-        </svg>
-        <div class="gauge-center">
-          <div class="gauge-lbl">OVS</div>
-          <div class="gauge-ovs" id="ovs-num">87</div>
-          <div class="gauge-pct" id="ovs-pct">Top 6%</div>
-        </div>
-        <div class="ovs-tooltip">
-          <div class="ovs-tt-title">OVS Aufschl&uuml;sselung</div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Performance</span><span class="ovs-tt-val pos">+31</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Marktwert</span><span class="ovs-tt-val pos">+22</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Gehaltseffizienz</span><span class="ovs-tt-val pos">+15</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Alter &amp; Potenzial</span><span class="ovs-tt-val pos">+12</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Verl&auml;sslichkeit</span><span class="ovs-tt-val pos">+8</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Risikofaktor</span><span class="ovs-tt-val neg">&minus;6</span></div>
-          <div class="ovs-tt-row"><span class="ovs-tt-label">Datenqualit&auml;t</span><span class="ovs-tt-val neg">&minus;3</span></div>
-          <div class="ovs-tt-sep"></div>
-          <div class="ovs-tt-total"><span class="lbl">OVS Score</span><span class="val">87 &mdash; Top 6%</span></div>
-        </div>
-      </div>
-      <!-- Animated progress bars -->
-      <div class="bars-wrap" id="ovs-bars">
-        <div class="bar-row"><div class="bar-label">Performance</div><div class="bar-track"><div class="bar-fill g anim-bar" style="--bar-w:89%;width:0%"></div></div><div class="bar-num">89</div><div class="bar-rank">Top 6%</div></div>
-        <div class="bar-row"><div class="bar-label">Kosteneffizienz</div><div class="bar-track"><div class="bar-fill anim-bar" style="--bar-w:82%;width:0%;animation-delay:.1s"></div></div><div class="bar-num">82</div><div class="bar-rank">Top 12%</div></div>
-        <div class="bar-row"><div class="bar-label">Marktchance</div><div class="bar-track"><div class="bar-fill c anim-bar" style="--bar-w:88%;width:0%;animation-delay:.15s"></div></div><div class="bar-num">88</div><div class="bar-rank">Top 8%</div></div>
-        <div class="bar-row"><div class="bar-label">Verl&auml;sslichkeit</div><div class="bar-track"><div class="bar-fill anim-bar" style="--bar-w:80%;width:0%;animation-delay:.2s"></div></div><div class="bar-num">80</div><div class="bar-rank">Top 15%</div></div>
-        <div class="bar-row"><div class="bar-label">Alterskurve</div><div class="bar-track"><div class="bar-fill a anim-bar" style="--bar-w:76%;width:0%;animation-delay:.25s"></div></div><div class="bar-num">76</div><div class="bar-rank">Top 20%</div></div>
-        <div class="bar-row"><div class="bar-label">Potenzial</div><div class="bar-track"><div class="bar-fill g anim-bar" style="--bar-w:86%;width:0%;animation-delay:.3s"></div></div><div class="bar-num">86</div><div class="bar-rank">Top 7%</div></div>
-        <div class="bar-row"><div class="bar-label">Risiko</div><div class="bar-track"><div class="bar-fill r anim-bar" style="--bar-w:32%;width:0%;animation-delay:.35s"></div></div><div class="bar-num">32</div><div class="bar-rank">Besser 65%</div></div>
-      </div>
-    </div>
-    <div class="ovs-connector">
-      <span class="ovs-conn-label">Score:</span>
-      <div class="ovs-conn-chips">
-        <span class="conn-chip pos">+31 Perf.</span><span class="conn-chip pos">+22 Markt</span>
-        <span class="conn-chip pos">+15 Gehalt</span><span class="conn-chip pos">+12 Alter</span>
-        <span class="conn-chip pos">+8 Zuverl.</span><span class="conn-chip neg">&minus;6 Risiko</span>
-        <span class="conn-chip neg">&minus;3 Daten</span>
-      </div>
-    </div>
+<!-- ═══ Player list (table) + Scout Report detail ═══ -->
+<div class="card" style="margin-top:14px">
+  <div class="card-header">
+    <span class="card-title">Spielerliste</span>
+    <span class="card-title-badge" id="players-count-badge">0 Spieler</span>
   </div>
+  <div id="player-list"></div>
+</div>
 
-  <!-- OVS Breakdown -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">OVS Aufschl&uuml;sselung</span></div>
-    <div class="breakdown-list">
-      <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Performance</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:100%"></div></div><div class="bd-val pos">+31</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128176;</div><div class="bd-label">Marktwert</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:71%"></div></div><div class="bd-val pos">+22</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128181;</div><div class="bd-label">Gehaltseffizienz</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:48%"></div></div><div class="bd-val pos">+15</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128200;</div><div class="bd-label">Alter &amp; Potenzial</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:39%"></div></div><div class="bd-val pos">+12</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128737;</div><div class="bd-label">Verl&auml;sslichkeit</div><div class="bd-bar"><div class="bd-bar-fill pos" style="width:26%"></div></div><div class="bd-val pos">+8</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#9888;</div><div class="bd-label">Risikofaktor</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:19%"></div></div><div class="bd-val neg">&minus;6</div></div>
-      <div class="breakdown-row"><div class="bd-icon">&#128202;</div><div class="bd-label">Datenqualit&auml;t</div><div class="bd-bar"><div class="bd-bar-fill neg" style="width:10%"></div></div><div class="bd-val neg">&minus;3</div></div>
-    </div>
-    <div class="ovs-tie-note">Starke Performance &amp; Marktchance treiben OVS. Minimales Risiko dr&uuml;ckt leicht.</div>
-    <div class="breakdown-total"><div class="breakdown-total-label">OVS Gesamt</div><div class="breakdown-total-val">+79</div></div>
-  </div>
-
-  <!-- P2+P3: SCOUT VERDICT — dominant hero -->
-  <div class="card verdict-panel hero">
-    <div class="verdict-glow-bg"></div>
-    <div class="verdict-top">
-      <div>
-        <div class="verdict-label">Scout Verdict</div>
-        <div class="verdict-text" id="verdict-text">STRONG BUY</div>
-        <div class="verdict-badge">&#11088; A+ Recommendation</div>
-      </div>
-      <div class="verdict-conf">
-        <div class="conf-ring-wrap">
-          <svg width="60" height="60" viewBox="0 0 60 60">
-            <circle cx="30" cy="30" r="25" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>
-            <circle id="conf-ring" cx="30" cy="30" r="25" fill="none"
-              stroke="var(--accent-green)" stroke-width="5"
-              stroke-dasharray="157" stroke-dashoffset="157"
-              stroke-linecap="round" transform="rotate(-90 30 30)"
-              style="--ring-full:157;--ring-offset:19;filter:drop-shadow(0 0 7px var(--accent-green))"/>
-          </svg>
-          <div class="conf-num" id="conf-num">92</div>
-        </div>
-        <div class="conf-label" data-i18n="conf.label">KONFIDENZ</div>
-      </div>
-    </div>
-    <div class="verdict-meta">
-      <div><div class="vmeta-label" data-i18n="v.hidden">Hidden Gem</div><div class="vmeta-val gn">JA</div></div>
-      <div><div class="vmeta-label" data-i18n="v.impact">Sofortimpact</div><div class="vmeta-val cy">HOCH</div></div>
-      <div><div class="vmeta-label" data-i18n="v.resale">Resale</div><div class="vmeta-val am">SEHR HOCH</div></div>
-      <div><div class="vmeta-label" data-i18n="v.risk">Risiko</div><div class="vmeta-val gn"><span class="rdot low"></span>GERING</div></div>
-    </div>
-
-    <!-- P6: verdict quick reasons — filled by renderDashboard -->
-    <div id="verdict-quick-reasons" style="display:none;margin:0 14px 8px;padding:7px 10px;border-radius:6px"></div>
-    <!-- P3: DEAL SCORE — animated premium block -->
-    <div class="deal-score-wrap">
-      <div class="ds-header">
-        <span class="ds-label">&#9878; Deal Score</span>
-        <div class="ds-score-group">
-          <span class="ds-score-text" id="ds-num">0</span>
-          <span class="ds-slash">&thinsp;/ 100</span>
-        </div>
-      </div>
-      <div class="ds-bar-track">
-        <div class="ds-bar-fill anim-deal" id="ds-bar" style="--ds-w:98%;width:0%"></div>
-      </div>
-      <div class="ds-verdict-row">
-        <span class="ds-verdict">NO-BRAINER DEAL</span>
-        <span class="ds-ai-tag" data-i18n="ds.tag">Transferfazit</span>
-      </div>
-      <div class="ds-quote">"Wenn heute nur ein Spieler verpflichtet werden kann &mdash; dann dieser. Chance-Risiko geh&ouml;rt zum Besten im gesamten Datensatz."</div>
-    </div>
-
-    <div class="verdict-fees">
-      <div class="fee-box"><div class="fee-box-label">Empf. Ablöse</div><div class="fee-box-val" id="fee-rec">&#8364;3,8M</div></div>
-      <div class="fee-box danger"><div class="fee-box-label">Niemals &uuml;ber</div><div class="fee-box-val" id="fee-max">&#8364;4,5M</div></div>
-    </div>
-    <!-- stable placeholder: filled by renderDashboard -->
-    <div id="verdict-why-not" style="display:none;margin:0 14px 10px;padding:8px 10px;border-radius:6px;font-size:10px;line-height:1.6"></div>
-    <div class="verdict-quote">"Markt bewertet die Liga, nicht die Leistung. Unsere Modelle sehen Bundesliga-Spitzenniveau. Selbst konservativ gerechnet: enormes Upside."</div>
-  </div>
-
-</div><!-- /row1 -->
-
-<!-- ═══ ROW 2: Why Buy | Risks | Market | Risk | Budget ═══ -->
-<div class="dash-row dash-row-2">
-
-  <div class="card" id="card-why-buy">
-    <div class="card-header"><span class="card-title" id="why-buy-title" data-i18n="panel.whybuy">Warum kaufen?</span></div>
-    <div class="reason-list" id="pros-list">
-      <div class="reason-item"><div class="reason-icon-wrap pro">&#9650;</div><div class="reason-text"><div class="reason-main">Lade Daten...</div></div></div>
-    </div>
-  </div>
-
-  <div class="card" id="card-risks">
-    <div class="card-header"><span class="card-title" data-i18n="panel.risks">Risiken</span></div>
-    <div class="reason-list" id="cons-list">
-      <div class="reason-item"><div class="reason-icon-wrap con">&#8593;</div><div class="reason-text"><div class="reason-main">Lade Daten...</div></div></div>
-    </div>
-  </div>
-
-  <!-- P9: Market Inefficiency — hero sizing -->
-  <div class="card hero">
-    <div class="card-header"><span class="card-title" data-i18n="panel.mkt">Marktineffizienz</span></div>
-    <div class="mkt-ineff">
-      <div class="mkt-pct-big" id="mkt-pct">74%</div>
-      <div class="mkt-sub" data-i18n="mkt.under">unter Marktwert</div>
-      <div class="mkt-values">
-        <div><div class="mkt-val-label">Gesch. Wert</div><div class="mkt-val-num" id="mkt-estimated">&#8364;12,5M</div></div>
-        <div><div class="mkt-val-label">Aktueller Preis</div><div class="mkt-val-num" id="mkt-current">&#8364;3,2M</div></div>
-      </div>
-      <div class="mkt-bar"><div class="mkt-bar-fill" id="mkt-bar-fill" style="width:74%"></div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span class="card-title" data-i18n="panel.risk">Risikoanalyse</span></div>
-    <div class="risk-total-banner">
-      <div class="risk-total-dot"></div>
-      <div class="risk-total-text">
-        <div class="risk-total-label">&#9679; Gesamtrisiko</div>
-        <div class="risk-total-level">GERING</div>
-        <div class="risk-total-score">8,4 / 10 Sicherheit</div>
-      </div>
-    </div>
-    <div class="risk-panel">
-      <div class="risk-ring-wrap">
-        <svg width="64" height="64" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="25" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
-          <circle id="risk-ring" cx="32" cy="32" r="25" fill="none" stroke="var(--accent-green)" stroke-width="6"
-            stroke-dasharray="157" stroke-dashoffset="157" stroke-linecap="round" transform="rotate(-90 32 32)"
-            style="--ring-full:157;--ring-offset:118;filter:drop-shadow(0 0 5px var(--accent-green))"/>
-        </svg>
-        <div class="risk-ring-label"><div class="risk-level-text">LOW<br>RISK</div></div>
-      </div>
-      <div class="risk-dots">
-        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.inj.lbl">Verletzung</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.data.lbl">Datenbasis</span><span class="risk-pill med">Mittel</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.age.lbl">Altersrisiko</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.price.lbl">Preisrisiko</span><span class="risk-pill low">Gering</span></div>
-        <div class="risk-dot-row"><span class="risk-dot-name" data-i18n="risk.wage.lbl">Gehaltsrisiko</span><span class="risk-pill med">Mittel</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- P5: Budget & Deal — all KPIs -->
-  <div class="card">
-    <div class="card-header"><span class="card-title" data-i18n="panel.budget">Budget &amp; Transfer-Effizienz</span></div>
-    <div class="budget-panel">
-      <div class="budget-rings">
-        <div class="budget-ring-item">
-          <div class="budget-ring-wrap">
-            <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/><circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-blue)" stroke-width="5" stroke-dasharray="126" stroke-dashoffset="103" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg>
-            <div class="budget-ring-center">18%</div>
-          </div>
-          <div class="budget-ring-label">Transfer<br>Budget</div>
-        </div>
-        <div class="budget-ring-item">
-          <div class="budget-ring-wrap">
-            <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/><circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-cyan)" stroke-width="5" stroke-dasharray="126" stroke-dashoffset="115" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg>
-            <div class="budget-ring-center">9%</div>
-          </div>
-          <div class="budget-ring-label">Gehalts<br>Budget</div>
-        </div>
-      </div>
-      <!-- highlighted KPIs — filled by renderDashboard -->
-      <div id="budget-highlights" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px">
-        <div id="bh-roi"   style="padding:6px 8px;border-radius:6px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);text-align:center">
-          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:2px">Gesch. ROI</div>
-          <div id="bv-roi" style="font-size:16px;font-weight:900;color:var(--accent-green)">+180%</div>
-        </div>
-        <div id="bh-vfm"  style="padding:6px 8px;border-radius:6px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.18);text-align:center">
-          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:2px">Value for Money</div>
-          <div id="bv-vfm" style="font-size:13px;font-weight:800;color:var(--accent-cyan)">Top 9%</div>
-        </div>
-      </div>
-      <div class="budget-kpis">
-        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.fv.lbl">Fair Value</span><span class="budget-kpi-val cy" id="bv-fv">&#8364;12,5M</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label">Empf. Abl&ouml;se</span><span class="budget-kpi-val gn" id="bv-rec">&#8364;3,8M</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label">Niemals &uuml;ber</span><span class="budget-kpi-val rd" id="bv-max">&#8364;4,5M</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.be.lbl">Break-Even</span><span class="budget-kpi-val cy" id="bv-be">ca. 14 Monate</span></div>
-        <div class="budget-kpi-row"><span class="budget-kpi-label" data-i18n="bud.rs.lbl">Resale-Potenzial</span><span class="budget-kpi-val am" id="bv-rs">&#8364;8&ndash;14M</span></div>
-        <div class="budget-kpi-row" style="border:none"><span class="budget-kpi-label" data-i18n="bud.eff.lbl">Transfereffizienz</span><span class="budget-kpi-val gn" id="bv-eff">EXZELLENT</span></div>
-        <div class="budget-eff-bar"><div class="budget-eff-fill" id="bv-eff-bar" style="width:91%"></div></div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /row2 -->
-
-<!-- ═══ ROW 3: Radar | Similar | Scout Report | Hidden Gem ═══ -->
-<div class="dash-row dash-row-3">
-
-  <div class="card">
-    <div class="card-header"><span class="card-title" data-i18n="panel.type">Spielertyp</span></div>
-    <div class="player-type-panel">
-      <div class="player-type-badge">Box-to-Box Midfielder</div>
-      <div class="radar-wrap">
-        <svg width="148" height="148" viewBox="0 0 148 148">
-          <g opacity="0.12"><polygon points="74,14 123,44 123,104 74,134 25,104 25,44" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/><polygon points="74,29 111,51 111,97 74,119 37,97 37,51" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/><polygon points="74,44 99,59 99,89 74,104 49,89 49,59" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></g>
-          <g stroke="rgba(255,255,255,0.08)" stroke-width="0.6"><line x1="74" y1="14" x2="74" y2="134"/><line x1="74" y1="74" x2="123" y2="44"/><line x1="74" y1="74" x2="123" y2="104"/><line x1="74" y1="74" x2="25" y2="104"/><line x1="74" y1="74" x2="25" y2="44"/></g>
-          <polygon points="74,21 117,50 109,97 74,121 37,91 39,48" fill="rgba(59,130,246,0.16)" stroke="var(--accent-blue)" stroke-width="1.5" stroke-linejoin="round"/>
-          <text x="74" y="10" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Schuss</text>
-          <text x="132" y="45" text-anchor="start" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Pass</text>
-          <text x="132" y="107" text-anchor="start" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Dribling</text>
-          <text x="74" y="145" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Verteidigung</text>
-          <text x="15" y="107" text-anchor="end" fill="rgba(255,255,255,0.45)" font-size="9" font-family="Inter">Physis</text>
-          <g fill="var(--accent-blue)"><circle cx="74" cy="21" r="2.5"/><circle cx="117" cy="50" r="2.5"/><circle cx="109" cy="97" r="2.5"/><circle cx="74" cy="121" r="2.5"/><circle cx="37" cy="91" r="2.5"/><circle cx="39" cy="48" r="2.5"/></g>
-          <text x="74" y="18" text-anchor="middle" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">81</text>
-          <text x="121" y="48" text-anchor="start" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">88</text>
-          <text x="113" y="100" text-anchor="start" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">83</text>
-          <text x="74" y="130" text-anchor="middle" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">74</text>
-          <text x="33" y="94" text-anchor="end" fill="var(--accent-cyan)" font-size="8" font-weight="700" font-family="Inter">78</text>
-        </svg>
-      </div>
-    </div>
-  </div>
-
-  <!-- P7: Similar Players with rich diff chips -->
-  <div class="card" style="display:flex;flex-direction:column;">
-    <div class="card-header"><span class="card-title" data-i18n="panel.similar">&#196;hnliche Spieler</span></div>
-    <div class="similar-list">
-      <div class="similar-item">
-        <div class="similar-avatar">FV</div>
-        <div class="similar-info">
-          <div class="similar-name">F. Valverde</div>
-          <div class="similar-club">Real Madrid</div>
-          <div class="similar-chips">
-            <span class="sim-chip pos">&#8593; Mehr Tempo</span>
-            <span class="sim-chip pos">&#8593; Besseres Dribling</span>
-            <span class="sim-chip neg">&#8595; 4x teurer</span>
-            <span class="sim-chip neg">&#8595; H&ouml;heres Gehalt</span>
-          </div>
-        </div>
-        <div class="similar-right"><div class="similar-pct">89%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
-      </div>
-      <div class="similar-item">
-        <div class="similar-avatar">HC</div>
-        <div class="similar-info">
-          <div class="similar-name">H. &#199;alhanoglu</div>
-          <div class="similar-club">Inter Milan</div>
-          <div class="similar-chips">
-            <span class="sim-chip pos">&#8593; Besseres Passspiel</span>
-            <span class="sim-chip neu">&#8596; &Auml;hnliches Alter</span>
-            <span class="sim-chip neg">&#8595; 30% teurer</span>
-            <span class="sim-chip neg">&#8595; Schw&auml;cher defensiv</span>
-          </div>
-        </div>
-        <div class="similar-right"><div class="similar-pct">87%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
-      </div>
-      <div class="similar-item">
-        <div class="similar-avatar">PF</div>
-        <div class="similar-info">
-          <div class="similar-name">P. Foden</div>
-          <div class="similar-club">Man City</div>
-          <div class="similar-chips">
-            <span class="sim-chip pos">&#8593; H&ouml;heres Potenzial</span>
-            <span class="sim-chip neu">&#8596; G&uuml;nstiger</span>
-            <span class="sim-chip neg">&#8595; H&ouml;heres Risiko</span>
-            <span class="sim-chip neg">&#8595; 8x teurer</span>
-          </div>
-        </div>
-        <div class="similar-right"><div class="similar-pct">85%</div><div class="similar-pct-label">&#196;hnlichkeit</div></div>
-      </div>
-    </div>
-    <div class="view-all-link" data-i18n="sim.viewall">Alle &auml;hnlichen Spieler &#8594;</div>
-  </div>
-
-  <!-- P6: SCOUT REPORT -->
-  <div class="card hero">
-    <div class="card-header"><span class="card-title" data-i18n="panel.scout">Chefscout-Analyse</span></div>
-    <div class="scout-report-panel">
-      <div class="scout-verdict-tag">&#10003; Kaufempfehlung &mdash; Sofort handeln</div>
-      <div class="scout-prose" id="scout-prose">
-        <strong>Marktbewertung:</strong> Der Markt bewertet aktuell die Liga, nicht die tats&auml;chliche Leistung dieses Spielers. Unsere Modelle erkennen <em>Bundesliga-Spitzenniveau</em> &mdash; ein Wert, den die aktuelle Ablöse von 3,2M vollst&auml;ndig ignoriert.<br><br>
-        <strong>Warum jetzt?</strong> Das Transferfenster &ouml;ffnet bald. Die Datenlage ist eindeutig, aber andere Scouts werden folgen. Wer zuerst handelt, sichert sich den Deal des Jahres.<br><br>
-        <strong>Systemfit &amp; Upside:</strong> Ideale Erg&auml;nzung f&uuml;r 4-3-3 Pressingssysteme. Selbst bei konservativer Entwicklung besteht <em>erhebliches Upside-Potenzial</em>. Das Chance-Risiko-Verh&auml;ltnis geh&ouml;rt zu den besten im gesamten Datensatz.
-      </div>
-      <div class="scout-action" id="scout-action">&#9658; Sofort Kontakt aufnehmen. Angebot bei &#8364;3,4M starten. Absolute Grenze: &#8364;4,5M.</div>
-      <!-- stable placeholder: filled by renderDashboard -->
-      <div id="why-now-block" style="display:none"></div>
-      <div class="scout-tags">
-        <div class="scout-tag pro"><span class="si">&#10003;</span> Exzellente Ballverteilung</div>
-        <div class="scout-tag pro"><span class="si">&#10003;</span> Konsistenz steigend</div>
-        <div class="scout-tag pro"><span class="si">&#10003;</span> Hoher Defensivbeitrag</div>
-        <div class="scout-tag warn"><span class="si">&#9888;</span> Kleine Verletzungshistorie</div>
-        <div class="scout-tag pro"><span class="si">&#10003;</span> Top-Fit f&uuml;r Gegenpressing</div>
-        <div class="scout-tag warn"><span class="si">&#9888;</span> Kopfball ausbauf&auml;hig</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- P8: HIDDEN GEM — expanded with detailed reasons -->
-  <div class="card">
-    <div class="card-header"><span class="card-title" data-i18n="panel.gem">Hidden Gem Analyse</span></div>
-    <div class="gem-panel">
-      <div class="gem-top">
-        <div class="gem-ring-wrap">
-          <svg width="80" height="80" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="33" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="7"/>
-            <circle id="gem-ring" cx="40" cy="40" r="33" fill="none" stroke="var(--accent-amber)" stroke-width="7"
-              stroke-dasharray="207" stroke-dashoffset="207" stroke-linecap="round" transform="rotate(-90 40 40)"
-              style="--ring-full:207;--ring-offset:25;filter:drop-shadow(0 0 7px var(--accent-amber))"/>
-          </svg>
-          <div class="gem-ring-center"><div class="gem-pct" id="gem-pct">89%</div></div>
-        </div>
-        <div class="gem-verdict-side">
-          <div class="gem-verdict-label">Scouting-Bewertung</div>
-          <div class="gem-verdict-val">SEHR HOCH<br>KONFIDENT</div>
-        </div>
-      </div>
-      <div class="gem-reasons">
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Liga vom Markt unterschätzt</div><div class="gem-reason-detail">Ligafaktor 0.76 &mdash; echtes Talent wird skaliert</div></div></div>
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Verein ohne Aufmerksamkeit</div><div class="gem-reason-detail">Scouts ignorieren diesen Markt systematisch</div></div></div>
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Markt ignoriert Leistung</div><div class="gem-reason-detail">Keine Medienpräsenz &mdash; Preis bleibt k&uuml;nstlich niedrig</div></div></div>
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Gehalt weit unter Standard</div><div class="gem-reason-detail">Gehaltsrahmen optimal f&uuml;r das Budget</div></div></div>
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">G&uuml;nstige Vertragssituation</div><div class="gem-reason-detail">Ablöse unter 20% des fairen Marktwertes</div></div></div>
-        <div class="gem-reason-row"><div class="gem-reason-icon">&#10003;</div><div class="gem-reason-text"><div class="gem-reason-main">Geringe Konkurrenz</div><div class="gem-reason-detail">Kein bekanntes Bieterangebot im Markt</div></div></div>
-      </div>
-      <svg class="gem-sparkline" viewBox="0 0 140 24" preserveAspectRatio="none">
-        <defs><linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-amber)" stop-opacity="0.35"/><stop offset="100%" stop-color="var(--accent-amber)" stop-opacity="0"/></linearGradient></defs>
-        <path d="M0,20 L20,17 L40,14 L60,11 L80,8 L100,6 L120,3 L140,1" fill="none" stroke="var(--accent-amber)" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M0,20 L20,17 L40,14 L60,11 L80,8 L100,6 L120,3 L140,1 L140,24 L0,24Z" fill="url(#spark-grad)"/>
-      </svg>
-    </div>
-  </div>
-
-</div><!-- /row3 -->
+<div id="scout-report-content" style="margin-top:14px"></div>
 </div><!-- /dashboard-content -->
 </div><!-- /view-dashboard -->
 
@@ -1196,7 +824,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <div class="card" style="overflow:hidden">
     <div style="padding:12px 16px 0;display:flex;align-items:center;justify-content:space-between">
       <span class="card-title" data-i18n="pl.title">Alle Spieler</span>
-      <span class="card-title-badge" id="players-count-badge">0 Spieler</span>
+      <span class="card-title-badge" id="players-count-badge-secondary">0 Spieler</span>
     </div>
     <div id="player-list-body" style="overflow-x:auto">
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:50px 20px;text-align:center">
@@ -2082,31 +1710,42 @@ function renderExecV2(players){
 ══════════════════════════════════════════════════════════════ */
 function renderListV2(players){
   var el=document.getElementById('player-list');
-  if(!el)return;
+  var elSecondary=document.getElementById('player-list-body');
+  if(!el&&!elSecondary)return;
+
+  var html;
   if(players.length===0){
-    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">Keine Spieler entsprechen den aktuellen Filtern.</div>';
-    return;
+    html='<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">Keine Spieler entsprechen den aktuellen Filtern.</div>';
+  } else {
+    var rows=players.map(function(p,i){
+      var vCol=verdictColor(p.verdict);
+      return '<tr class="list-row" onclick="window.selectPlayer('+i+')" style="cursor:pointer">'+
+        '<td style="padding:8px 10px;font-size:12px;font-weight:600">'+p.name+'</td>'+
+        '<td style="padding:8px 10px;font-size:11px;color:var(--text-muted)">'+(GROUP_LABELS[p.posGrp]||p.posGrp)+'</td>'+
+        '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+p.perfScoreAdj+'</td>'+
+        '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+(p.costUnknown?'—':p.costEfficiency)+'</td>'+
+        '<td style="padding:8px 10px;text-align:center">'+confidenceBadge(p)+'</td>'+
+        '<td style="padding:8px 10px;text-align:center"><span style="font-weight:800;color:'+vCol+'">'+(p.verdict==='UNKNOWN_COST'?'? KOSTEN':p.verdict)+'</span></td>'+
+      '</tr>';
+    }).join('');
+    html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'+
+      '<thead><tr style="border-bottom:1px solid var(--border-dim)">'+
+        '<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase">Spieler</th>'+
+        '<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase">Position</th>'+
+        '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Performance</th>'+
+        '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Value</th>'+
+        '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Confidence</th>'+
+        '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Empfehlung</th>'+
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
-  var rows=players.map(function(p,i){
-    var vCol=verdictColor(p.verdict);
-    return '<tr class="list-row" onclick="window.selectPlayer('+i+')" style="cursor:pointer">'+
-      '<td style="padding:8px 10px;font-size:12px;font-weight:600">'+p.name+'</td>'+
-      '<td style="padding:8px 10px;font-size:11px;color:var(--text-muted)">'+(GROUP_LABELS[p.posGrp]||p.posGrp)+'</td>'+
-      '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+p.perfScoreAdj+'</td>'+
-      '<td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center">'+(p.costUnknown?'—':p.costEfficiency)+'</td>'+
-      '<td style="padding:8px 10px;text-align:center">'+confidenceBadge(p)+'</td>'+
-      '<td style="padding:8px 10px;text-align:center"><span style="font-weight:800;color:'+vCol+'">'+(p.verdict==='UNKNOWN_COST'?'? KOSTEN':p.verdict)+'</span></td>'+
-    '</tr>';
-  }).join('');
-  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'+
-    '<thead><tr style="border-bottom:1px solid var(--border-dim)">'+
-      '<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase">Spieler</th>'+
-      '<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text-muted);text-transform:uppercase">Position</th>'+
-      '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Performance</th>'+
-      '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Value</th>'+
-      '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Confidence</th>'+
-      '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Empfehlung</th>'+
-    '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+
+  if(el)el.innerHTML=html;
+  if(elSecondary)elSecondary.innerHTML=html;
+
+  var badge1=document.getElementById('players-count-badge');
+  var badge2=document.getElementById('players-count-badge-secondary');
+  if(badge1)badge1.textContent=players.length+' Spieler';
+  if(badge2)badge2.textContent=players.length+' Spieler';
 }
 
 /* ══════════════════════════════════════════════════════════════
