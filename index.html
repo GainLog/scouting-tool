@@ -810,14 +810,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <!-- ═══ Player Overview / Score Breakdown / Scout Verdict panel ═══ -->
 <div id="dashboard-overview-panel"></div>
 
-<!-- ═══ Player list (table) + Scout Report detail ═══ -->
-<div class="card" style="margin-top:14px">
-  <div class="card-header">
-    <span class="card-title">Spielerliste</span>
-    <span class="card-title-badge" id="players-count-badge">0 Spieler</span>
-  </div>
-  <div id="player-list"></div>
+<!-- ═══ Detail-Visualisierungen für den selektierten Spieler: Radar, Cost-Breakdown, Similar Players ═══ -->
+<div id="dashboard-detail-viz"></div>
+
+<!-- ═══ Markt-Übersicht über alle gefilterten Spieler: Score-Verteilung, Verdict-Cluster, Perf/Cost-Scatter ═══ -->
+<div class="card-header" style="padding:4px 4px 0;margin-top:6px">
+  <span class="card-title">Markt-Übersicht</span>
+  <span class="card-title-badge" id="market-overview-count">0 Spieler im Filter</span>
 </div>
+<div id="dashboard-market-overview"></div>
 
 <div id="scout-report-content" style="margin-top:14px"></div>
 </div><!-- /dashboard-content -->
@@ -1632,13 +1633,14 @@ function applyFilters(){
   if(FILTERED.length>0){
     renderScoutReportV2(FILTERED[0]);
     renderOverviewPanelV2(FILTERED[0],FILTERED);
+    renderDetailVizV2(FILTERED[0],FILTERED);
   } else {
     renderOverviewPanelV2(null,FILTERED);
+    renderDetailVizV2(null,FILTERED);
   }
+  renderMarketOverviewV2(FILTERED);
   var pcNum=document.getElementById('player-count-num');
   if(pcNum)pcNum.textContent=FILTERED.length;
-  var pcb=document.getElementById('players-count-badge');
-  if(pcb)pcb.textContent=FILTERED.length+' Spieler';
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1857,14 +1859,340 @@ function renderOverviewPanelV2(p,allInGroup){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SIMPLE TABLE LIST VIEW — per user's decision: dashboard reduced
-   to a clean table for now (Phase 2 redesign comes later).
+   RADAR CHART — built directly from p.bd, the same weighted
+   per-metric percentiles already computed in normaliseV2(). No
+   invented axes: whatever PERF_PROFILES weighs for this position
+   group is what gets plotted, sorted by weight so the heaviest
+   metrics anchor the shape. 5-8 axes depending on group profile.
+══════════════════════════════════════════════════════════════ */
+function radarChartSvg(p,compareP){
+  var entries=Object.keys(p.bd).map(function(k){
+    return {key:k,pct:p.bd[k].pct,weight:p.bd[k].weight};
+  });
+  entries.sort(function(a,b){return b.weight-a.weight;});
+  var n=entries.length;
+  if(n<3)return '<div style="font-size:11px;color:var(--text-muted);padding:20px;text-align:center">Zu wenige Metriken für Radar-Darstellung.</div>';
+
+  var size=240,cx=size/2,cy=size/2,maxR=92;
+  var angleStep=(2*Math.PI)/n;
+  var startAngle=-Math.PI/2;
+
+  function pointAt(i,valuePct){
+    var ang=startAngle+i*angleStep;
+    var r=maxR*(valuePct/100);
+    return {x:cx+r*Math.cos(ang),y:cy+r*Math.sin(ang)};
+  }
+  function labelPointAt(i){
+    var ang=startAngle+i*angleStep;
+    var r=maxR+22;
+    return {x:cx+r*Math.cos(ang),y:cy+r*Math.sin(ang)};
+  }
+
+  /* grid rings at 25/50/75/100 */
+  var gridRings=[25,50,75,100].map(function(g){
+    var pts=entries.map(function(e,i){var pt=pointAt(i,g);return pt.x.toFixed(1)+','+pt.y.toFixed(1);}).join(' ');
+    return '<polygon points="'+pts+'" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>';
+  }).join('');
+
+  /* spokes */
+  var spokes=entries.map(function(e,i){
+    var pt=pointAt(i,100);
+    return '<line x1="'+cx+'" y1="'+cy+'" x2="'+pt.x.toFixed(1)+'" y2="'+pt.y.toFixed(1)+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+  }).join('');
+
+  /* data polygon for the focal player */
+  var dataPts=entries.map(function(e,i){var pt=pointAt(i,e.pct);return pt.x.toFixed(1)+','+pt.y.toFixed(1);}).join(' ');
+  var vCol=verdictColor(p.verdict);
+
+  /* optional comparison polygon (e.g. group-median ghost at 50) */
+  var comparePoly='';
+  if(compareP){
+    var cmpPts=entries.map(function(e,i){
+      var cv=(compareP.bd[e.key]?compareP.bd[e.key].pct:50);
+      var pt=pointAt(i,cv);return pt.x.toFixed(1)+','+pt.y.toFixed(1);
+    }).join(' ');
+    comparePoly='<polygon points="'+cmpPts+'" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>';
+  } else {
+    /* group-median reference at flat 50 so the shape has a baseline */
+    var medPts=entries.map(function(e,i){var pt=pointAt(i,50);return pt.x.toFixed(1)+','+pt.y.toFixed(1);}).join(' ');
+    comparePoly='<polygon points="'+medPts+'" fill="none" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0.45"/>';
+  }
+
+  var labels=entries.map(function(e,i){
+    var lp=labelPointAt(i);
+    var anchor=lp.x<cx-8?'end':(lp.x>cx+8?'start':'middle');
+    return '<text x="'+lp.x.toFixed(1)+'" y="'+lp.y.toFixed(1)+'" text-anchor="'+anchor+'" font-size="9" fill="var(--text-secondary)" dominant-baseline="middle">'+(METRIC_LABELS[e.key]||e.key)+'</text>'+
+      '<text x="'+lp.x.toFixed(1)+'" y="'+(lp.y+11).toFixed(1)+'" text-anchor="'+anchor+'" font-size="9" font-weight="700" fill="'+vCol+'" dominant-baseline="middle">'+e.pct+'</text>';
+  }).join('');
+
+  return '<svg viewBox="0 0 '+size+' '+size+'" style="width:100%;max-width:280px;display:block;margin:0 auto">'+
+    gridRings+spokes+comparePoly+
+    '<polygon points="'+dataPts+'" fill="'+vCol+'22" stroke="'+vCol+'" stroke-width="2"/>'+
+    entries.map(function(e,i){var pt=pointAt(i,e.pct);return '<circle cx="'+pt.x.toFixed(1)+'" cy="'+pt.y.toFixed(1)+'" r="2.5" fill="'+vCol+'"/>';}).join('')+
+    labels+
+  '</svg>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COST-EFFICIENCY BREAKDOWN — visualizes exactly what feeds
+   TotalCost (transferValue + wage) and where Cost Efficiency
+   percentile sits within the group. No fabricated "Marktineffizienz
+   %" — only the same totalCost/perfScoreAdj ratio already computed
+   in normaliseV2().
+══════════════════════════════════════════════════════════════ */
+function costBreakdownHtml(p,allInGroup){
+  if(p.costUnknown){
+    return '<div style="padding:20px;text-align:center;font-size:11px;color:var(--text-muted)">'+
+      'Marktwert und/oder Gehalt unbekannt — Cost Efficiency kann nicht berechnet werden.'+
+    '</div>';
+  }
+  var tvShare=p.tvKnown?p.transferValue:0;
+  var wageShare=p.wageKnown?p.wage:0;
+  var total=tvShare+wageShare;
+  var tvPct=total>0?Math.round(tvShare/total*100):0;
+  var wagePct=100-tvPct;
+
+  /* where this player's totalCost/perf ratio sits vs. group, shown as
+     a simple position marker on a 0-100 bar (same percentile already
+     computed, just visualized) */
+  var ceCol=p.costEfficiency>=70?'var(--accent-green)':p.costEfficiency>=40?'var(--accent-amber)':'var(--accent-red)';
+
+  return '<div style="display:flex;flex-direction:column;gap:14px">'+
+    '<div>'+
+      '<div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:6px">Gesamtkosten-Zusammensetzung</div>'+
+      '<div style="display:flex;height:18px;border-radius:4px;overflow:hidden">'+
+        '<div style="width:'+tvPct+'%;background:var(--accent-blue)" title="Marktwert"></div>'+
+        '<div style="width:'+wagePct+'%;background:var(--accent-purple)" title="Gehalt (Jahresbasis)"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text-secondary)">'+
+        '<span><span style="display:inline-block;width:8px;height:8px;background:var(--accent-blue);border-radius:2px;margin-right:4px"></span>Marktwert '+fmtMoney(tvShare)+' ('+tvPct+'%)</span>'+
+        '<span><span style="display:inline-block;width:8px;height:8px;background:var(--accent-purple);border-radius:2px;margin-right:4px"></span>Gehalt/J. '+fmtMoney(wageShare)+' ('+wagePct+'%)</span>'+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">'+
+        '<span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700">Cost Efficiency (Perf. pro Gesamtkosten)</span>'+
+        '<span style="font-size:16px;font-weight:900;color:'+ceCol+'">'+p.costEfficiency+'/100</span>'+
+      '</div>'+
+      '<div style="position:relative;height:8px;background:rgba(255,255,255,0.06);border-radius:4px">'+
+        '<div style="position:absolute;left:'+p.costEfficiency+'%;top:-3px;width:2px;height:14px;background:'+ceCol+';box-shadow:0 0 6px '+ceCol+'"></div>'+
+      '</div>'+
+      '<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Perzentil innerhalb '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' ('+(allInGroup?allInGroup.filter(function(x){return x.posGrp===p.posGrp&&!x.costUnknown;}).length:'?')+' vergleichbare Spieler)</span>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIMILAR PLAYERS — real statistical similarity, computed as
+   euclidean distance over each player's bd percentile vector
+   (same metrics, same weights, same position group only — never
+   cross-group). Filtered additionally to a Moneyball Score band
+   of ±15 around the focal player so comparisons stay relevant for
+   transfer decisions, per explicit user instruction. Top 5.
+══════════════════════════════════════════════════════════════ */
+function findSimilarPlayersV2(p,allPlayers){
+  if(!allPlayers||p.moneyballScore===null)return [];
+  var sameGroup=allPlayers.filter(function(x){return x!==p&&x.posGrp===p.posGrp;});
+  var scoreBand=sameGroup.filter(function(x){
+    return x.moneyballScore!==null&&Math.abs(x.moneyballScore-p.moneyballScore)<=15;
+  });
+  var pool=scoreBand.length>=3?scoreBand:sameGroup; /* fall back to full group if band too thin, never fabricate matches */
+  if(pool.length===0)return [];
+
+  var keys=Object.keys(p.bd);
+  var scored=pool.map(function(x){
+    var distSq=0,count=0;
+    keys.forEach(function(k){
+      if(x.bd[k]){
+        var d=p.bd[k].pct-x.bd[k].pct;
+        distSq+=d*d;
+        count++;
+      }
+    });
+    var dist=count>0?Math.sqrt(distSq/count):999;
+    return {player:x,dist:dist};
+  });
+  scored.sort(function(a,b){return a.dist-b.dist;});
+  return scored.slice(0,5);
+}
+
+function similarPlayersHtml(p,allPlayers){
+  var sims=findSimilarPlayersV2(p,allPlayers);
+  if(sims.length===0){
+    return '<div style="padding:20px;text-align:center;font-size:11px;color:var(--text-muted)">Keine vergleichbaren Spieler in dieser Positionsgruppe mit ähnlichem Moneyball Score.</div>';
+  }
+  return sims.map(function(s){
+    var sp=s.player;
+    var simPct=Math.max(0,Math.round(100-s.dist));
+    var vCol=verdictColor(sp.verdict);
+    return '<div class="list-row" data-simname="'+sp.name.replace(/"/g,'')+'" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:6px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'\'">'+
+      '<div style="display:flex;flex-direction:column;gap:1px">'+
+        '<span style="font-size:12px;font-weight:700">'+sp.name+'</span>'+
+        '<span style="font-size:10px;color:var(--text-muted)">'+sp.age+' J. \u2022 '+sp.club+'</span>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<span style="font-size:10px;color:var(--text-muted)">Score '+(sp.moneyballScore===null?'—':sp.moneyballScore)+'</span>'+
+        '<span style="font-size:11px;font-weight:800;color:'+vCol+'">'+(sp.verdict==='UNKNOWN_COST'?'?':sp.verdict)+'</span>'+
+        '<span style="font-size:10px;font-weight:700;color:var(--accent-cyan);min-width:38px;text-align:right">'+simPct+'% sim.</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DETAIL VIZ ROW — Radar | Cost Breakdown | Similar Players,
+   three columns below the overview panel, for the selected player.
+══════════════════════════════════════════════════════════════ */
+function renderDetailVizV2(p,allPlayers){
+  var el=document.getElementById('dashboard-detail-viz');
+  if(!el)return;
+  if(!p){ el.innerHTML=''; return; }
+
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:14px;margin-bottom:14px">'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Performance-Radar</span></div>'+
+      radarChartSvg(p)+
+      '<div style="text-align:center;font-size:9px;color:var(--text-muted);margin-top:6px">Gestrichelt = Gruppen-Median (50)</div>'+
+    '</div>'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Cost-Efficiency-Breakdown</span></div>'+
+      costBreakdownHtml(p,allPlayers)+
+    '</div>'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Ähnliche Spieler</span><span style="font-size:9px;color:var(--text-muted)">±15 Moneyball Score · gleiche Position</span></div>'+
+      '<div style="display:flex;flex-direction:column;gap:2px">'+similarPlayersHtml(p,allPlayers)+'</div>'+
+    '</div>'+
+  '</div>';
+
+  /* rebind similar-player rows to a stable click handler now that the
+     markup is in the DOM (avoids inlining unsafe onclick references) */
+  var sims=findSimilarPlayersV2(p,allPlayers);
+  var rows=el.querySelectorAll('[data-simname]');
+  rows.forEach(function(row,i){
+    if(!sims[i])return;
+    row.onclick=function(){
+      var idx=FILTERED.indexOf(sims[i].player);
+      if(idx>=0)window.selectPlayer(idx);
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MARKET OVERVIEW — aggregated visualizations across the whole
+   FILTERED set: Moneyball Score distribution, Verdict cluster,
+   and a Performance-vs-Cost scatter (the honest substitute for a
+   fabricated "Marktineffizienz %" — value gaps are shown as visual
+   clusters, not an invented single number).
+══════════════════════════════════════════════════════════════ */
+function renderMarketOverviewV2(players){
+  var el=document.getElementById('dashboard-market-overview');
+  var badge=document.getElementById('market-overview-count');
+  if(badge)badge.textContent=players.length+' Spieler im Filter';
+  if(!el)return;
+  if(!players||players.length===0){ el.innerHTML=''; return; }
+
+  /* ---- Moneyball Score histogram, 10 buckets of 10 points each ---- */
+  var buckets=new Array(10).fill(0);
+  var scored=players.filter(function(p){return p.moneyballScore!==null;});
+  scored.forEach(function(p){
+    var b=Math.min(9,Math.floor(p.moneyballScore/10));
+    buckets[b]++;
+  });
+  var maxBucket=Math.max(1,Math.max.apply(null,buckets));
+  var histBars=buckets.map(function(count,i){
+    var h=Math.round((count/maxBucket)*100);
+    var rangeLabel=(i*10)+'-'+(i*10+9);
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">'+
+      '<span style="font-size:9px;color:var(--text-secondary);font-weight:700">'+count+'</span>'+
+      '<div style="width:100%;height:60px;display:flex;align-items:flex-end">'+
+        '<div style="width:100%;height:'+Math.max(2,h)+'%;background:linear-gradient(180deg,var(--accent-cyan),var(--accent-blue));border-radius:3px 3px 0 0"></div>'+
+      '</div>'+
+      '<span style="font-size:8px;color:var(--text-muted)">'+rangeLabel+'</span>'+
+    '</div>';
+  }).join('');
+
+  /* ---- Verdict cluster ---- */
+  var verdictCounts={BUY:0,WATCH:0,HOLD:0,AVOID:0,UNKNOWN_COST:0};
+  players.forEach(function(p){ verdictCounts[p.verdict]=(verdictCounts[p.verdict]||0)+1; });
+  var verdictOrder=['BUY','WATCH','HOLD','AVOID','UNKNOWN_COST'];
+  var verdictLabels={BUY:'BUY',WATCH:'WATCH',HOLD:'HOLD',AVOID:'AVOID',UNKNOWN_COST:'KOSTEN UNBEK.'};
+  var totalV=players.length;
+  var verdictBars=verdictOrder.map(function(v){
+    var count=verdictCounts[v]||0;
+    var pct=totalV>0?Math.round(count/totalV*100):0;
+    var col=verdictColor(v);
+    return '<div style="display:flex;align-items:center;gap:8px">'+
+      '<span style="width:90px;font-size:10px;font-weight:700;color:'+col+';flex-shrink:0">'+verdictLabels[v]+'</span>'+
+      '<div style="flex:1;height:10px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">'+
+        '<div style="height:100%;width:'+Math.max(1,pct)+'%;background:'+col+'"></div>'+
+      '</div>'+
+      '<span style="width:42px;text-align:right;font-size:10px;color:var(--text-secondary)">'+count+' ('+pct+'%)</span>'+
+    '</div>';
+  }).join('');
+
+  /* ---- Performance vs. Cost Efficiency scatter ----
+     Honest substitute for "Marktineffizienz %": plots perfScoreAdj
+     (x) against costEfficiency (y) for every player with known
+     cost. Top-left quadrant = high performance, low cost-efficiency
+     rank relative to peers... actually top-right = best value
+     (high perf AND high cost efficiency). Clicking a dot selects
+     that player. */
+  var withCost=players.filter(function(p){return !p.costUnknown;});
+  var scatterSize=280,pad=18;
+  var scatterPts=withCost.map(function(p,i){
+    var x=pad+(p.perfScoreAdj/100)*(scatterSize-2*pad);
+    var y=(scatterSize-pad)-(p.costEfficiency/100)*(scatterSize-2*pad);
+    var col=verdictColor(p.verdict);
+    return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="'+col+'" opacity="0.75" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" '+
+      'data-scatidx="'+players.indexOf(p)+'" style="cursor:pointer">'+
+      '<title>'+p.name+' \u2022 Perf '+p.perfScoreAdj+' \u2022 Cost-Eff '+p.costEfficiency+'</title>'+
+    '</circle>';
+  }).join('');
+  var scatterHtml=withCost.length>0?
+    '<svg viewBox="0 0 '+scatterSize+' '+scatterSize+'" style="width:100%;max-width:300px;display:block;margin:0 auto" id="market-scatter-svg">'+
+      '<line x1="'+pad+'" y1="'+(scatterSize-pad)+'" x2="'+(scatterSize-pad)+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'+
+      '<line x1="'+pad+'" y1="'+pad+'" x2="'+pad+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'+
+      '<line x1="'+(scatterSize/2)+'" y1="'+pad+'" x2="'+(scatterSize/2)+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>'+
+      '<line x1="'+pad+'" y1="'+(scatterSize/2)+'" x2="'+(scatterSize-pad)+'" y2="'+(scatterSize/2)+'" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>'+
+      '<text x="'+(scatterSize/2)+'" y="'+(scatterSize-3)+'" text-anchor="middle" font-size="8" fill="var(--text-muted)">Performance →</text>'+
+      '<text x="9" y="'+(scatterSize/2)+'" text-anchor="middle" font-size="8" fill="var(--text-muted)" transform="rotate(-90 9 '+(scatterSize/2)+')">Cost Efficiency →</text>'+
+      scatterPts+
+    '</svg>'
+    :'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text-muted)">Keine Spieler mit bekannten Kosten im Filter.</div>';
+
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:10px"><span class="card-title">Moneyball Score-Verteilung</span></div>'+
+      '<div style="display:flex;gap:4px;align-items:flex-end">'+histBars+'</div>'+
+    '</div>'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:10px"><span class="card-title">Verdict-Cluster</span></div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px">'+verdictBars+'</div>'+
+    '</div>'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:10px"><span class="card-title">Performance vs. Cost Efficiency</span></div>'+
+      scatterHtml+
+    '</div>'+
+  '</div>';
+
+  /* bind scatter dot clicks */
+  var dots=el.querySelectorAll('[data-scatidx]');
+  dots.forEach(function(dot){
+    dot.onclick=function(){
+      var idx=parseInt(dot.getAttribute('data-scatidx'));
+      if(idx>=0)window.selectPlayer(idx);
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIMPLE TABLE LIST VIEW — lives exclusively in the Players tab now.
+   Dashboard shows analysis/visualization instead of the raw table.
    Columns: Spieler | Position | Performance | Value | Confidence | Empfehlung
 ══════════════════════════════════════════════════════════════ */
 function renderListV2(players){
-  var el=document.getElementById('player-list');
   var elSecondary=document.getElementById('player-list-body');
-  if(!el&&!elSecondary)return;
+  if(!elSecondary)return;
 
   var html;
   if(players.length===0){
@@ -1892,12 +2220,9 @@ function renderListV2(players){
       '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   }
 
-  if(el)el.innerHTML=html;
-  if(elSecondary)elSecondary.innerHTML=html;
+  elSecondary.innerHTML=html;
 
-  var badge1=document.getElementById('players-count-badge');
   var badge2=document.getElementById('players-count-badge-secondary');
-  if(badge1)badge1.textContent=players.length+' Spieler';
   if(badge2)badge2.textContent=players.length+' Spieler';
 }
 
@@ -2002,6 +2327,7 @@ window.selectPlayer=function(idx,targetView){
   /* always update scout report view with new player */
   renderScoutReportV2(p);
   renderOverviewPanelV2(p,FILTERED);
+  renderDetailVizV2(p,FILTERED);
 
   var dest=targetView||'dashboard';
   document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
@@ -2335,7 +2661,9 @@ window.setLang=function(lang){
     var sel=(typeof SELECTED_IDX!=='undefined'?SELECTED_IDX:0);
     if(FILTERED[sel]){
       renderScoutReportV2(FILTERED[sel]);
+      renderDetailVizV2(FILTERED[sel],FILTERED);
     }
+    renderMarketOverviewV2(FILTERED);
   }
 };
 /* boot in German */
