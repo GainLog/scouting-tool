@@ -1949,6 +1949,133 @@ function verdictColor(v){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   FILTER & APPLY — this was lost during an earlier cleanup pass
+   today (confirmed via backup diff) and its absence is the root
+   cause of the reported bug: with no applyFilters(), imported CSV
+   data never reached renderListV2/renderScoutReportV2/renderExecV2,
+   so the static demo HTML (Lukaku, Depay, Tierney, Schick — hardcoded
+   in the dashboard-content markup) stayed visible regardless of
+   which file was loaded.
+══════════════════════════════════════════════════════════════ */
+function applyFilters(){
+  var posEl=document.getElementById('filter-pos');
+  var pos=(posEl?posEl.value:'')||'';
+  var ageMinEl=document.getElementById('filter-age-min');
+  var ageMaxEl=document.getElementById('filter-age-max');
+  var ageMin=ageMinEl?parseInt(ageMinEl.value)||16:16;
+  var ageMax=ageMaxEl?parseInt(ageMaxEl.value)||45:45;
+  var feeEl=document.getElementById('filter-fee');
+  var feeMax=feeEl?parseInt(feeEl.value)||200:200;
+  var wageEl=document.getElementById('filter-wage');
+  var wageMax=wageEl?parseInt(wageEl.value)||500:500;
+  var leagueEl=document.getElementById('filter-league');
+  var league=(leagueEl?leagueEl.value:'').toLowerCase();
+
+  FILTERED=ALL_PLAYERS.filter(function(p){
+    if(pos&&p.posGrp!==pos)return false;
+    if(p.age<ageMin||p.age>ageMax)return false;
+    if(feeMax<200&&p.tvKnown&&p.transferValue>feeMax*1000000)return false;
+    if(wageMax<500&&p.wageKnown&&p.wage>wageMax*1000)return false;
+    if(league&&(p.league||p.club||'').toLowerCase().indexOf(league)<0)return false;
+    return true;
+  });
+
+  /* sort by active preset, falling back to Moneyball Score.
+     Unknown-cost players (moneyballScore=null) sort to the bottom
+     rather than crashing the comparator. */
+  var activePresetEl=document.querySelector('.btn-preset.active');
+  var preset=activePresetEl?activePresetEl.dataset.preset:'';
+  FILTERED.sort(function(a,b){
+    if(preset==='value')   return (b.costUnknown?-1:b.costEfficiency)-(a.costUnknown?-1:a.costEfficiency);
+    if(preset==='perf')    return b.perfScoreAdj-a.perfScoreAdj;
+    if(preset==='young')   return a.age-b.age;
+    if(preset==='lowrisk') return (a.confidence.tier==='low'?1:0)-(b.confidence.tier==='low'?1:0);
+    var av=a.moneyballScore===null?-1:a.moneyballScore;
+    var bv=b.moneyballScore===null?-1:b.moneyballScore;
+    return bv-av;
+  });
+
+  SELECTED_IDX=0;
+  renderListV2(FILTERED);
+  renderExecV2(FILTERED);
+  if(FILTERED.length>0){
+    renderScoutReportV2(FILTERED[0]);
+  }
+  var pcNum=document.getElementById('player-count-num');
+  if(pcNum)pcNum.textContent=FILTERED.length;
+  var pcb=document.getElementById('players-count-badge');
+  if(pcb)pcb.textContent=FILTERED.length+' Spieler';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXEC BAR — six headline cards above the table. These DOM nodes
+   exist in static HTML with placeholder demo content (Lukaku, Depay,
+   Tierney, Schick etc.) that must be overwritten on every import —
+   that overwrite was missing after the v2 rewrite, which is why demo
+   names kept showing regardless of the imported CSV. Fixed here.
+══════════════════════════════════════════════════════════════ */
+function renderExecV2(players){
+  if(!players||players.length===0)return;
+  var sorted=[].concat(players).filter(function(p){return p.moneyballScore!==null;})
+    .sort(function(a,b){return b.moneyballScore-a.moneyballScore;});
+  if(sorted.length===0)return;
+
+  var withCost=sorted.filter(function(p){return !p.costUnknown;});
+  var bestOverall=sorted[0];
+  var bestCostEff=[].concat(withCost).sort(function(a,b){return b.costEfficiency-a.costEfficiency;})[0]||bestOverall;
+  var bestPerf=[].concat(players).sort(function(a,b){return b.perfScoreAdj-a.perfScoreAdj;})[0];
+  var bestYoung=[].concat(sorted).filter(function(p){return p.age<=23;}).sort(function(a,b){return b.moneyballScore-a.moneyballScore;})[0]||sorted[1]||bestOverall;
+  var worstCostEff=[].concat(withCost).sort(function(a,b){return a.costEfficiency-b.costEfficiency;})[0];
+  var bestWage=[].concat(players).filter(function(p){return p.wageKnown;}).sort(function(a,b){
+    return (b.perfScoreAdj/Math.max(1,b.wage))-(a.perfScoreAdj/Math.max(1,a.wage));
+  })[0]||bestOverall;
+
+  function setCard(id,p,stat,meta,cta){
+    var el=document.getElementById(id);
+    if(!el||!p)return;
+    var nameEl=el.querySelector('.exec-hero-name');
+    var statEl=el.querySelector('.exec-stat');
+    var metaEl=el.querySelector('.exec-meta');
+    var ctaEl=el.querySelector('.exec-cta');
+    if(nameEl)nameEl.textContent=p.name;
+    if(statEl)statEl.textContent=stat;
+    if(metaEl)metaEl.textContent=meta;
+    if(ctaEl)ctaEl.textContent=cta;
+    el.onclick=function(){
+      var idx=FILTERED.indexOf(p);
+      if(idx>=0)window.selectPlayer(idx);
+    };
+  }
+
+  var grpLabel=function(p){return (GROUP_LABELS[p.posGrp]||p.posGrp);};
+
+  setCard('exec-steal',bestOverall,
+    'Moneyball Score '+bestOverall.moneyballScore,
+    bestOverall.age+' J. \u2022 '+grpLabel(bestOverall)+' \u2022 '+bestOverall.verdict,
+    '\u2192 Scout Report \u00f6ffnen');
+  setCard('exec-gem',bestCostEff,
+    bestCostEff.costUnknown?'Kosten unbekannt':('Cost Efficiency '+bestCostEff.costEfficiency),
+    bestCostEff.age+' J. \u2022 '+grpLabel(bestCostEff)+' \u2022 Top Leistung pro Kosten-Euro',
+    '\u2192 Scout Report \u00f6ffnen');
+  setCard('exec-impact',bestPerf,
+    'Performance Score '+bestPerf.perfScoreAdj,
+    bestPerf.age+' J. \u2022 '+grpLabel(bestPerf)+' \u2022 '+bestPerf.confidence.label,
+    '\u2192 Scout Report \u00f6ffnen');
+  setCard('exec-resale',bestYoung,
+    'U23 \u2022 Moneyball Score '+bestYoung.moneyballScore,
+    bestYoung.age+' J. \u2022 '+grpLabel(bestYoung)+' \u2022 Entwicklungsperspektive',
+    '\u2192 Scout Report \u00f6ffnen');
+  if(worstCostEff) setCard('exec-over',worstCostEff,
+    'Cost Efficiency nur '+worstCostEff.costEfficiency,
+    worstCostEff.age+' J. \u2022 '+grpLabel(worstCostEff)+' \u2022 Teuer für die Leistung',
+    '\u2192 Scout Report \u00f6ffnen');
+  setCard('exec-wage',bestWage,
+    'Beste Leistung pro Gehalts-Euro',
+    bestWage.age+' J. \u2022 '+grpLabel(bestWage)+' \u2022 '+(bestWage.wageKnown?fmtMoney(bestWage.wage)+'/J.':'Gehalt unbekannt'),
+    '\u2192 Scout Report \u00f6ffnen');
+}
+
+/* ══════════════════════════════════════════════════════════════
    SIMPLE TABLE LIST VIEW — per user's decision: dashboard reduced
    to a clean table for now (Phase 2 redesign comes later).
    Columns: Spieler | Position | Performance | Value | Confidence | Empfehlung
