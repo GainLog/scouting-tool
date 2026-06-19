@@ -878,7 +878,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 </div>
 <div class="view" id="view-compare"><div class="empty-state"><div class="empty-icon">&#9878;</div><div class="empty-title">Spieler vergleichen</div></div></div>
-<div class="view" id="view-hidden-gems"><div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Hidden Gems</div><div class="empty-desc">CSV importieren und unterbewertete Spieler entdecken.</div></div></div>
+<div class="view" id="view-hidden-gems">
+  <div id="hidden-gems-content">
+    <div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Hidden Gems</div><div class="empty-desc">CSV importieren und unterbewertete Spieler entdecken.</div></div>
+  </div>
+</div>
 <div class="view" id="view-settings">
   <div class="card">
     <div class="card-header"><span class="card-title">Einstellungen / Settings</span></div>
@@ -919,7 +923,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
           <div style="font-size:10px;color:var(--text-muted);line-height:1.7">
             Moneyball Scout FM26 is a free tool developed and maintained by DewdBush.<br>
             Redistribution, resale or republication under a different name is strictly prohibited.<br>
-            Personal use only. &mdash; Kostenlose Nutzung erlaubt. Weiterverbreitung oder Verkauf unter eigenem Namen ist nicht gestattet.
+            Personal use only. &mdash; Kostenlose Nutzung erlaubt. Weiterverbreitung oder Verkauf unter eigenem Namen ist nicht gestattet.<br>
+            <span style="opacity:0.6">Build v13 &mdash; Scout Report Pipeline Audit</span>
           </div>
           <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
             <a href="https://ko-fi.com/moneyballscout" target="_blank"
@@ -1677,6 +1682,7 @@ function applyFilters(){
     renderDetailVizV2(null,FILTERED);
   }
   renderMarketOverviewV2(FILTERED);
+  renderHiddenGemsV2(FILTERED);
   var pcNum=document.getElementById('player-count-num');
   if(pcNum)pcNum.textContent=FILTERED.length;
 }
@@ -1688,11 +1694,48 @@ function applyFilters(){
    that overwrite was missing after the v2 rewrite, which is why demo
    names kept showing regardless of the imported CSV. Fixed here.
 ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CLEAR EXEC CARDS — explicit empty state for all six cards when
+   no player in the filter qualifies (e.g. every player has unknown
+   cost, so no moneyballScore exists for any of them). Without this,
+   the cards would keep showing the static demo placeholders
+   (Guéndouzi, Grealish, Lukaku...) with no click handler attached —
+   the exact bug reported: cards looked clickable but did nothing.
+══════════════════════════════════════════════════════════════ */
+function clearExecCardsV2(){
+  ['exec-steal','exec-gem','exec-impact','exec-resale','exec-over','exec-wage'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var nameEl=el.querySelector('.exec-hero-name');
+    var statEl=el.querySelector('.exec-stat');
+    var metaEl=el.querySelector('.exec-meta');
+    var ctaEl=el.querySelector('.exec-cta');
+    if(nameEl)nameEl.textContent='—';
+    if(statEl)statEl.textContent='Kein Spieler im Filter';
+    if(metaEl)metaEl.textContent='';
+    if(ctaEl)ctaEl.textContent='';
+    el.style.opacity='0.45';
+    el.style.cursor='default';
+    el.onclick=null;
+    el.querySelectorAll('.exec-quickstat-value').forEach(function(q){q.textContent='—';});
+  });
+}
+
 function renderExecV2(players){
-  if(!players||players.length===0)return;
+  if(!players||players.length===0){
+    clearExecCardsV2();
+    return;
+  }
   var sorted=[].concat(players).filter(function(p){return p.moneyballScore!==null;})
     .sort(function(a,b){return b.moneyballScore-a.moneyballScore;});
-  if(sorted.length===0)return;
+  if(sorted.length===0){
+    /* every player in the filter has unknown cost (no moneyballScore
+       possible) — clear all six cards explicitly instead of returning
+       early and leaving the static demo placeholders (or a stale
+       previous render) sitting there with no click handler. */
+    clearExecCardsV2();
+    return;
+  }
 
   var withCost=sorted.filter(function(p){return !p.costUnknown;});
   var bestOverall=sorted[0];
@@ -1706,11 +1749,31 @@ function renderExecV2(players){
 
   function setCard(id,p,stat,meta,cta){
     var el=document.getElementById(id);
-    if(!el||!p)return;
+    if(!el)return;
     var nameEl=el.querySelector('.exec-hero-name');
     var statEl=el.querySelector('.exec-stat');
     var metaEl=el.querySelector('.exec-meta');
     var ctaEl=el.querySelector('.exec-cta');
+
+    if(!p){
+      /* no qualifying player for this category in the current filter —
+         show an explicit empty state instead of silently leaving the
+         previous render (or the static demo placeholder) in place with
+         a now-stale or entirely absent click handler */
+      if(nameEl)nameEl.textContent='—';
+      if(statEl)statEl.textContent='Kein Spieler im Filter';
+      if(metaEl)metaEl.textContent='';
+      if(ctaEl)ctaEl.textContent='';
+      el.style.opacity='0.45';
+      el.style.cursor='default';
+      el.onclick=null;
+      var qsEmpty=el.querySelectorAll('.exec-quickstat-value');
+      qsEmpty.forEach(function(q){q.textContent='—';});
+      return;
+    }
+    el.style.opacity='';
+    el.style.cursor='';
+
     if(nameEl)nameEl.textContent=p.name;
     if(statEl)statEl.textContent=stat;
     if(metaEl)metaEl.textContent=meta;
@@ -2150,11 +2213,27 @@ function comparisonTagsV2(focal,other){
     tags.push({label:Math.abs(dAge)+' J. '+(dAge<0?'jünger':'älter'),good:dAge<0});
   }
 
-  /* Wage: only compare if both known; lower wage is favourable */
+  /* Wage: only compare if both known; lower wage is favourable.
+     Same 999% cap as the transfer-value comparison below. */
   if(focal.wageKnown&&other.wageKnown&&focal.wage>0){
     var wageDeltaPct=Math.round((other.wage-focal.wage)/focal.wage*100);
     if(Math.abs(wageDeltaPct)>=8){
-      tags.push({label:Math.abs(wageDeltaPct)+'% Gehalt '+(wageDeltaPct<0?'günstiger':'teurer'),good:wageDeltaPct<0});
+      var wageDeltaCapped=Math.min(999,Math.abs(wageDeltaPct));
+      tags.push({label:wageDeltaCapped+(wageDeltaCapped<Math.abs(wageDeltaPct)?'+':'')+'% Gehalt '+(wageDeltaPct<0?'günstiger':'teurer'),good:wageDeltaPct<0});
+    }
+  }
+
+  /* Transfer value / market price: separate from wage — a player can
+     be cheap to sign (low fee) but expensive to run (high wage), or
+     vice versa, so these need to be two distinct comparisons rather
+     than folded into one "price" number. Capped at 999% so a tiny
+     focal transferValue (data quirk, not a real scenario) never
+     produces an absurd six-figure percentage in the UI. */
+  if(focal.tvKnown&&other.tvKnown&&focal.transferValue>0){
+    var tvDeltaPct=Math.round((other.transferValue-focal.transferValue)/focal.transferValue*100);
+    if(Math.abs(tvDeltaPct)>=8){
+      var tvDeltaCapped=Math.min(999,Math.abs(tvDeltaPct));
+      tags.push({label:tvDeltaCapped+(tvDeltaCapped<Math.abs(tvDeltaPct)?'+':'')+'% Marktwert '+(tvDeltaPct<0?'günstiger':'teurer'),good:tvDeltaPct<0});
     }
   }
 
@@ -2204,6 +2283,21 @@ function similarPlayersHtml(p,allPlayers){
       '</div>'
       :'<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Nahezu identisches Profil &mdash; keine relevanten Unterschiede</div>';
 
+    /* explicit price comparison row — absolute €, not just a %-tag,
+       since a transfer decision needs the real numbers side by side,
+       not just "X% teurer" */
+    var priceCompareHtml='';
+    if(p.tvKnown||sp.tvKnown||p.wageKnown||sp.wageKnown){
+      priceCompareHtml='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-dim);font-size:9.5px">'+
+        '<div><span style="color:var(--text-muted)">Marktwert: </span><span style="font-weight:700;color:var(--text-secondary)">'+(sp.tvKnown?fmtMoney(sp.transferValue):'unbekannt')+'</span>'+
+          (p.tvKnown&&sp.tvKnown?' <span style="color:var(--text-muted)">(Ø '+(p.transferValue>0?(sp.transferValue>=p.transferValue?'+':'')+Math.round((sp.transferValue-p.transferValue)/p.transferValue*100)+'%':'—')+')</span>':'')+
+        '</div>'+
+        '<div><span style="color:var(--text-muted)">Gehalt/J.: </span><span style="font-weight:700;color:var(--text-secondary)">'+(sp.wageKnown?fmtMoney(sp.wage):'unbekannt')+'</span>'+
+          (p.wageKnown&&sp.wageKnown?' <span style="color:var(--text-muted)">(Ø '+(p.wage>0?(sp.wage>=p.wage?'+':'')+Math.round((sp.wage-p.wage)/p.wage*100)+'%':'—')+')</span>':'')+
+        '</div>'+
+      '</div>';
+    }
+
     return '<div class="list-row" data-simname="'+sp.name.replace(/"/g,'')+'" style="cursor:pointer;display:flex;flex-direction:column;gap:0;padding:9px 10px;border-radius:6px;transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'\'">'+
       '<div style="display:flex;align-items:center;justify-content:space-between">'+
         '<div style="display:flex;flex-direction:column;gap:1px">'+
@@ -2213,10 +2307,11 @@ function similarPlayersHtml(p,allPlayers){
         '<div style="display:flex;align-items:center;gap:10px">'+
           '<span style="font-size:10px;color:var(--text-muted)">Score '+(sp.moneyballScore===null?'—':sp.moneyballScore)+'</span>'+
           '<span style="font-size:11px;font-weight:800;color:'+vCol+'">'+(sp.verdict==='UNKNOWN_COST'?'?':sp.verdict)+'</span>'+
-          '<span style="font-size:10px;font-weight:700;color:var(--accent-cyan);min-width:38px;text-align:right">'+simPct+'% sim.</span>'+
+          '<span style="font-size:10px;font-weight:700;color:var(--accent-cyan);min-width:38px;text-align:right" title="Profilähnlichkeit: Euklidische Distanz der gewichteten Performance-Perzentile, je näher 100% desto ähnlicher das statistische Profil">'+simPct+'% sim.</span>'+
         '</div>'+
       '</div>'+
       tagsHtml+
+      priceCompareHtml+
     '</div>';
   }).join('');
 }
@@ -2369,7 +2464,11 @@ function renderMarketOverviewV2(players){
     '</div>'+
   '</div>'+
 
-  /* ---- Second row: Age distribution, Position distribution ---- */
+  /* ---- Second row: Age distribution, Position distribution ----
+     Ranked lists (Top 10 Cost-Eff/Perf, Top U23) moved to the
+     Hidden Gems tab — see renderHiddenGemsV2() — per user decision
+     to shorten the dashboard; those lists are a discovery tool,
+     not a daily-overview metric. */
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'+
     '<div class="card" style="padding:16px">'+
       '<div class="card-header" style="margin-bottom:10px"><span class="card-title">Altersverteilung</span></div>'+
@@ -2379,22 +2478,6 @@ function renderMarketOverviewV2(players){
       '<div class="card-header" style="margin-bottom:10px"><span class="card-title">Positionsverteilung</span></div>'+
       positionDistributionHtml(players)+
     '</div>'+
-  '</div>'+
-
-  /* ---- Third row: three ranked lists ---- */
-  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">'+
-    '<div class="card" style="padding:16px">'+
-      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Top 10 Cost Efficiency</span></div>'+
-      rankedListHtml(players,'costEff')+
-    '</div>'+
-    '<div class="card" style="padding:16px">'+
-      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Top 10 Performance Score</span></div>'+
-      rankedListHtml(players,'perf')+
-    '</div>'+
-    '<div class="card" style="padding:16px">'+
-      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Top U23 Targets</span><span style="font-size:9px;color:var(--text-muted)">&le;23 J., nach Moneyball Score</span></div>'+
-      rankedListHtml(players,'u23')+
-    '</div>'+
   '</div>';
 
   /* bind scatter dot clicks */
@@ -2402,15 +2485,6 @@ function renderMarketOverviewV2(players){
   dots.forEach(function(dot){
     dot.onclick=function(){
       var idx=parseInt(dot.getAttribute('data-scatidx'));
-      if(idx>=0)window.selectPlayer(idx);
-    };
-  });
-
-  /* bind ranked-list row clicks (same data-scatidx convention, reused) */
-  var listRows=el.querySelectorAll('[data-rankidx]');
-  listRows.forEach(function(row){
-    row.onclick=function(){
-      var idx=parseInt(row.getAttribute('data-rankidx'));
       if(idx>=0)window.selectPlayer(idx);
     };
   });
@@ -2474,6 +2548,137 @@ function positionDistributionHtml(players){
    clickable via data-rankidx, bound back to the FILTERED index the
    same way the scatter dots are.
 ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   HIDDEN GEM EXPLANATION — a "hidden gem" claim needs a reason, not
+   just a label. Defines the criteria explicitly (high performance
+   AND high cost efficiency AND the market hasn't priced it in via
+   a high transfer value) and states which of those the player
+   actually meets, in plain language.
+══════════════════════════════════════════════════════════════ */
+function hiddenGemReasonV2(p,allInGroup){
+  var reasons=[];
+  var isGem=true;
+
+  if(p.costUnknown){
+    return {isGem:false,reasons:['Kosten unbekannt — kein Hidden-Gem-Urteil ohne Marktwert/Gehalt möglich.']};
+  }
+
+  if(p.perfScoreAdj>=60){
+    reasons.push('Performance Score '+p.perfScoreAdj+'/100 — klar über dem Mittelfeld der Positionsgruppe.');
+  } else {
+    isGem=false;
+  }
+
+  if(p.costEfficiency>=70){
+    reasons.push('Cost Efficiency '+p.costEfficiency+'/100 — Leistung pro Gesamtkosten-Euro liegt in den Top 30% der Gruppe.');
+  } else {
+    isGem=false;
+  }
+
+  /* "market hasn't priced it in" proxy: low transfer value relative
+     to performance, using the same group the player is compared
+     within everywhere else — no invented market-inefficiency number,
+     just the existing tvKnown/transferValue field read directly */
+  if(p.tvKnown&&allInGroup){
+    var groupTVs=allInGroup.filter(function(x){return x.posGrp===p.posGrp&&x.tvKnown;}).map(function(x){return x.transferValue;});
+    if(groupTVs.length>=3){
+      var sorted=groupTVs.slice().sort(function(a,b){return a-b;});
+      var rank=sorted.filter(function(v){return v<=p.transferValue;}).length;
+      var tvPercentile=Math.round(rank/sorted.length*100);
+      if(tvPercentile<=40){
+        reasons.push('Transferwert liegt im unteren '+tvPercentile+'. Perzentil der Positionsgruppe — der Markt bewertet die Leistung noch nicht entsprechend ein.');
+      } else {
+        isGem=false;
+      }
+    }
+  } else if(!p.tvKnown){
+    reasons.push('Kein Transferwert in den Daten — Markteinschätzung unklar, Einstufung basiert nur auf Performance/Cost-Efficiency.');
+  }
+
+  if(p.confidence.tier==='low'||p.confidence.tier==='mid'){
+    reasons.push('Hinweis: Datenbasis von '+p.minutes+' Minuten — Einstufung mit entsprechender Vorsicht zu lesen.');
+  }
+
+  return {isGem:isGem,reasons:reasons};
+}
+
+function hiddenGemsListHtml(players){
+  var withCost=players.filter(function(p){return !p.costUnknown;});
+  var candidates=withCost.map(function(p){
+    return {player:p,verdict:hiddenGemReasonV2(p,players)};
+  }).filter(function(c){return c.verdict.isGem;});
+
+  candidates.sort(function(a,b){return b.player.costEfficiency-a.player.costEfficiency;});
+  candidates=candidates.slice(0,10);
+
+  if(candidates.length===0){
+    return '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-muted)">Keine Spieler im aktuellen Filter erfüllen alle drei Hidden-Gem-Kriterien (hohe Performance, hohe Cost Efficiency, vom Markt unterbewerteter Transferwert).</div>';
+  }
+
+  return candidates.map(function(c){
+    var p=c.player;
+    var idx=players.indexOf(p);
+    var vCol=verdictColor(p.verdict);
+    return '<div data-rankidx="'+idx+'" style="cursor:pointer;padding:12px 14px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border-dim);transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.02)\'">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+        '<div style="display:flex;flex-direction:column;gap:1px">'+
+          '<span style="font-size:13px;font-weight:800">'+p.name+'</span>'+
+          '<span style="font-size:10px;color:var(--text-muted)">'+p.age+' J. \u2022 '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' \u2022 '+p.club+'</span>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<span style="font-size:10px;color:var(--text-muted)">Cost-Eff</span>'+
+          '<span style="font-size:14px;font-weight:900;color:var(--accent-green)">'+p.costEfficiency+'</span>'+
+          '<span style="font-size:11px;font-weight:800;color:'+vCol+'">'+p.verdict+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:3px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-dim)">'+
+        c.verdict.reasons.map(function(r){
+          return '<div style="font-size:10.5px;color:var(--text-secondary);line-height:1.4">&#10003; '+r+'</div>';
+        }).join('')+
+      '</div>'+
+    '</div>';
+  }).join('<div style="height:8px"></div>');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HIDDEN GEMS TAB — full render: explained Hidden Gem list plus
+   the two ranked lists (Top 10 Performance, Top U23) that moved
+   here from the dashboard. All read FILTERED so the tab respects
+   whatever filters are active, same as the dashboard does.
+══════════════════════════════════════════════════════════════ */
+function renderHiddenGemsV2(players){
+  var el=document.getElementById('hidden-gems-content');
+  if(!el)return;
+  if(!players||players.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#128142;</div><div class="empty-title">Hidden Gems</div><div class="empty-desc">CSV importieren und unterbewertete Spieler entdecken.</div></div>';
+    return;
+  }
+
+  el.innerHTML='<div class="card" style="margin-bottom:14px">'+
+    '<div class="card-header"><span class="card-title">Hidden Gems</span><span style="font-size:9px;color:var(--text-muted)">Hohe Performance + hohe Cost Efficiency + vom Markt unterbewerteter Transferwert</span></div>'+
+    '<div style="padding:12px 14px;display:flex;flex-direction:column;gap:0">'+hiddenGemsListHtml(players)+'</div>'+
+  '</div>'+
+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Top 10 Performance Score</span></div>'+
+      rankedListHtml(players,'perf')+
+    '</div>'+
+    '<div class="card" style="padding:16px">'+
+      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Top U23 Targets</span><span style="font-size:9px;color:var(--text-muted)">&le;23 J., nach Moneyball Score</span></div>'+
+      rankedListHtml(players,'u23')+
+    '</div>'+
+  '</div>';
+
+  var rows=el.querySelectorAll('[data-rankidx]');
+  rows.forEach(function(row){
+    row.onclick=function(){
+      var idx=parseInt(row.getAttribute('data-rankidx'));
+      if(idx>=0)window.selectPlayer(idx);
+    };
+  });
+}
+
 function rankedListHtml(players,mode){
   var pool,sortFn,valueFn,unit;
   if(mode==='costEff'){
@@ -2666,14 +2871,202 @@ function scoutVerdictSummaryHtml(p){
   '</div>';
 }
 
+/* ══════════════════════════════════════════════════════════════
+   DEAL ANALYSIS — the deeper layer of the scout report: explicit
+   buy case vs. counter-argument, single biggest risk (not a list —
+   the one thing most likely to sink the deal), best/worst case
+   outcomes, a defensible maximum-bid range, and a one-line deal
+   interpretation. Every number here traces back to fields already
+   computed elsewhere (costEfficiency, transferValue, perfScoreAdj,
+   confidence tier) — nothing is invented from scratch. The bid
+   range is explicitly framed as a model-derived band, not a market
+   price, since no real bid/negotiation data exists in this export.
+══════════════════════════════════════════════════════════════ */
+function biggestRiskV2(p){
+  /* same signals as redFlagsV2, but picks exactly one — the most
+     severe — and explains why it's the one that matters most,
+     rather than listing everything. Severity order: tiny sample
+     size beats everything else (it undermines the whole score),
+     then contract urgency, then missing financial data, then age. */
+  if(p.confidence.tier==='low'){
+    return {title:'Stichprobengröße',
+      text:'Nur '+p.minutes+' Minuten Datenbasis. Der gesamte Performance Score steht auf wackligen Füßen — eine einzelne starke oder schwache Phase kann das Bild stark verzerren. Vor einem Transfer: weitere Spiele beobachten, wenn möglich.'};
+  }
+  if(p.smallGroupWarning){
+    return {title:'Vergleichsgruppe zu klein',
+      text:'Nur '+p.groupSampleSize+' Spieler in der Positionsgruppe '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' im Datensatz. Das Perzentil-Ranking kann sich stark verschieben, sobald mehr Vergleichsspieler importiert werden — der Score ist nicht so stabil, wie er aussieht.'};
+  }
+  if(p.contractMonths<6){
+    return {title:'Vertragslaufzeit',
+      text:'Vertrag läuft in unter 6 Monaten aus. Wenig Verhandlungsspielraum für den Verkäuferclub bedeutet zwar potenziell einen günstigeren Preis, aber auch Risiko bei Ablösefrei-Wechsel-Konkurrenz von anderen Vereinen.'};
+  }
+  if(p.costUnknown){
+    return {title:'Unbekannte Kosten',
+      text:'Marktwert und/oder Gehalt fehlen in den Daten. Ohne diese Zahlen ist jede Kauf-Empfehlung reine Performance-Einschätzung — das eigentliche Transfer-Risiko (zu teuer für die Leistung) lässt sich nicht bewerten.'};
+  }
+  var effAge=p.age-(AGE_PEAK_SHIFT[p.posGrp]||0);
+  if(effAge>=31){
+    return {title:'Alter / Leistungskurve',
+      text:'Jenseits des statistischen Leistungshöhepunkts für diese Positionsgruppe. Realistischerweise ist mit nachlassender Leistung über die Vertragslaufzeit zu rechnen, nicht mit weiterer Entwicklung.'};
+  }
+  if(!p.costUnknown&&p.costEfficiency<40){
+    return {title:'Preis-Leistung',
+      text:'Cost Efficiency von nur '+p.costEfficiency+'/100 — die Gesamtkosten (Marktwert + Gehalt) stehen in einem ungünstigen Verhältnis zur gezeigten Leistung verglichen mit der Positionsgruppe.'};
+  }
+  return {title:'Kein dominantes Risiko',
+    text:'Keiner der geprüften Risikofaktoren (Stichprobe, Vergleichsgruppe, Vertrag, Kosten, Alter) tritt klar hervor. Das verbleibende Risiko ist das allgemeine Transfer-Risiko, das jeder Wechsel mit sich bringt — keine spezifische Datenwarnung.'};
+}
+
+function maxBidRangeV2(p){
+  if(!p.tvKnown){
+    return {hasRange:false,text:'Kein Transferwert in den Daten hinterlegt — keine modellbasierte Gebotsspanne ableitbar. Eigene Markteinschätzung nötig.'};
+  }
+  /* band width modulated by cost efficiency: a player who already
+     scores well on leistung-pro-kosten justifies bidding closer to
+     (or slightly above) the listed value; a poor cost-efficiency
+     score argues for staying well below it. This is explicitly a
+     model-derived band around the known transferValue field, not a
+     market prediction — framed as such in the UI text below. */
+  var ce=p.costUnknown?50:p.costEfficiency;
+  var lowMult,highMult;
+  if(ce>=70){ lowMult=0.90; highMult=1.10; }
+  else if(ce>=50){ lowMult=0.80; highMult=1.00; }
+  else if(ce>=30){ lowMult=0.65; highMult=0.85; }
+  else { lowMult=0.50; highMult=0.70; }
+
+  var low=Math.round(p.transferValue*lowMult);
+  var high=Math.round(p.transferValue*highMult);
+  return {hasRange:true,low:low,high:high,
+    text:'Modellbasierte Spanne um den bekannten Transferwert ('+fmtMoney(p.transferValue)+'), angepasst an die Cost-Efficiency-Position dieses Spielers in seiner Gruppe. Keine Marktprognose, sondern eine Orientierung basierend auf Leistung-pro-Kosten-Daten.'};
+}
+
+function dealAnalysisHtml(p){
+  var risk=biggestRiskV2(p);
+  var bidRange=maxBidRangeV2(p);
+  var bdEntries=Object.keys(p.bd).map(function(k){return {key:k,pct:p.bd[k].pct,weight:p.bd[k].weight};});
+  bdEntries.sort(function(a,b){return (b.pct*b.weight)-(a.pct*a.weight);});
+  var topMetric=bdEntries[0];
+  var bottomMetric=bdEntries[bdEntries.length-1];
+
+  /* counter-argument: the case AGAINST this transfer, framed honestly
+     even for BUY-rated players — every deal has a credible objection,
+     and pretending otherwise is not useful for a transfer decision */
+  var counterArgument;
+  if(p.costUnknown){
+    counterArgument='Ohne bekannte Kosten lässt sich kein belastbares Gegenargument zur Kauf-Frage formulieren — das eigentliche Problem ist die fehlende Datenbasis, nicht die Leistung.';
+  } else if(p.verdict==='BUY'){
+    counterArgument=bottomMetric?
+      'Auch bei klarer Kaufempfehlung: schwächster Wert ist '+(METRIC_LABELS[bottomMetric.key]||bottomMetric.key)+' ('+bottomMetric.pct+'/100) — falls diese Schwäche im Spielsystem stärker zum Tragen kommt als in den Durchschnittsdaten, relativiert sich der Gesamteindruck.'
+      :'Keine ausgeprägte Schwäche in den Daten erkennbar — das stärkste Gegenargument bleibt generisches Transfer-Risiko (Anpassung an neue Liga/Mannschaft, das in keinem Datensatz abgebildet ist).';
+  } else if(p.verdict==='WATCH'){
+    counterArgument='Datenlage ist positiv, aber nicht eindeutig genug für eine klare Kaufempfehlung — wer auf Nummer sicher gehen will, wartet auf mehr Spielzeit oder einen niedrigeren Preis.';
+  } else if(p.verdict==='HOLD'){
+    counterArgument='Nichts in den Daten spricht zwingend gegen einen Transfer, aber auch nichts dafür — das Gegenargument zum Kauf ist schlicht: es gibt bessere Optionen am Markt für dasselbe Budget.';
+  } else {
+    counterArgument='Falls es trotz AVOID-Einstufung ein Argument für diesen Spieler gibt, liegt es außerhalb der Daten (z.B. Vereinsbindung, sofortige Verfügbarkeit, persönliche Umstände) — nicht in der Performance- oder Kosten-Analyse.';
+  }
+
+  /* best/worst case: framed around what's actually measurable —
+     confidence tier (how much the score could still move) and the
+     signing-type classification computed earlier */
+  var signing=signingTypeV2(p);
+  var bestCase,worstCase;
+  if(p.confidence.tier==='low'||p.confidence.tier==='mid'){
+    bestCase='Mit mehr Spielzeit bestätigt sich der aktuelle Score oder verbessert sich — bei nur '+p.minutes+' Minuten Datenbasis ist nach oben wie unten Bewegung wahrscheinlich.';
+    worstCase='Der aktuelle Score war eine kurze Form-Spitze; mit mehr Daten nähert sich die Leistung dem Gruppendurchschnitt (Perzentil 50) an.';
+  } else if(p.verdict==='BUY'||p.verdict==='WATCH'){
+    bestCase=signing.type==='Langfristige Investition'?
+      'Entwickelt sich wie erwartet weiter und liefert über mehrere Jahre steigenden Wert, ideal auch für späteren Weiterverkauf.'
+      :'Liefert von Anfang an auf dem gezeigten Niveau und rechtfertigt die Kosten direkt über die gezeigte Performance.';
+    worstCase=topMetric?
+      'Die Stärke bei '+(METRIC_LABELS[topMetric.key]||topMetric.key)+' lässt sich in einem neuen System/einer neuen Liga nicht reproduzieren, Leistung pendelt sich näher am Gruppendurchschnitt ein.'
+      :'Leistung pendelt sich nach Wechsel näher am Gruppendurchschnitt ein als die aktuellen Daten vermuten lassen.';
+  } else {
+    bestCase='Spieler übertrifft die aktuelle Dateneinschätzung — möglich, aber nichts in den vorliegenden Zahlen stützt diese Erwartung.';
+    worstCase='Leistung bleibt wie in den Daten erkennbar unterdurchschnittlich für die Kosten, Transfer erweist sich als Fehlinvestition.';
+  }
+
+  return '<div class="card" style="border-color:rgba(245,158,11,0.18)">'+
+    '<div class="card-header"><span class="card-title">Deal-Analyse</span><span style="font-size:9px;color:var(--text-muted)">Kaufargument, Gegenargument, Risiko, Szenarien, Gebotsspanne</span></div>'+
+    '<div style="padding:4px 16px 16px;display:flex;flex-direction:column;gap:14px">'+
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+        '<div>'+
+          '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-green);margin-bottom:4px">Kaufargument</div>'+
+          '<div style="font-size:11.5px;color:var(--text-secondary);line-height:1.5">'+evidenceLineV2(p)+'</div>'+
+        '</div>'+
+        '<div>'+
+          '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-red);margin-bottom:4px">Gegenargument</div>'+
+          '<div style="font-size:11.5px;color:var(--text-secondary);line-height:1.5">'+counterArgument+'</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div style="padding:10px 12px;border-radius:8px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.16)">'+
+        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-red);margin-bottom:3px">Größtes Risiko: '+risk.title+'</div>'+
+        '<div style="font-size:11.5px;color:var(--text-secondary);line-height:1.5">'+risk.text+'</div>'+
+      '</div>'+
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'+
+        '<div style="padding:10px 12px;border-radius:8px;background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.14)">'+
+          '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-green);margin-bottom:3px">Best Case</div>'+
+          '<div style="font-size:11px;color:var(--text-secondary);line-height:1.5">'+bestCase+'</div>'+
+        '</div>'+
+        '<div style="padding:10px 12px;border-radius:8px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.14)">'+
+          '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent-red);margin-bottom:3px">Worst Case</div>'+
+          '<div style="font-size:11px;color:var(--text-secondary);line-height:1.5">'+worstCase+'</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div>'+
+        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:4px">Maximalgebot &mdash; modellbasierte Orientierung</div>'+
+        (bidRange.hasRange?
+          '<div style="font-size:20px;font-weight:900;color:var(--accent-amber);margin-bottom:4px">'+fmtMoney(bidRange.low)+' &ndash; '+fmtMoney(bidRange.high)+'</div>'
+          :'<div style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:4px">Keine Spanne ableitbar</div>')+
+        '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5">'+bidRange.text+'</div>'+
+      '</div>'+
+
+      '<div style="padding-top:10px;border-top:1px solid var(--border-dim)">'+
+        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:4px">Deal-Interpretation</div>'+
+        '<div style="font-size:12px;font-weight:700;color:var(--text-primary);line-height:1.5">'+dealInterpretationV2(p,bidRange)+'</div>'+
+      '</div>'+
+
+    '</div>'+
+  '</div>';
+}
+
+function dealInterpretationV2(p,bidRange){
+  if(p.costUnknown){
+    return 'Kein Deal-Urteil möglich ohne bekannte Kosten — zunächst Marktwert/Gehalt klären, dann neu bewerten.';
+  }
+  if(p.verdict==='BUY'&&bidRange.hasRange){
+    return 'Bei einem Angebot innerhalb der Spanne ('+fmtMoney(bidRange.low)+'–'+fmtMoney(bidRange.high)+') ein klarer Deal — Leistung und Kosten passen zusammen. Oberhalb der Spanne wird aus einem guten Transfer ein riskanter.';
+  }
+  if(p.verdict==='WATCH'&&bidRange.hasRange){
+    return 'Lohnt sich am unteren Ende der Spanne ('+fmtMoney(bidRange.low)+'), wird am oberen Ende schnell zu einem Geschäft ohne klaren Vorteil.';
+  }
+  if(p.verdict==='HOLD'){
+    return 'Kein dringender Fall in beide Richtungen — nur zugreifen, wenn der Preis deutlich unter dem aktuellen Transferwert liegt.';
+  }
+  if(p.verdict==='AVOID'){
+    return 'Datenlage rät vom Transfer ab, unabhängig vom Preis — das Problem ist die Leistung, nicht die Kosten.';
+  }
+  return 'Keine klare Einordnung anhand der verfügbaren Daten möglich.';
+}
+
 function renderScoutReportV2(p){
   var el=document.getElementById('scout-report-content');
   var elSecondary=document.getElementById('scout-report-content-secondary');
-  if(!el&&!elSecondary)return;
+  if(!el&&!elSecondary){
+    console.warn('[ScoutReport] BEIDE Container fehlen im DOM (#scout-report-content und #scout-report-content-secondary) — Rendering abgebrochen.');
+    return;
+  }
+  if(!el)console.warn('[ScoutReport] #scout-report-content (Dashboard) fehlt im DOM.');
+  if(!elSecondary)console.warn('[ScoutReport] #scout-report-content-secondary (Scout-Reports-Tab) fehlt im DOM.');
   if(!p){
     var emptyHtml='<div class="empty-state"><div class="empty-icon">&#128203;</div><div class="empty-title">Scout Reports</div><div class="empty-desc">Spieler aus dem Dashboard w&auml;hlen.</div></div>';
     if(el)el.innerHTML=emptyHtml;
     if(elSecondary)elSecondary.innerHTML=emptyHtml;
+    console.log('[ScoutReport] Kein Spieler übergeben (p=null) — Empty-State gerendert.');
     return;
   }
   var vCol=verdictColor(p.verdict);
@@ -2701,6 +3094,11 @@ function renderScoutReportV2(p){
   /* Scout Verdict Summary — answers the six required questions up front,
      before the detailed score breakdown that follows below. */
   scoutVerdictSummaryHtml(p)+
+
+  /* Deal Analysis — the deeper layer: buy case vs. counter-argument,
+     single biggest risk, best/worst case, model-derived bid range,
+     one-line deal interpretation. */
+  dealAnalysisHtml(p)+
 
   /* Performance / Value / Moneyball — clearly separated, never blended into one opaque number */
   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'+
@@ -2757,6 +3155,7 @@ function renderScoutReportV2(p){
 
   if(el)el.innerHTML=html;
   if(elSecondary)elSecondary.innerHTML=html;
+  console.log('[ScoutReport] Gerendert für '+p.name+' \u2014 Dashboard:',!!el,'Tab:',!!elSecondary);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2849,9 +3248,10 @@ function loadFile(file){
       if(v)v.classList.add('active');
       /* refresh secondary views on navigate */
       if(l.dataset.view==='scout-reports'&&FILTERED[SELECTED_IDX]) renderScoutReportV2(FILTERED[SELECTED_IDX]);
-      /* hidden-gems and compare views are deferred to a later phase
-         (dashboard redesign) — no render call here for now, so
-         navigating to those tabs won't throw on missing functions */
+      if(l.dataset.view==='hidden-gems') renderHiddenGemsV2(FILTERED);
+      /* compare view is deferred to a later phase — no render call
+         here for now, so navigating to that tab won't throw on a
+         missing function */
     });
   });
 
@@ -3113,6 +3513,7 @@ window.setLang=function(lang){
       renderDetailVizV2(FILTERED[sel],FILTERED);
     }
     renderMarketOverviewV2(FILTERED);
+    renderHiddenGemsV2(FILTERED);
   }
 };
 /* boot in German */
