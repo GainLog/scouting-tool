@@ -1116,6 +1116,7 @@ function resolveAndValidate(players){
      scorePlayerV2-Aufrufen (posGroupFromRole) neu befüllt */
   UNKNOWN_ROLES_SEEN={};
   UNKNOWN_LEAGUES_SEEN={};
+  FUZZY_MATCHED_SEEN={};
   return validation;
 }
 
@@ -1268,6 +1269,8 @@ var LEAGUE_STRENGTH={
    "wir wissen es nicht" — das sollte im UI genauso auffallen wie eine
    unbekannte Rolle oder eine fehlende Spalte. */
 var UNKNOWN_LEAGUES_SEEN={};
+var FUZZY_MATCHED_SEEN={}; /* AUDIT RUNDE 12 — siehe leagueFactor: Spieler, die über den
+  Substring-Fallback statt exaktem Treffer aufgelöst wurden (geringere Konfidenz). */
 function leagueFactor(s){
   if(!s){
     /* BUGFIX Runde 9: leeres/fehlendes Liga-Feld lief bisher VOR dem
@@ -1313,7 +1316,28 @@ function leagueFactor(s){
       bestMatch=k;bestLen=k.length;
     }
   }
-  if(bestMatch!==null)return LEAGUE_STRENGTH[bestMatch];
+  if(bestMatch!==null){
+    /* AUDIT RUNDE 12 — User-Anfrage nach "Alias-Matches angewendet".
+       Die Tabelle hat keine kanonisch/Alias-Unterscheidung (jeder
+       String ist ein gleichwertiger Key), DAFÜR aber eine echte,
+       andere Unterscheidung: exakter Treffer (Zeile drüber, hohe
+       Konfidenz — der String steht wortwörtlich in der Tabelle) vs.
+       Substring-Fallback hier (geringere Konfidenz — das ist exakt
+       der Mechanismus, der beim "Galaktische Superliga"-Fall und beim
+       in dieser Runde gefixten Liga-Portugal-Fall greift). Separates
+       Tracking, damit sichtbar wird, wie viele Spieler über den
+       UNSICHEREN Pfad aufgelöst wurden, nicht nur "aufgelöst ja/nein". */
+    /* AUDIT RUNDE 13 — User-Anfrage: "häufigste Fuzzy-Matches" mit
+       Ziel-Liga anzeigen (z.B. "Liga Portugal 2 -> Liga Portugal").
+       Dafür reicht eine reine Zählung nicht — wir brauchen auch
+       WOHIN der Treffer ging. Struktur geändert von einer reinen Zahl
+       auf {count, matchedKey}. matchedKey ist für einen gegebenen
+       String s deterministisch (gleiche Eingabe -> gleicher bestMatch),
+       daher reicht es, ihn beim ersten Auftreten zu speichern. */
+    if(!FUZZY_MATCHED_SEEN[s])FUZZY_MATCHED_SEEN[s]={count:0,matchedKey:bestMatch};
+    FUZZY_MATCHED_SEEN[s].count++;
+    return LEAGUE_STRENGTH[bestMatch];
+  }
   UNKNOWN_LEAGUES_SEEN[s]=(UNKNOWN_LEAGUES_SEEN[s]||0)+1;
   return LEAGUE_STRENGTH['default'];
 }
@@ -1481,6 +1505,7 @@ var LAST_IMPORT_FILE_TYPE=null;
 /* sortierte [name,count]-Paare des letzten Imports, nur für den
    Export-Button gehalten — keine Score-Logik liest diese Variable */
 var LAST_UNKNOWN_LEAGUES_EXPORT=[];
+var LAST_FUZZY_MATCHES_EXPORT=[]; /* AUDIT RUNDE 13 — siehe exportFuzzyMatches */
 
 function buildFieldResolver(headers){
   var headerSet={};
@@ -1582,10 +1607,21 @@ function parseMoneyRange(str){
 }
 
 function parseContractMonths(str){
-  /* "30.6.2026" -> months remaining from now */
-  if(!str)return 36;
+  /* "30.6.2026" -> months remaining from now.
+     BUGFIX Runde 14 — endgültiger Fix für den seit Runde 9 dokumentierten,
+     bewusst verschobenen Punkt: vorher gab diese Funktion bei fehlendem
+     ODER unparsebarem Datum lautlos 36 zurück (= "normale Vertragslänge"),
+     OHNE jede Markierung. Das floss unmarkiert in riskPenalty, zwei
+     redFlags-Stellen, maxBidRangeV2 und zwei UI-Anzeigen ein — exakt das
+     gleiche Muster wie der alte tvKnown/wageKnown-Bug, nur hier nie
+     behoben. Jetzt: null bei Unbekannt, Aufrufer (scorePlayerV2) setzt
+     explizit contractMonthsKnown und einen Fallback-Zahlenwert NUR für
+     Berechnungen, die zwingend eine Zahl brauchen — alle Konsumenten
+     prüfen jetzt zusätzlich das Flag, bevor sie den Wert als echt
+     behandeln (gleiches Muster wie tvKnown/wageKnown). */
+  if(!str)return null;
   var m=str.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  if(!m)return 36;
+  if(!m)return null;
   var end=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));
   var now=new Date();
   var months=(end.getFullYear()-now.getFullYear())*12+(end.getMonth()-now.getMonth());
@@ -1944,6 +1980,8 @@ function scorePlayerV2(raw){
   var tvKnown=!!tvRange;
 
   var contractMonths=parseContractMonths(raw['endet']);
+  var contractMonthsKnown=contractMonths!==null;
+  if(!contractMonthsKnown)contractMonths=36; /* Fallback NUR für Stellen, die zwingend eine Zahl brauchen (z.B. Sortierung) — riskPenalty/redFlags/maxBidRangeV2/UI prüfen contractMonthsKnown, BEVOR sie diesen Wert wie echte Daten behandeln */
 
   var minutes=parseDeNum(raw['minuten']);
   var starts=parseDeNum(raw['start11']);
@@ -1995,6 +2033,7 @@ function scorePlayerV2(raw){
     wage:wage,wageKnown:wageKnown,
     transferValue:transferValue,tvKnown:tvKnown,
     contractMonths:contractMonths,
+    contractMonthsKnown:contractMonthsKnown,
     minutes:minutes,starts:starts,
     goals:goals,assists:assists,xg:xg,xa:xa,
     goals90:goals90,xg90:xg90,xa90:xa90,
@@ -2179,8 +2218,10 @@ function normaliseV2(players){
     var ageGroup=p.posGrp;
     var ageScore=ageCurveScore(p.age,ageGroup);
     var riskPenalty=0;
-    if(p.contractMonths<6)riskPenalty+=10;
-    else if(p.contractMonths<12)riskPenalty+=5;
+    if(p.contractMonthsKnown){
+      if(p.contractMonths<6)riskPenalty+=10;
+      else if(p.contractMonths<12)riskPenalty+=5;
+    }
     if(p.minutes<450)riskPenalty+=8; /* low sample size risk, separate from the display confidence tier */
     p.riskPenalty=riskPenalty;
     p.ageScore=ageScore;
@@ -2379,8 +2420,11 @@ function redFlagsV2(p){
   if(p.smallGroupWarning){
     flags.push({cat:'Vergleichsgruppe',t:'Nur '+p.groupSampleSize+' Spieler in der Positionsgruppe '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' im Datensatz — Perzentil-Ranking ist instabil.'});
   }
-  if(p.contractMonths<6){
+  if(p.contractMonthsKnown&&p.contractMonths<6){
     flags.push({cat:'Vertrag',t:'Vertrag läuft in unter 6 Monaten aus — wenig Verhandlungsspielraum.'});
+  }
+  if(!p.contractMonthsKnown){
+    flags.push({cat:'Vertragsende',t:'Kein Vertragsende in den Daten — Vertrags-Leverage nicht bewertbar, kein Risiko-/Bonusfaktor angewendet.'});
   }
   if(!p.wageKnown){
     flags.push({cat:'Gehalt',t:'Kein Gehalt in den Daten — Value Score nicht berechenbar.'});
@@ -2887,7 +2931,7 @@ function renderOverviewPanelV2(p,allInGroup){
     '<div class="card" style="padding:14px">'+
       '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Risikoanalyse</div>'+
       '<div style="font-size:20px;font-weight:900;color:'+(riskScore>=80?'var(--accent-green)':riskScore>=60?'var(--accent-amber)':'var(--accent-red)')+'">'+riskScore+'/100</div>'+
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Vertragsrestlaufzeit: '+p.contractMonths+' Mon. &bull; Minuten: '+p.minutes+'</div>'+
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Vertragsrestlaufzeit: '+(p.contractMonthsKnown?p.contractMonths+' Mon.':'unbekannt')+' &bull; Minuten: '+p.minutes+'</div>'+
     '</div>'+
     '<div class="card" style="padding:14px">'+
       '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Budget</div>'+
@@ -3856,9 +3900,13 @@ function biggestRiskV2(p){
     return {title:'Vergleichsgruppe zu klein',
       text:'Nur '+p.groupSampleSize+' Spieler in der Positionsgruppe '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' im Datensatz. Das Perzentil-Ranking kann sich stark verschieben, sobald mehr Vergleichsspieler importiert werden — der Score ist nicht so stabil, wie er aussieht.'};
   }
-  if(p.contractMonths<6){
+  if(p.contractMonthsKnown&&p.contractMonths<6){
     return {title:'Vertragslaufzeit',
       text:'Vertrag läuft in unter 6 Monaten aus. Wenig Verhandlungsspielraum für den Verkäuferclub bedeutet zwar potenziell einen günstigeren Preis, aber auch Risiko bei Ablösefrei-Wechsel-Konkurrenz von anderen Vereinen.'};
+  }
+  if(!p.contractMonthsKnown){
+    return {title:'Vertragsende unbekannt',
+      text:'Kein Vertragsende in den Daten. Die Vertrags-Leverage des Verkäuferclubs lässt sich nicht einschätzen — weder Risiko- noch Bonusfaktor wurde angewendet, das Bid-Modell rechnet hier mit einer neutralen Annahme statt mit echten Daten.'};
   }
   if(p.costUnknown){
     return {title:'Unbekannte Kosten',
@@ -3940,8 +3988,13 @@ function maxBidRangeV2(p){
   else { adj-=12; factors.push('Deutlich jenseits des Leistungshöhepunkts (-12)'); }
 
   /* 3. Contract leverage — short remaining contract weakens the
-     seller's negotiating position */
-  if(p.contractMonths<6){ adj-=10; factors.push('Vertrag <6 Monate, wenig Verkäufer-Leverage (-10)'); }
+     seller's negotiating position.
+     BUGFIX Runde 14: vorher lief eine fehlende/unparsebare 'endet'-
+     Spalte hier lautlos auf den else-Zweig "Normale Vertragslaufzeit
+     (±0)" — das BEHAUPTET implizit, die Vertragsdauer sei bekannt und
+     normal, obwohl sie schlicht fehlte. Jetzt eigener, ehrlicher Zweig. */
+  if(!p.contractMonthsKnown){ factors.push('Vertragsende unbekannt, kein Anpassungsfaktor (±0)'); }
+  else if(p.contractMonths<6){ adj-=10; factors.push('Vertrag <6 Monate, wenig Verkäufer-Leverage (-10)'); }
   else if(p.contractMonths<12){ adj-=5; factors.push('Vertrag <12 Monate (-5)'); }
   else if(p.contractMonths>36){ adj+=3; factors.push('Langer Vertrag, Verkäufer kann auf vollen Wert bestehen (+3)'); }
   else { factors.push('Normale Vertragslaufzeit (±0)'); }
@@ -4437,7 +4490,7 @@ function renderScoutReportV2(p,allPlayers){
     '<div style="padding:10px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">'+
       '<div><span style="color:var(--text-muted)">Gehalt: </span><span style="font-weight:700">'+(p.wageKnown?fmtMoney(p.wage)+'/J.':'unbekannt')+'</span></div>'+
       '<div><span style="color:var(--text-muted)">Transferwert: </span><span style="font-weight:700">'+(p.tvKnown?fmtMoney(p.transferValue):'unbekannt')+'</span></div>'+
-      '<div><span style="color:var(--text-muted)">Vertrag bis: </span><span style="font-weight:700">'+p.contractMonths+' Monate</span></div>'+
+      '<div><span style="color:var(--text-muted)">Vertrag bis: </span><span style="font-weight:700">'+(p.contractMonthsKnown?p.contractMonths+' Monate':'unbekannt')+'</span></div>'+
       '<div><span style="color:var(--text-muted)">Liga-Faktor: </span><span style="font-weight:700">'+p.lf.toFixed(2)+' ('+p.league+')</span></div>'+
     '</div>'+
   '</div>'+
@@ -4498,6 +4551,30 @@ window.selectPlayerAndView=function(idx,view){
    Mapping. "NEU?" mit hoher Similarity (z.B. Série B/C gegen Série A,
    94.7%) ist trotzdem KEINE Variante — Similarity ist hier nur ein
    Sortier-Hinweis für die manuelle Suche, keine Entscheidung. */
+window.exportFuzzyMatches=function(){
+  if(!LAST_FUZZY_MATCHES_EXPORT||LAST_FUZZY_MATCHES_EXPORT.length===0){
+    alert('Keine Fuzzy-Matches im aktuellen Import — nichts zu exportieren.');
+    return;
+  }
+  var lines=['Original-Liganame|Count|Aufgelöst gegen|Liga-Wert'];
+  LAST_FUZZY_MATCHES_EXPORT.forEach(function(e){
+    var safeName=String(e.name).replace(/\|/g,'/');
+    var safeKey=String(e.matchedKey).replace(/\|/g,'/');
+    lines.push(safeName+'|'+e.count+'|'+safeKey+'|'+e.value);
+  });
+  var csv='\uFEFF'+lines.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  var ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href=url;
+  a.download='fuzzy_matches_'+ts+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+};
+
 window.exportUnknownLeagues=function(){
   if(!LAST_UNKNOWN_LEAGUES_EXPORT||LAST_UNKNOWN_LEAGUES_EXPORT.length===0){
     alert('Keine unbekannten Ligen im aktuellen Import — nichts zu exportieren.');
@@ -4540,7 +4617,7 @@ window.exportUnknownLeagues=function(){
    Gegensatz zum Warnbanner, das nur bei Problemen erscheint). Zeigt
    die 6 angeforderten Kennzahlen nach JEDEM Import, auch einem
    sauberen — Vertrauen durch Transparenz statt nur Fehler-Meldungen. */
-function renderImportAuditPanel(validation,players,fileType,positionDiag,unknownRoles,unknownLeagues){
+function renderImportAuditPanel(validation,players,fileType,positionDiag,unknownRoles,unknownLeagues,fuzzyMatched){
   var panel=document.getElementById('import-audit-panel');
   if(!panel)return;
   if(!validation||!players){
@@ -4556,19 +4633,23 @@ function renderImportAuditPanel(validation,players,fileType,positionDiag,unknown
   var missingCount=validation.missingRequired.length;
   var missingBizCount=(validation.missingBusinessFields||[]).length;
 
-  /* AUDIT RUNDE 11 — User-Anfrage: "Spieler auf Default-Faktor 0.55"
-     als feste, dauerhafte Kennzahl, NICHT als einmaliger Vorher/Nachher-
-     Vergleich gegen eine eingefrorene alte Tabelle (siehe ausführliche
-     Begründung in der Chat-Antwort, warum das bewusst NICHT eingebaut
-     wurde). WICHTIG: NICHT über p.lf===0.55 zählen — 'Serie BKT'
-     (italienische Serie B) ist bewusst ebenfalls auf 0.55 gesetzt,
-     das wäre sonst eine falsche Positiv-Zählung für eine korrekt
-     aufgelöste, echte Liga. Stattdessen über UNKNOWN_LEAGUES_SEEN
-     summieren — das ist exakt die Menge an Spielern, die tatsächlich
-     den Default-Fallback durchlaufen haben (inkl. des Runde-9-Fixes
-     für komplett fehlende 'liga'-Spalte). */
+  /* AUDIT RUNDE 11 — "Spieler auf Default-Faktor 0.55" als feste,
+     dauerhafte Kennzahl. WICHTIG: NICHT über p.lf===0.55 zählen —
+     'Serie BKT' (italienische Serie B) ist bewusst ebenfalls auf 0.55
+     gesetzt, das wäre sonst eine falsche Positiv-Zählung für eine
+     korrekt aufgelöste, echte Liga. Stattdessen über
+     UNKNOWN_LEAGUES_SEEN summieren. */
   var totalLeagueAffected=Object.keys(unknownLeagues||{}).reduce(function(s,k){return s+unknownLeagues[k];},0);
   var leagueDefaultPct=players.length>0?Math.round((totalLeagueAffected/players.length)*1000)/10:0;
+  /* AUDIT RUNDE 12 — User-Anfrage "Alias-Matches angewendet": die
+     Tabelle hat keine kanonisch/Alias-Unterscheidung, daher hier die
+     direkte Komplementärzahl zu "Spieler auf Liga-Default" (alles,
+     was NICHT auf Default landete) PLUS, wo verfügbar, wie viel davon
+     über den unsicheren Substring-Fallback statt exaktem Treffer
+     aufgelöst wurde — siehe leagueFactor/FUZZY_MATCHED_SEEN. */
+  var totalResolved=players.length-totalLeagueAffected;
+  var resolvedPct=players.length>0?Math.round((totalResolved/players.length)*1000)/10:0;
+  var totalFuzzyMatched=Object.keys(fuzzyMatched||{}).reduce(function(s,k){return s+fuzzyMatched[k].count;},0);
 
   function stat(label,value,warn){
     return '<span><span style="color:'+(warn?'var(--accent-red)':'var(--text-muted)')+'">'+label+':</span> '+
@@ -4584,10 +4665,11 @@ function renderImportAuditPanel(validation,players,fileType,positionDiag,unknown
     stat('Header gemappt',headersMapped+' / '+headersTotal)+
     stat('Fehlende Pflichtfelder',missingCount===0?'0':missingCount,missingCount>0)+
     stat('Geschäftsfeld-Spalten fehlend',missingBizCount===0?'0':missingBizCount+' ('+validation.missingBusinessFields.join(', ')+')',missingBizCount>0)+
+    stat('Liga erfolgreich aufgelöst',totalResolved+' ('+resolvedPct+'%)'+(totalFuzzyMatched>0?' \u2014 davon '+totalFuzzyMatched+' \u00FCber Fuzzy-Match':''))+
     stat('Spieler auf Liga-Default (0.55)',totalLeagueAffected+' ('+leagueDefaultPct+'%)',leagueDefaultPct>10);
 }
 
-function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlayers){
+function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlayers,fuzzyMatched){
   var banner=document.getElementById('import-warning-banner');
   if(!banner)return;
   totalPlayers=totalPlayers||0;
@@ -4600,11 +4682,18 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
      Import, die nichts mit der Größe des Problems zu tun hat) */
   var unknownLeagueEntries=unknownLeagues?Object.keys(unknownLeagues).sort(function(a,b){return unknownLeagues[b]-unknownLeagues[a];}):[];
   var hasUnknownLeagues=unknownLeagueEntries.length>0;
+  /* AUDIT RUNDE 13 — User-Anfrage "häufigste Fuzzy-Matches anzeigen".
+     Eigene, von Unknown-Leagues GETRENNTE Kategorie: das sind keine
+     Lücken (es WURDE etwas zugeordnet), sondern potenziell falsche
+     Zuordnungen — andere Risikoart, andere Liste, eigener Export. */
+  var fuzzyMatchEntries=fuzzyMatched?Object.keys(fuzzyMatched).sort(function(a,b){return fuzzyMatched[b].count-fuzzyMatched[a].count;}):[];
+  var hasFuzzyMatches=fuzzyMatchEntries.length>0;
 
-  if(!hasMissingCols&&!hasMissingBusinessFields&&!hasUnknownRoles&&!hasUnknownLeagues){
+  if(!hasMissingCols&&!hasMissingBusinessFields&&!hasUnknownRoles&&!hasUnknownLeagues&&!hasFuzzyMatches){
     banner.classList.add('hidden');
     banner.innerHTML='';
     LAST_UNKNOWN_LEAGUES_EXPORT=[];
+    LAST_FUZZY_MATCHES_EXPORT=[];
     return;
   }
   banner.classList.remove('hidden');
@@ -4689,11 +4778,19 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
     var TOP_N=20;
     var visibleSuggestions=suggestions.slice(0,TOP_N);
     var hiddenCount=suggestions.length-visibleSuggestions.length;
+    /* AUDIT RUNDE 12 — User-Feedback: die Top-Liga-Liste existierte
+       technisch schon (Runde 11), war aber hinter einem Klick auf
+       "Liga-Mapping" versteckt — die eigentliche Anfrage war nicht
+       "Liste bauen", sondern "ohne Klick sichtbar machen". Daher jetzt
+       eine Top-3-Vorschau DIREKT in der eingeklappten Zusammenfassungs-
+       zeile (bleibt eine Zeile, kein Bruch des "ruhig by default"-
+       Prinzips), volle Top-20-Liste weiterhin hinter dem Klick. */
+    var top3Preview=suggestions.slice(0,3).map(function(s){return '"'+s.name+'" ('+s.count+')';}).join(', ');
     html+='<details>'+
       '<summary style="cursor:pointer;color:var(--text-secondary)">'+
         '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> Liga-Mapping: '+
         (hasTotalCount?matchedCount+'/'+totalPlayers+' Spieler mit echter Liga-St\u00E4rke ('+matchedPct+'%)':'Coverage nicht berechenbar')+
-        ' <span style="color:var(--text-muted)">\u00B7 '+unknownLeagueEntries.length+' unbekannte Liga-Namen, Default-Wert 0.55 verwendet, Score nicht blockiert</span>'+
+        ' <span style="color:var(--text-muted)">\u00B7 Gr\u00F6\u00DFte L\u00FCcken: '+top3Preview+(suggestions.length>3?' \u2026':'')+'</span>'+
         '<button onclick="event.stopPropagation();window.exportUnknownLeagues()" style="margin-left:10px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--border-dim)">\u2B07 Export</button>'+
       '</summary>'+
       '<div style="padding:8px 0 4px">'+
@@ -4704,16 +4801,76 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
         '<div style="margin:0 0 6px;color:var(--text-muted);font-weight:600">Top '+visibleSuggestions.length+' nach Spieleranzahl'+(hiddenCount>0?' (von '+suggestions.length+' gesamt — vollst\u00E4ndige Liste \u00FCber Export)':'')+':</div>'+
         '<ul style="margin:4px 0 0 18px;padding:0;color:var(--text-muted)">'+
         visibleSuggestions.map(function(s){
+          /* Format auf User-Wunsch: "Name – N Spieler" führt, der
+             Alias-Ähnlichkeits-Hinweis ist Kontext, nicht die Hauptzahl
+             — daher kleiner/sekundär statt gleichrangig. */
           var tag=s.isExactVariant
             ?'<span style="color:var(--accent-green)">[Variante]</span>'
             :'<span style="color:var(--text-muted)">[Neu?]</span>';
-          return '<li style="margin-bottom:3px">'+tag+' "'+s.name+'" \u00D7 '+s.count+
-            ' \u2192 \u00E4hnlichster Eintrag: "'+s.bestMatch+'" ('+s.similarity+'%, nur Hinweis)</li>';
+          return '<li style="margin-bottom:4px">'+tag+' <span style="color:var(--text-primary);font-weight:600">"'+s.name+'"</span> \u2013 '+s.count+' Spieler'+
+            '<br><span style="font-size:10px;color:var(--text-muted)">\u00E4hnlichster bekannter Eintrag: "'+s.bestMatch+'" ('+s.similarity+'%, nur Hinweis, kein automatisches Mapping)</span></li>';
         }).join('')+
         (hiddenCount>0?'<li style="margin-top:4px;color:var(--text-muted);font-style:italic">+ '+hiddenCount+' weitere, kleinere Liga-Namen \u2014 vollst\u00E4ndige Liste im Export</li>':'')+
         '</ul>'+
       '</div>'+
     '</details>';
+  } else {
+    /* BUGFIX Runde 15 — User-Frage: kann Export auf veraltete Daten
+       zeigen, wenn ein FOLGE-Import 0 Unknown Leagues hat, das Banner
+       aber wegen einer ANDEREN Warnung trotzdem sichtbar bleibt? Vorher
+       wurde LAST_UNKNOWN_LEAGUES_EXPORT nur im "Banner komplett
+       ausblenden"-Pfad zurückgesetzt — nicht hier. Über die UI nicht
+       auslösbar (kein Button wird ohne hasUnknownLeagues gerendert),
+       aber der globale Zustand selbst war falsch. Jetzt: pro Abschnitt
+       eigenständig zurückgesetzt, unabhängig vom Zustand der anderen
+       Banner-Abschnitte. */
+    LAST_UNKNOWN_LEAGUES_EXPORT=[];
+  }
+  if(hasFuzzyMatches){
+    /* AUDIT RUNDE 13 — User-Anfrage: "häufigste Fuzzy-Matches anzeigen,
+       Beispiel: Liga Portugal 2 -> Liga Portugal (58 Spieler)".
+       Bewusst EIGENER <details>-Block, nicht in den Liga-Mapping-Block
+       gemischt: das ist konzeptionell eine andere Risikoart. Unknown
+       Leagues = "wir wissen es nicht, Default verwendet, sichtbar
+       markiert". Fuzzy-Matches = "wir haben etwas zugeordnet, aber
+       nicht über einen exakten Treffer — könnte falsch sein" (das
+       dokumentierte, ungelöste Substring-Kollisionsrisiko, z.B.
+       "Galaktische Superliga" -> SuperLiga). Wer das nicht prüfen will,
+       kann den Block einfach zugeklappt lassen — er erscheint nur,
+       wenn es überhaupt Fuzzy-Matches gibt (ruhig-by-default bleibt). */
+    var totalFuzzyPlayers=fuzzyMatchEntries.reduce(function(s,k){return s+fuzzyMatched[k].count;},0);
+    var FUZZY_TOP_N=20;
+    var fuzzyExportList=fuzzyMatchEntries.map(function(k){
+      return {name:k,count:fuzzyMatched[k].count,matchedKey:fuzzyMatched[k].matchedKey,value:LEAGUE_STRENGTH[fuzzyMatched[k].matchedKey]};
+    });
+    LAST_FUZZY_MATCHES_EXPORT=fuzzyExportList;
+    var visibleFuzzy=fuzzyExportList.slice(0,FUZZY_TOP_N);
+    var hiddenFuzzyCount=fuzzyExportList.length-visibleFuzzy.length;
+    var fuzzyTop3Preview=fuzzyExportList.slice(0,3).map(function(e){return '"'+e.name+'"\u2192"'+e.matchedKey+'" ('+e.count+')';}).join(', ');
+    html+='<details>'+
+      '<summary style="cursor:pointer;color:var(--text-secondary)">'+
+        '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> Fuzzy-Matches: '+
+        totalFuzzyPlayers+' Spieler \u00FCber unsicheren Substring-Treffer aufgel\u00F6st (kein exakter Treffer)'+
+        ' <span style="color:var(--text-muted)">\u00B7 Gr\u00F6\u00DFte: '+fuzzyTop3Preview+(fuzzyExportList.length>3?' \u2026':'')+'</span>'+
+        '<button onclick="event.stopPropagation();window.exportFuzzyMatches()" style="margin-left:10px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--border-dim)">\u2B07 Export</button>'+
+      '</summary>'+
+      '<div style="padding:8px 0 4px">'+
+        '<div style="margin:0 0 6px;color:var(--text-muted)">Diese Spieler wurden NICHT über einen exakten Tabellen-Eintrag aufgel\u00F6st, sondern weil ihr Liga-String einen bekannten Eintrag als Teilstring enth\u00E4lt. Bei kurzen/generischen Namen kann das falsch zugeordnet sein \u2014 bitte stichprobenhaft pr\u00FCfen.</div>'+
+        '<div style="margin:0 0 6px;color:var(--text-muted);font-weight:600">Top '+visibleFuzzy.length+' nach Spieleranzahl'+(hiddenFuzzyCount>0?' (von '+fuzzyExportList.length+' gesamt — vollst\u00E4ndige Liste \u00FCber Export)':'')+':</div>'+
+        '<ul style="margin:4px 0 0 18px;padding:0;color:var(--text-muted)">'+
+        visibleFuzzy.map(function(e){
+          return '<li style="margin-bottom:4px"><span style="color:var(--text-primary);font-weight:600">"'+e.name+'"</span>'+
+            ' \u2192 <span style="color:var(--accent-amber)">"'+e.matchedKey+'"</span> ('+e.count+' Spieler, Wert: '+e.value+')</li>';
+        }).join('')+
+        (hiddenFuzzyCount>0?'<li style="margin-top:4px;color:var(--text-muted);font-style:italic">+ '+hiddenFuzzyCount+' weitere Fuzzy-Matches \u2014 vollst\u00E4ndige Liste im Export</li>':'')+
+        '</ul>'+
+      '</div>'+
+    '</details>';
+  } else {
+    /* BUGFIX Runde 15 — gleicher Fix wie bei LAST_UNKNOWN_LEAGUES_EXPORT
+       oben: pro Abschnitt eigenständig zurückgesetzt, statt nur im
+       globalen "Banner ausblenden"-Pfad. */
+    LAST_FUZZY_MATCHES_EXPORT=[];
   }
   banner.innerHTML=html;
 }
@@ -4747,9 +4904,9 @@ function loadFile(file){
     /* Positions-Diagnose erst JETZT möglich — posGroupFromRole füllt
        UNKNOWN_ROLES_SEEN erst während scorePlayerV2. Banner zeigt
        Spalten- UND Positions-Probleme gemeinsam. */
-    renderImportWarningV2(validation,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN,ALL_PLAYERS.length);
+    renderImportWarningV2(validation,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN,ALL_PLAYERS.length,FUZZY_MATCHED_SEEN);
     LAST_POSITION_DIAGNOSTIC=diagnosePositions(ALL_PLAYERS);
-    renderImportAuditPanel(validation,ALL_PLAYERS,fileType,LAST_POSITION_DIAGNOSTIC,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN);
+    renderImportAuditPanel(validation,ALL_PLAYERS,fileType,LAST_POSITION_DIAGNOSTIC,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN,FUZZY_MATCHED_SEEN);
 
     /* Phase 2: normalise all scores against the full dataset, per position group */
     normaliseV2(ALL_PLAYERS);
