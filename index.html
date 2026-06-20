@@ -1086,11 +1086,27 @@ function resolveAndValidate(players){
   var resolverMap=buildFieldResolver(headers);
   players.forEach(function(row){applyFieldAliases(row,resolverMap);});
   var missingRequired=SCORING_CRITICAL_FIELDS.filter(function(k){return !resolverMap[k];});
+  /* AUDIT RUNDE 9 — Antwort auf die offene FIELD_ALIASES-Lücke:
+     transferwert/gehalt/liga/endet/beste_rolle werden in scorePlayerV2
+     per raw['...'] 1:1 unter Klarnamen gelesen, OHNE FIELD_ALIASES-
+     Eintrag. Bewusst KEINE spekulativen Aliase hinzugefügt — dieselbe
+     Begründung wie beim bestehenden Kommentar zu zwk_z/spa: eine
+     erratene falsche Alias-Zuordnung ist riskanter als eine sichtbar
+     gemeldete Lücke. Diese Liste prüft daher nur, ob die Spalte
+     ÜBERHAUPT im Header vorkommt (nicht, ob der Inhalt plausibel ist —
+     das machen tvKnown/wageKnown/UNKNOWN_LEAGUES_SEEN bereits pro Zeile).
+     Differenzierte Risikobewertung (warum nicht alle 5 gleich kritisch
+     sind) siehe Code-Kommentare bei leagueFactor/posGroupFromRole/
+     parseContractMonths — diese Liste deckt NUR den "Spalte komplett
+     umbenannt/entfernt"-Fall ab, der ohne diesen Check unsichtbar bliebe. */
+  var BUSINESS_FIELDS=['transferwert','gehalt','liga','endet','beste_rolle'];
+  var missingBusinessFields=BUSINESS_FIELDS.filter(function(k){return headers.indexOf(k)===-1;});
   var validation={
     headers:headers,
     resolverMap:resolverMap,
     rowsFound:players.length,
     missingRequired:missingRequired,
+    missingBusinessFields:missingBusinessFields,
     impactLines:describeFieldImpact(missingRequired)
   };
   UNRESOLVED_FIELDS=missingRequired;
@@ -1169,6 +1185,80 @@ var LEAGUE_STRENGTH={
   'Serie BKT':0.55, /* [KONTEXT, KEINE ZAHL] Italian Serie B, Sponsor-Name — als "unter Serie A, aber starke Fußball-Nation" eingeordnet, kein berechneter Abstand */
   'SuperLiga':0.52, /* [KONTEXT, KEINE ZAHL] Serbian SuperLiga — UEFA-aktiv, als unterdurchschnittlich gegenüber Westeuropa eingeordnet, keine Kennzahl dahinter */
   'Superliga':0.80, /* [KONTEXT, KEINE ZAHL] Danish Superliga (Großschreibung S vs. serbisches "SuperLiga" — bewusst zwei unterschiedliche Strings) — Midtjylland/FCK als etablierte UEFA-Teilnehmer eingeordnet, 0.80 selbst geschätzt */
+
+  /* AUDIT RUNDE 10 — Antwort auf User-Anfrage: 9 konkret benannte
+     Liga-Namen aus der "Unknown Leagues"-Liste (45,7% der 2728
+     Spieler liefen auf Default). WICHTIGER VORBEHALT, der für ALLE
+     Einträge unten gilt: ich habe NICHT die echte exportierte Liste
+     mit den exakten String-Schreibweisen aus FM26 gesehen (nur die 9
+     vom User benannten Namen als Freitext) — anders als z.B. bei
+     "Brasileirão Série A" (Audit Runde 7), wo der exakte Export-String
+     an echten Daten verifiziert wurde. Pro Liga daher MEHRERE
+     plausible String-Varianten als Keys (analog zum bestehenden
+     Scottish Premiership/Premiership-Muster), damit ein Treffer
+     wahrscheinlicher wird, OHNE eine andere Liga falsch zu belegen
+     (das Werte-Risiko ist hier gering, da jede neue Liga eine
+     GENUIN andere ist, kein Namens-Alias einer bereits falsch
+     zugeordneten — anders als der alte Brasilien-Bug). Die ZAHLEN
+     selbst sind [UNDOKUMENTIERT] im selben Sinn wie der Rest der
+     Tabelle: Fußball-Plausibilitätsschätzung, keine berechnete
+     Kennzahl. Empfehlung: nach dem nächsten Import prüfen, ob diese
+     Strings tatsächlich matchen (Unknown-Leagues-Report sollte für
+     diese 8 Ligen leer laufen) — falls nicht, exakte Strings aus
+     dem echten Export nachliefern. */
+  'League One':0.42,'League 1':0.42,'EFL League One':0.42,'Sky Bet League One':0.42,
+    /* England Tier 3 — Verhältnis zur Championship (0.70) grob nach
+       demselben "2./3. Liga ≈ 0.6-0.7× der jeweils höheren Liga"-Muster
+       geschätzt wie Ligue 2/La Liga Hypermotion im Bestand. */
+  'League Two':0.32,'League 2':0.32,'EFL League Two':0.32,'Sky Bet League Two':0.32,
+    /* England Tier 4 — eine Stufe unter League One, gleiches Muster. */
+  'A-League':0.58,'A-League Men':0.58,'Isuzu UTE A-League':0.58,
+    /* Australien, AFC (außerhalb UEFA, daher kein Koeffizient verfügbar).
+       Aktuell (Recherche 2026) ein Sponsoring-Wachstum bei Zuschauern,
+       aber wirtschaftlich/sportlich klar unter MLS/Saudi Pro League
+       (0.74-0.75) eingeordnet — bewusst knapp über Default, nicht
+       "wir wissen nichts", aber auch keine etablierte Topliga. */
+  'Liga Portugal 2':0.58,'Liga Portugal B':0.58,'LigaPro':0.58,'Segunda Liga':0.58,
+    /* Portugal Tier 2 — mehrere Namensvarianten, weil diese Liga in
+       den letzten Jahren mehrfach umbenannt wurde (Sponsor-Wechsel).
+       Verhältnis zur Primeira/Liga Portugal (0.86) nach demselben
+       2.-Liga-Muster geschätzt. */
+  'Brasileirão Série B':0.50,'Brasileiro Série B':0.50,'Campeonato Brasileiro Série B':0.50,
+    /* Brasilien Tier 2 — Namensmuster nach dem bei Série A bereits
+       verifizierten "Brasileirão"-Präfix, PLUS die vom User notierte
+       Schreibweise ohne "ão" als Absicherung, falls das die tatsächliche
+       Export-Form ist. */
+  'Brasileirão Série C':0.36,'Brasileiro Série C':0.36,'Campeonato Brasileiro Série C':0.36,
+    /* Brasilien Tier 3 — deutlich unter Série B, semi-professionelles Niveau. */
+  'Chinese Super League':0.45,'CSL':0.45,
+    /* [KONTEXT, KEINE ZAHL] — per Web-Recherche dieser Runde bestätigt:
+       CSL befindet sich nach dem Finanz-Crash 2020-2022 (mehrere
+       Top-Klubs insolvent, u.a. Jiangsu/Guangzhou Evergrande) aktuell
+       in einer bewussten Sparkurs-/Jugendförderungs-Phase mit
+       Gehaltsobergrenzen — Zuschauerzahlen erholen sich, sportliches
+       Niveau ist aber klar unter dem früheren (2015-2019) Ausgaben-Boom.
+       0.45 ist eine Einschätzung für die AKTUELLE Phase, keine stabile
+       langfristige Zahl — diese Liga ist finanziell volatiler als die
+       meisten anderen Einträge hier, ggf. häufiger neu bewerten. */
+  'Regionalliga Nord':0.30,'Regionalliga Nordost':0.30,'Regionalliga Süd':0.30,
+  'Regionalliga West':0.30,'Regionalliga Bayern':0.30,'Regionalliga':0.30,
+    /* Deutschland Tier 4, 5 echte Regionalstaffeln + ein generischer
+       Catch-all-Key für den Fall, dass FM26 die Staffel nicht im
+       Namen führt. Halb-professionell, daher niedrig angesetzt — ÜBER
+       dem englischen Pendant League Two eingeordnet, da die deutsche
+       Fußball-Pyramide insgesamt als tiefer/breiter gilt, aber das ist
+       eine grobe Einordnung, keine harte Kennzahl. */
+
+  /* BEWUSST NICHT HINZUGEFÜGT: 'National' (vom User als 9. Beispiel
+     genannt). Konkret getestet (siehe Antwort an User): ein Key
+     'National' würde GLEICHZEITIG die englische "National League"
+     (Tier 5, semi-professionell) UND die französische "Championnat
+     National" (Tier 3, professionell) über den bestehenden Substring-
+     Fallback treffen — zwei Länder, zwei Ligastufen, ein Wert. Genau
+     das Risiko, das der Brasilien-Bug (Runde 7) schon einmal gezeigt
+     hat, nur diesmal vorher erkannt statt nachträglich gefixt. Ohne
+     den exakten Export-String (z. B. "Championnat National" explizit,
+     nicht nur "National") bleibt das offen — siehe Antwort an User. */
   'default':0.55 /* [KONTEXT, KEINE ZAHL] explizit "wir wissen es nicht", siehe UNKNOWN_LEAGUES_SEEN unten — KEINE Aussage über tatsächliche Ligastärke */
 };
 /* Erfasst Liga-Namen, die auf den 'default'-Wert (0.55) fallen, statt
@@ -1179,7 +1269,23 @@ var LEAGUE_STRENGTH={
    unbekannte Rolle oder eine fehlende Spalte. */
 var UNKNOWN_LEAGUES_SEEN={};
 function leagueFactor(s){
-  if(!s)return LEAGUE_STRENGTH['default'];
+  if(!s){
+    /* BUGFIX Runde 9: leeres/fehlendes Liga-Feld lief bisher VOR dem
+       UNKNOWN_LEAGUES_SEEN-Tracking auf 'return default' — dadurch
+       wurde ein komplett fehlender 'liga'-Spaltenname (z.B. nach einem
+       künftigen FM26-Spalten-Rename, da 'liga' KEINEN FIELD_ALIASES-
+       Eintrag hat) NIE als unbekannt erfasst. Konsequenz: die
+       Liga-Mapping-Coverage im Warnbanner (renderImportWarningV2)
+       hätte fälschlich "100% Spieler mit echter Liga-Stärke" gezeigt,
+       obwohl in Wahrheit 0% einen echten Liga-Wert hatten — die
+       Sicherheitsanzeige hätte genau dann gelogen, wenn sie am
+       wichtigsten gewesen wäre. Jetzt unter eigenem Schlüssel erfasst,
+       damit Banner/Coverage/Export es ehrlich zeigen (taucht als
+       "neue Liga, braucht Mapping" auf, nicht als Schreibvariante —
+       semantisch leicht ungenau, aber korrekt als Lücke markiert). */
+    UNKNOWN_LEAGUES_SEEN['(kein Liga-Wert im Import)']=(UNKNOWN_LEAGUES_SEEN['(kein Liga-Wert im Import)']||0)+1;
+    return LEAGUE_STRENGTH['default'];
+  }
   /* exact match first (case-sensitive) — required because some league
      names differ ONLY by case (Serbian "SuperLiga" vs Danish "Superliga")
      and a case-insensitive lookup would silently collapse them into the
@@ -1187,10 +1293,27 @@ function leagueFactor(s){
      country the player is actually in */
   if(LEAGUE_STRENGTH[s]!==undefined)return LEAGUE_STRENGTH[s];
   /* fallback: case-insensitive substring match for export-name variants
-     not in the exact list */
+     not in the exact list.
+     BUGFIX Runde 10: vorher gab die Schleife beim ERSTEN Treffer in
+     Objekt-Insertion-Order zurück. Das brach, sobald zwei Keys in
+     einer Tier1/Tier2-Präfix-Beziehung stehen (z.B. 'Liga Portugal'
+     0.86 ist Substring von 'Liga Portugal 2' 0.58, neu hinzugefügt
+     diese Runde) — eine nicht exakt erfasste 2.-Liga-Export-Variante
+     hätte fälschlich die 1.-Liga-Stärke bekommen, weil 'Liga Portugal'
+     früher in der Tabelle steht. Jetzt: ALLE Substring-Treffer
+     sammeln, LÄNGSTER (= spezifischster) Match gewinnt. Löst NICHT
+     das andere, bereits dokumentierte Problem (SuperLiga/Superliga,
+     identische Länge nach Lowercase, nur durch Groß-/Kleinschreibung
+     unterscheidbar, vom case-insensitive Vergleich hier nicht mehr
+     unterscheidbar) — das bleibt ein offener, separater Punkt. */
+  var bestMatch=null,bestLen=-1;
   for(var k in LEAGUE_STRENGTH){
-    if(k!=='default'&&s.toLowerCase().indexOf(k.toLowerCase())>-1)return LEAGUE_STRENGTH[k];
+    if(k==='default')continue;
+    if(s.toLowerCase().indexOf(k.toLowerCase())>-1&&k.length>bestLen){
+      bestMatch=k;bestLen=k.length;
+    }
   }
+  if(bestMatch!==null)return LEAGUE_STRENGTH[bestMatch];
   UNKNOWN_LEAGUES_SEEN[s]=(UNKNOWN_LEAGUES_SEEN[s]||0)+1;
   return LEAGUE_STRENGTH['default'];
 }
@@ -1703,8 +1826,18 @@ function posGroupFromRole(role){
   if(ROLE_ALIASES[norm])return ROLE_ALIASES[norm];
   /* KEIN stiller Fallback mehr — unbekannte Rolle wird explizit erfasst
      und an den Aufrufer (scorePlayerV2 -> posGrp='UNKNOWN') signalisiert,
-     statt geraten zu werden. */
-  if(role)UNKNOWN_ROLES_SEEN[role]=(UNKNOWN_ROLES_SEEN[role]||0)+1;
+     statt geraten zu werden.
+     BUGFIX Runde 9: vorher nur 'if(role)' geloggt — leere Rolle (z.B.
+     'beste_rolle'-Spalte komplett fehlt, kein FIELD_ALIASES-Eintrag
+     vorhanden) wurde NIE in UNKNOWN_ROLES_SEEN gezählt. posGrp='UNKNOWN'
+     wurde zwar trotzdem korrekt gesetzt (diagnosePositions zeigt es),
+     aber die Spieleranzahl-Anzeige im Audit-Panel ('UNKNOWN-Rollen: N
+     (X Spieler)') ließ den '(X Spieler)'-Zusatz weg, weil
+     unknownPlayerCount=0 blieb — ausgerechnet im Totalausfall-Fall
+     (100% der Zeilen betroffen) fehlte die Mengenangabe, die die
+     Größe des Problems sichtbar gemacht hätte. */
+  var roleKey=role||'(keine Rolle im Import)';
+  UNKNOWN_ROLES_SEEN[roleKey]=(UNKNOWN_ROLES_SEEN[roleKey]||0)+1;
   return 'UNKNOWN';
 }
 
@@ -3851,7 +3984,21 @@ function maxBidRangeV2(p){
   if(!p.costUnknown&&p.costEfficiency<40){
     var ceiling=p.costEfficiency<=20?0.85:1.00;
     if(highMult>ceiling){
-      var excess=highMult-1.0;
+      /* BUGFIX Runde 9: excess war fest gegen 1.0 berechnet, nicht
+         gegen den jeweils aktiven Ceiling. Für ceiling=1.00 ist das
+         identisch (kein Unterschied, da ceiling=1.0) — der Bug betraf
+         ausschließlich den ceiling=0.85-Zweig (costEfficiency<=20):
+         dort kann highMult zwischen 0.85 und 1.0 liegen, was excess
+         NEGATIV machte (z.B. highMult=0.94 -> excess=-0.06). Negative
+         excess wurde von Math.min(0.15,excess*0.3) durchgereicht und
+         drückte compressed UNTER den eigentlich beabsichtigten Boden
+         (ceiling-0.15), wodurch Spieler mit ohnehin schon korrekt
+         abgewerteter (wegen schwacher Performance) Gebotsspanne durch
+         den Cost-Efficiency-Preisschutz NOCH WEITER unnötig runtergedrückt
+         wurden als beabsichtigt. Fix verifiziert: ceiling=1.00-Zweig
+         liefert für alle Testfälle exakt dieselben Werte wie vorher
+         (siehe test_capbug.js), nur der ceiling=0.85-Zweig ändert sich. */
+      var excess=highMult-ceiling;
       var compressed=ceiling-0.15+Math.min(0.15,excess*0.3);
       highMult=Math.min(ceiling,compressed);
       lowMult=Math.min(lowMult,highMult-spread/100*0.6);
@@ -4393,7 +4540,7 @@ window.exportUnknownLeagues=function(){
    Gegensatz zum Warnbanner, das nur bei Problemen erscheint). Zeigt
    die 6 angeforderten Kennzahlen nach JEDEM Import, auch einem
    sauberen — Vertrauen durch Transparenz statt nur Fehler-Meldungen. */
-function renderImportAuditPanel(validation,players,fileType,positionDiag,unknownRoles){
+function renderImportAuditPanel(validation,players,fileType,positionDiag,unknownRoles,unknownLeagues){
   var panel=document.getElementById('import-audit-panel');
   if(!panel)return;
   if(!validation||!players){
@@ -4407,6 +4554,21 @@ function renderImportAuditPanel(validation,players,fileType,positionDiag,unknown
   var headersMapped=Object.values(validation.resolverMap).filter(function(v){return v;}).length;
   var headersTotal=Object.keys(validation.resolverMap).length;
   var missingCount=validation.missingRequired.length;
+  var missingBizCount=(validation.missingBusinessFields||[]).length;
+
+  /* AUDIT RUNDE 11 — User-Anfrage: "Spieler auf Default-Faktor 0.55"
+     als feste, dauerhafte Kennzahl, NICHT als einmaliger Vorher/Nachher-
+     Vergleich gegen eine eingefrorene alte Tabelle (siehe ausführliche
+     Begründung in der Chat-Antwort, warum das bewusst NICHT eingebaut
+     wurde). WICHTIG: NICHT über p.lf===0.55 zählen — 'Serie BKT'
+     (italienische Serie B) ist bewusst ebenfalls auf 0.55 gesetzt,
+     das wäre sonst eine falsche Positiv-Zählung für eine korrekt
+     aufgelöste, echte Liga. Stattdessen über UNKNOWN_LEAGUES_SEEN
+     summieren — das ist exakt die Menge an Spielern, die tatsächlich
+     den Default-Fallback durchlaufen haben (inkl. des Runde-9-Fixes
+     für komplett fehlende 'liga'-Spalte). */
+  var totalLeagueAffected=Object.keys(unknownLeagues||{}).reduce(function(s,k){return s+unknownLeagues[k];},0);
+  var leagueDefaultPct=players.length>0?Math.round((totalLeagueAffected/players.length)*1000)/10:0;
 
   function stat(label,value,warn){
     return '<span><span style="color:'+(warn?'var(--accent-red)':'var(--text-muted)')+'">'+label+':</span> '+
@@ -4420,7 +4582,9 @@ function renderImportAuditPanel(validation,players,fileType,positionDiag,unknown
     stat('Rollen erkannt',rolesRecognized+' / '+(rolesRecognized+rolesUnknown))+
     stat('UNKNOWN-Rollen',rolesUnknown+(unknownPlayerCount?' ('+unknownPlayerCount+' Spieler)':''),rolesUnknown>0)+
     stat('Header gemappt',headersMapped+' / '+headersTotal)+
-    stat('Fehlende Pflichtfelder',missingCount===0?'0':missingCount,missingCount>0);
+    stat('Fehlende Pflichtfelder',missingCount===0?'0':missingCount,missingCount>0)+
+    stat('Geschäftsfeld-Spalten fehlend',missingBizCount===0?'0':missingBizCount+' ('+validation.missingBusinessFields.join(', ')+')',missingBizCount>0)+
+    stat('Spieler auf Liga-Default (0.55)',totalLeagueAffected+' ('+leagueDefaultPct+'%)',leagueDefaultPct>10);
 }
 
 function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlayers){
@@ -4428,6 +4592,7 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
   if(!banner)return;
   totalPlayers=totalPlayers||0;
   var hasMissingCols=validation&&validation.missingRequired&&validation.missingRequired.length>0;
+  var hasMissingBusinessFields=validation&&validation.missingBusinessFields&&validation.missingBusinessFields.length>0;
   var unknownRoleEntries=unknownRoles?Object.keys(unknownRoles):[];
   var hasUnknownRoles=unknownRoleEntries.length>0;
   /* Punkt 1: nach Spieleranzahl absteigend sortiert, statt nach
@@ -4436,7 +4601,7 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
   var unknownLeagueEntries=unknownLeagues?Object.keys(unknownLeagues).sort(function(a,b){return unknownLeagues[b]-unknownLeagues[a];}):[];
   var hasUnknownLeagues=unknownLeagueEntries.length>0;
 
-  if(!hasMissingCols&&!hasUnknownRoles&&!hasUnknownLeagues){
+  if(!hasMissingCols&&!hasMissingBusinessFields&&!hasUnknownRoles&&!hasUnknownLeagues){
     banner.classList.add('hidden');
     banner.innerHTML='';
     LAST_UNKNOWN_LEAGUES_EXPORT=[];
@@ -4444,6 +4609,19 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
   }
   banner.classList.remove('hidden');
   var html='';
+  if(hasMissingBusinessFields){
+    /* AUDIT RUNDE 9: diese 5 Felder haben keinen FIELD_ALIASES-
+       Schutz — wenn die Spalte komplett fehlt, laufen alle Zeilen
+       lautlos auf Default-Annahmen (siehe Kommentare bei leagueFactor/
+       posGroupFromRole/parseContractMonths). Eigene, prominente Zeile,
+       weil das genau die Lücke ist, die der User für diese Runde
+       angefragt hat — nicht hinter den bestehenden "Pflichtspalten"-
+       Punkt gemischt, der etwas anderes prüft (Performance-Metriken). */
+    html+='<div style="margin-bottom:3px;color:var(--accent-amber)">'+
+      '\u26A0 '+validation.missingBusinessFields.length+' Geschäftsfeld-Spalte(n) nicht im Export gefunden ('+
+      validation.missingBusinessFields.join(', ')+') — betroffene Werte laufen auf Default/unbekannt, ohne aliasiert zu werden'+
+    '</div>';
+  }
   if(hasMissingCols){
     var lines=validation.impactLines||[];
     html+='<details style="margin-bottom:3px">'+
@@ -4502,6 +4680,15 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
        eingeklappt. Liga-Anpassung bleibt ein Dämpfungsfaktor, kein
        Pflichtfeld — Score wird dadurch nicht blockiert, das war auch
        vorher schon so, nur jetzt nicht mehr wie ein Notfall dargestellt. */
+    /* AUDIT RUNDE 11 — User-Anfrage "Top 20 verbleibende Unknown-
+       Leagues mit Spieleranzahl". suggestions ist bereits nach count
+       absteigend sortiert (buildLeagueMatchSuggestions). Liste auf 20
+       gekappt, analog zum bestehenden renderListV2-150-Zeilen-Cap —
+       gleiches Prinzip: UI bleibt überschaubar, vollständige Liste
+       bleibt über den Export-Button verfügbar, nichts geht verloren. */
+    var TOP_N=20;
+    var visibleSuggestions=suggestions.slice(0,TOP_N);
+    var hiddenCount=suggestions.length-visibleSuggestions.length;
     html+='<details>'+
       '<summary style="cursor:pointer;color:var(--text-secondary)">'+
         '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> Liga-Mapping: '+
@@ -4514,14 +4701,16 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
           '<span>'+variantEntries.length+' von '+suggestions.length+' Namen = Varianten bekannter Ligen ('+variantPlayers+' Spieler, Normalisierung w\u00FCrde reichen)</span>'+
           '<span>'+newLeagueEntries.length+' von '+suggestions.length+' Namen = vermutlich neue Liga, braucht echtes Mapping ('+newLeaguePlayers+' Spieler)</span>'+
         '</div>'+
+        '<div style="margin:0 0 6px;color:var(--text-muted);font-weight:600">Top '+visibleSuggestions.length+' nach Spieleranzahl'+(hiddenCount>0?' (von '+suggestions.length+' gesamt — vollst\u00E4ndige Liste \u00FCber Export)':'')+':</div>'+
         '<ul style="margin:4px 0 0 18px;padding:0;color:var(--text-muted)">'+
-        suggestions.map(function(s){
+        visibleSuggestions.map(function(s){
           var tag=s.isExactVariant
             ?'<span style="color:var(--accent-green)">[Variante]</span>'
             :'<span style="color:var(--text-muted)">[Neu?]</span>';
           return '<li style="margin-bottom:3px">'+tag+' "'+s.name+'" \u00D7 '+s.count+
             ' \u2192 \u00E4hnlichster Eintrag: "'+s.bestMatch+'" ('+s.similarity+'%, nur Hinweis)</li>';
         }).join('')+
+        (hiddenCount>0?'<li style="margin-top:4px;color:var(--text-muted);font-style:italic">+ '+hiddenCount+' weitere, kleinere Liga-Namen \u2014 vollst\u00E4ndige Liste im Export</li>':'')+
         '</ul>'+
       '</div>'+
     '</details>';
@@ -4560,7 +4749,7 @@ function loadFile(file){
        Spalten- UND Positions-Probleme gemeinsam. */
     renderImportWarningV2(validation,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN,ALL_PLAYERS.length);
     LAST_POSITION_DIAGNOSTIC=diagnosePositions(ALL_PLAYERS);
-    renderImportAuditPanel(validation,ALL_PLAYERS,fileType,LAST_POSITION_DIAGNOSTIC,UNKNOWN_ROLES_SEEN);
+    renderImportAuditPanel(validation,ALL_PLAYERS,fileType,LAST_POSITION_DIAGNOSTIC,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN);
 
     /* Phase 2: normalise all scores against the full dataset, per position group */
     normaliseV2(ALL_PLAYERS);
