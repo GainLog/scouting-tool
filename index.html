@@ -1193,6 +1193,92 @@ function leagueFactor(s){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   LEAGUE-MATCH-VORSCHLÄGE — trennt "echte neue Liga" von "nur eine
+   Schreibvariante einer bereits bekannten Liga" für die UNKNOWN_LEAGUES-
+   Liste. Zwei GETRENNTE Signale, bewusst nicht zu einem einzigen
+   Prozentwert verschmolzen:
+
+   1) isExactVariant (binär, robust): nach Normalisierung (Akzente weg,
+      NFD-Zerlegung; Bindestrich-Varianten –/—/- zu Leerzeichen;
+      Kleinschreibung; Satzzeichen weg) exakt identisch zu einem
+      LEAGUE_STRENGTH-Key? Nur DANN gilt es als "echte Variante,
+      Normalisierung würde reichen" — das ist der einzige Fall, der
+      sicher genug ist, um ihn als "lösbares Mapping-Problem" statt
+      "neue Liga" zu zählen.
+
+   2) similarity (Hinweis, NICHT Entscheidungsgrundlage): Levenshtein-
+      basierter Ähnlichkeits-Score zum nächstgelegenen bekannten Key,
+      nur zur Anzeige für die manuelle Prüfung gedacht.
+
+   WARUM nicht einfach "Similarity >= 80% = Variante"? Weil das nachweislich
+   falsch läuft — gegen die echten Daten aus diesem Chat:
+     "League 1" -> "Ligue 1"   75% Ähnlichkeit, aber englische 3. Liga
+                                vs. französische 1. Liga — VÖLLIG andere
+                                Liga, andere Stärke, anderes Land.
+     "Brasileirão Série B" -> "Brasileirão Série A"   94.7% Ähnlichkeit,
+                                aber 2. brasilianische Liga vs. 1. Liga —
+                                ein Auto-Merge hätte hier eine real
+                                schwächere Liga mit der Stärke der
+                                Erstliga verrechnet, lautlos falsch,
+                                exakt der Fehlertyp, den dieses ganze
+                                System verhindern soll.
+   Ein einzelner Prozent-Schwellenwert kann diese beiden Fälle nicht von
+   echten Varianten (z.B. "Brasileirao Serie A" ohne Akzente, 100% nach
+   Normalisierung) unterscheiden — die falschen Treffer liegen TEILWEISE
+   HÖHER (94.7%) als der Sicherheitsabstand zulässt. Deshalb: nur exakte
+   Normalisierungs-Gleichheit zählt als "Variante", alles andere bleibt
+   "neue Liga, manuell prüfen" — der Hinweis-Score wird trotzdem
+   angezeigt, weil er bei der manuellen Suche nach dem richtigen
+   Mapping nützlich ist, nur eben nicht automatisch entscheidet. */
+function normalizeLeagueNameForMatch(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') /* Akzente entfernen: é->e, ã->a, ç->c */
+    .toLowerCase()
+    .replace(/[-–—]/g,' ') /* alle Bindestrich-Varianten -> Leerzeichen */
+    .replace(/[^a-z0-9 ]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function levenshteinDist(a,b){
+  var m=a.length,n=b.length;
+  if(m===0)return n;
+  if(n===0)return m;
+  var dp=new Array(n+1);
+  for(var j=0;j<=n;j++)dp[j]=j;
+  for(var i=1;i<=m;i++){
+    var prev=dp[0];
+    dp[0]=i;
+    for(var j2=1;j2<=n;j2++){
+      var temp=dp[j2];
+      dp[j2]=Math.min(dp[j2]+1, dp[j2-1]+1, prev+(a[i-1]===b[j2-1]?0:1));
+      prev=temp;
+    }
+  }
+  return dp[n];
+}
+function leagueSimilarityPct(a,b){
+  var na=normalizeLeagueNameForMatch(a),nb=normalizeLeagueNameForMatch(b);
+  var maxLen=Math.max(na.length,nb.length);
+  if(maxLen===0)return 100;
+  return Math.round((1-levenshteinDist(na,nb)/maxLen)*1000)/10;
+}
+function buildLeagueMatchSuggestions(unknownLeagues){
+  var knownKeys=Object.keys(LEAGUE_STRENGTH).filter(function(k){return k!=='default';});
+  var results=Object.keys(unknownLeagues||{}).map(function(name){
+    var best=null,bestScore=-1;
+    knownKeys.forEach(function(k){
+      var score=leagueSimilarityPct(name,k);
+      if(score>bestScore){bestScore=score;best=k;}
+    });
+    var normName=normalizeLeagueNameForMatch(name);
+    var isExactVariant=knownKeys.some(function(k){return normalizeLeagueNameForMatch(k)===normName;});
+    return {name:name,count:unknownLeagues[name],bestMatch:best,similarity:bestScore,isExactVariant:isExactVariant};
+  });
+  results.sort(function(a,b){return b.count-a.count;});
+  return results;
+}
+
+/* ══════════════════════════════════════════════════════════════
    FIELD ALIAS RESOLUTION — fixes a confirmed P0 bug (Audit Runde 4):
    scorePlayerV2 reads raw[...] using abbreviated FM26 column-name
    guesses (z.B. 'ent_zwk_90','klär_90','par__','pas__') that do NOT
@@ -4216,27 +4302,37 @@ window.selectPlayerAndView=function(idx,view){
   window.selectPlayer(idx,view||'scout-reports');
 };
 
-/* Punkt 2: Export-Button — Blob-Download, pipe-getrennt wie angefordert
-   ("Unknown League Name | Count"). UTF-8-BOM vorangestellt, weil die
+/* Punkt 2+ (erweitert): Export-Button — Blob-Download. Jetzt mit
+   Match-Vorschlag + Similarity + Klassifikation als zusätzliche
+   Spalten, damit die CSV direkt die Arbeitsliste für die manuelle
+   Prüfung ist, nicht nur Name+Count. UTF-8-BOM vorangestellt, weil die
    Liganamen Umlaute enthalten (z.B. "OL Baden-Württemberg") und Excel
    ohne BOM auf Windows/macOS deutsche Locale sonst falsch interpretiert.
-   Liest aus LAST_UNKNOWN_LEAGUES_EXPORT, NICHT erneut aus
-   UNKNOWN_LEAGUES_SEEN — das kann sich zwischen Render und Klick durch
-   einen neuen Import bereits geändert haben; die Liste muss exakt zu
-   dem passen, was beim Rendern sichtbar war. */
+   Liest aus LAST_UNKNOWN_LEAGUES_EXPORT (jetzt Array von Objekten aus
+   buildLeagueMatchSuggestions), NICHT erneut aus UNKNOWN_LEAGUES_SEEN —
+   das kann sich zwischen Render und Klick durch einen neuen Import
+   bereits geändert haben; die Liste muss exakt zu dem passen, was beim
+   Rendern sichtbar war.
+   WICHTIG, nochmal explizit für die CSV-Spalte "Klassifikation": NUR
+   "VARIANTE" bedeutet sicher genug für ein automatisches Normalisierungs-
+   Mapping. "NEU?" mit hoher Similarity (z.B. Série B/C gegen Série A,
+   94.7%) ist trotzdem KEINE Variante — Similarity ist hier nur ein
+   Sortier-Hinweis für die manuelle Suche, keine Entscheidung. */
 window.exportUnknownLeagues=function(){
   if(!LAST_UNKNOWN_LEAGUES_EXPORT||LAST_UNKNOWN_LEAGUES_EXPORT.length===0){
     alert('Keine unbekannten Ligen im aktuellen Import — nichts zu exportieren.');
     return;
   }
-  var lines=['Unknown League Name|Count'];
-  LAST_UNKNOWN_LEAGUES_EXPORT.forEach(function(pair){
+  var lines=['Unknown League Name|Count|Possible Match|Similarity %|Klassifikation'];
+  LAST_UNKNOWN_LEAGUES_EXPORT.forEach(function(s){
     /* Liganamen können theoretisch selbst ein "|" enthalten (kein
        FM26-Export bisher beobachtet, aber nicht ausgeschlossen) —
        ersetzt durch "/" statt die Spaltentrennung stillschweigend zu
        brechen */
-    var safeName=String(pair[0]).replace(/\|/g,'/');
-    lines.push(safeName+'|'+pair[1]);
+    var safeName=String(s.name).replace(/\|/g,'/');
+    var safeMatch=String(s.bestMatch||'').replace(/\|/g,'/');
+    var klass=s.isExactVariant?'VARIANTE (sicher)':'NEU? (manuell pruefen)';
+    lines.push(safeName+'|'+s.count+'|'+safeMatch+'|'+s.similarity+'|'+klass);
   });
   var csv='\uFEFF'+lines.join('\r\n');
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
@@ -4358,7 +4454,17 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
     /* für den Export-Button gemerkt — derselbe sortierte Datensatz,
        der auch die Liste unten befüllt, damit Anzeige und Export nie
        auseinanderlaufen können */
-    LAST_UNKNOWN_LEAGUES_EXPORT=unknownLeagueEntries.map(function(l){return [l,unknownLeagues[l]];});
+    var suggestions=buildLeagueMatchSuggestions(unknownLeagues);
+    LAST_UNKNOWN_LEAGUES_EXPORT=suggestions;
+
+    /* Q1/Q2 aus der Anfrage: wie viele sind echte neue Ligen vs. nur
+       Schreibvarianten? Nur isExactVariant zählt als "Variante" —
+       siehe Kommentar bei buildLeagueMatchSuggestions, warum ein
+       Ähnlichkeits-Schwellenwert dafür NICHT sicher genug ist. */
+    var variantEntries=suggestions.filter(function(s){return s.isExactVariant;});
+    var newLeagueEntries=suggestions.filter(function(s){return !s.isExactVariant;});
+    var variantPlayers=variantEntries.reduce(function(s,e){return s+e.count;},0);
+    var newLeaguePlayers=newLeagueEntries.reduce(function(s,e){return s+e.count;},0);
 
     html+='<div style="font-weight:800;margin-bottom:4px">\u26A0 '+unknownLeagueEntries.length+
       ' unbekannte Liga(en) gefunden ('+totalLeagueAffected+' Spieler) \u2014 nutzt den generischen Default-Wert (0.55) statt einer echten Liga-St\u00E4rke. Score wird NICHT blockiert (Liga-Anpassung ist ein D\u00E4mpfungsfaktor, kein Pflichtfeld), aber Liga-Faktor ist eine Sch\u00E4tzung, kein Treffer.</div>'+
@@ -4370,11 +4476,28 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
           :'<span style="color:var(--text-muted)">Gesamtspielerzahl nicht verf\u00FCgbar \u2014 Coverage-% kann nicht berechnet werden</span>'
         )+
         '<span style="padding:2px 8px;border-radius:10px;font-weight:800;font-size:10px;letter-spacing:0.04em;background:'+sevColor+'22;color:'+sevColor+';border:1px solid '+sevColor+'55">WARNSTUFE '+sevLabel+(hasTotalCount?' ('+fallbackPct+'%)':'')+'</span>'+
-        '<button onclick="window.exportUnknownLeagues()" style="margin-left:auto;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(239,68,68,0.15);color:var(--text-primary);border:1px solid var(--accent-red)">\u2B07 Export (Name | Count)</button>'+
+        '<button onclick="window.exportUnknownLeagues()" style="margin-left:auto;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(239,68,68,0.15);color:var(--text-primary);border:1px solid var(--accent-red)">\u2B07 Export (Name | Count | Match | %)</button>'+
+      '</div>'+
+
+      /* NEU: Varianten vs. echte neue Ligen, getrennt. isExactVariant
+         ist die einzige automatisch vertrauenswürdige Kategorie — alles
+         andere zählt hier bewusst als "neue Liga", auch wenn der
+         Ähnlichkeits-Hinweis unten plausibel aussieht (siehe Risiko-
+         Kommentar bei buildLeagueMatchSuggestions: "League 1"/"Ligue 1"
+         und "Série B"/"Série A" sehen ähnlich aus, sind es aber nicht). */
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:0 0 8px;font-size:11px;color:var(--text-secondary)">'+
+        '<span>\u2713 <b>'+variantEntries.length+'</b> von '+suggestions.length+' Namen = echte Varianten bekannter Ligen ('+variantPlayers+' Spieler, Normalisierung reicht)</span>'+
+        '<span>\u26A0 <b>'+newLeagueEntries.length+'</b> von '+suggestions.length+' Namen = vermutlich neue Liga, braucht echtes Mapping ('+newLeaguePlayers+' Spieler)</span>'+
       '</div>'+
 
       '<ul style="margin:4px 0 0 18px;padding:0">'+
-      unknownLeagueEntries.map(function(l){return '<li style="margin-bottom:2px">"'+l+'" \u00D7 '+unknownLeagues[l]+'</li>';}).join('')+
+      suggestions.map(function(s){
+        var tag=s.isExactVariant
+          ?'<span style="color:var(--accent-green);font-weight:700">[VARIANTE]</span>'
+          :'<span style="color:var(--accent-amber);font-weight:700">[NEU?]</span>';
+        return '<li style="margin-bottom:3px">'+tag+' "'+s.name+'" \u00D7 '+s.count+
+          ' <span style="color:var(--text-muted)">\u2192 \u00E4hnlichster bekannter Eintrag: "'+s.bestMatch+'" ('+s.similarity+'% \u2014 nur Hinweis, kein Automatik-Treffer)</span></li>';
+      }).join('')+
       '</ul>';
   }
   banner.innerHTML=html;
