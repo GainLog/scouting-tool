@@ -1112,28 +1112,61 @@ function splitLine(line,delim){
   return cols;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   LEAGUE STRENGTH — GRUNDLAGE DER WERTE (dokumentiert auf Anfrage)
+
+   Ehrliche Antwort zuerst: die meisten Werte unten sind KEINE Ableitung
+   aus einer Quelle, sondern eine allgemeine Fußball-Plausibilitätseinschätzung
+   beim ersten Schreiben dieser Tabelle ("Premier League ist klar die stärkste
+   Liga, 1.00 als Ankerpunkt, alles andere relativ dazu") — keine Berechnung,
+   keine zitierte Quelle, kein Datenfit. Das ist nicht falsch, aber es ist
+   Heuristik, kein dokumentiertes Faktum, auch wenn es wie eine präzise Zahl
+   aussieht (0.97 vs. 0.96 suggeriert mehr Exaktheit als tatsächlich vorhanden
+   ist — die Differenz zwischen Bundesliga und Serie A wurde nicht anhand
+   irgendeiner Kennzahl entschieden).
+
+   Drei Kategorien, pro Zeile unten markiert:
+   [UNDOKUMENTIERT] — reine Plausibilitätsschätzung, kein Quellenbezug.
+     Das betrifft die große Mehrheit, inkl. aller "großen 5" Ligen.
+   [KONTEXT, KEINE ZAHL] — ein qualitativer Hinweis existiert (z. B.
+     "UEFA-gesperrt"), aber er begründet nur die Größenordnung, nicht die
+     konkrete zweite Nachkommastelle.
+   [BUGFIX, KEIN WERT-URTEIL] — Kommentar dokumentiert nur ein
+     Matching-Problem (Exportname-Variante), nicht die Wahl des Werts selbst.
+
+   Bereits in einer früheren Runde vorgeschlagen, aber NICHT umgesetzt (Sven-
+   Entscheidung steht aus): echte UEFA-Länderkoeffizienten als nicht-zirkuläre
+   Quelle für die ~10 wichtigsten europäischen Ligen einzusetzen. Das würde
+   einen Teil der [UNDOKUMENTIERT]-Zeilen in echte, nachvollziehbare Werte
+   verwandeln — deckt aber Liga MX/MLS/Saudi Pro League/Brasileirão etc.
+   nicht ab (außerhalb des UEFA-Systems) und müsste für die aktuelle Saison
+   neu nachgeschlagen werden, nicht aus altem Wissen übernommen. Wenn du das
+   willst, sag's explizit — ich überschreibe hier nichts ungefragt. */
 var LEAGUE_STRENGTH={
-  'Premier League':1.00,'La Liga':0.98,'Bundesliga':0.97,'Serie A':0.96,
-  'Ligue 1':0.92,
-  'Eredivisie':0.87,'Primeira Liga':0.86,
-  'Liga MX':0.75,'MLS':0.75,
-  'Brazilian Serie A':0.78,'Brasileirão Série A':0.78, /* echter FM26-Exportname ist die portugiesische Eigenbezeichnung — "Brazilian Serie A" alleine hat nie gematcht, jeder Brasilien-Erstliga-Spieler bekam bisher lautlos den Default 0.55 statt der beabsichtigten 0.78 */
-  'Argentine Primera':0.74,
-  'Ligue 2':0.62,'LaLiga Hypermotion':0.68,'Championship':0.70,
-  'Süper Lig':0.75,'Super League':0.68,
-  'Belgian Pro League':0.78,'Profvoetbal 1A':0.62,
-  'Chance Liga':0.58,
-  'Ekstraklasa':0.56,
-  'efbet Liga':0.50,
-  'Premier Liga':0.58, /* Russian Premier League — UEFA-suspended, no current coefficient */
-  'Scottish Premiership':0.65,'Premiership':0.65, /* same league, FM export uses both names */
-  'Saudi Pro League':0.74,
-  'HNL':0.66, /* Croatian top flight — Dinamo Zagreb/Hajduk Split, UEFA-active, mid-tier European */
-  'Liga Portugal':0.86, /* = Primeira Liga, sponsor-name variant */
-  'Serie BKT':0.55, /* Italian Serie B, sponsor name — clearly below Serie A but within a strong footballing nation's pyramid */
-  'SuperLiga':0.52, /* Serbian SuperLiga — UEFA-active but low average attendance/investment relative to Western Europe */
-  'Superliga':0.80, /* Danish Superliga (capital S vs Serbian SuperLiga — distinct strings, distinct leagues) — Midtjylland/FCK, established UEFA performer */
-  'default':0.55
+  'Premier League':1.00, /* [UNDOKUMENTIERT] Ankerpunkt = 1.00, alles andere relativ dazu eingeschätzt */
+  'La Liga':0.98,        /* [UNDOKUMENTIERT] */
+  'Bundesliga':0.97,     /* [UNDOKUMENTIERT] */
+  'Serie A':0.96,        /* [UNDOKUMENTIERT] */
+  'Ligue 1':0.92,        /* [UNDOKUMENTIERT] */
+  'Eredivisie':0.87,'Primeira Liga':0.86, /* [UNDOKUMENTIERT] */
+  'Liga MX':0.75,'MLS':0.75, /* [UNDOKUMENTIERT] — liegen außerhalb UEFA, also auch durch UEFA-Koeffizienten nicht absicherbar */
+  'Brazilian Serie A':0.78,'Brasileirão Série A':0.78, /* [BUGFIX, KEIN WERT-URTEIL] echter FM26-Exportname ist die portugiesische Eigenbezeichnung — "Brazilian Serie A" alleine hat nie gematcht, jeder Brasilien-Erstliga-Spieler bekam bisher lautlos den Default 0.55 statt der beabsichtigten 0.78. Der Wert 0.78 selbst bleibt [UNDOKUMENTIERT]. */
+  'Argentine Primera':0.74, /* [UNDOKUMENTIERT] */
+  'Ligue 2':0.62,'LaLiga Hypermotion':0.68,'Championship':0.70, /* [UNDOKUMENTIERT] zweite Ligen relativ zur jeweiligen ersten Liga geschätzt */
+  'Süper Lig':0.75,'Super League':0.68, /* [UNDOKUMENTIERT] */
+  'Belgian Pro League':0.78,'Profvoetbal 1A':0.62, /* [UNDOKUMENTIERT] */
+  'Chance Liga':0.58, /* [UNDOKUMENTIERT] */
+  'Ekstraklasa':0.56, /* [UNDOKUMENTIERT] */
+  'efbet Liga':0.50, /* [UNDOKUMENTIERT] */
+  'Premier Liga':0.58, /* [KONTEXT, KEINE ZAHL] Russian Premier League — UEFA-suspended, kein aktueller Koeffizient verfügbar; 0.58 selbst ist eine Schätzung trotz der Sperre, nicht daraus abgeleitet */
+  'Scottish Premiership':0.65,'Premiership':0.65, /* [BUGFIX, KEIN WERT-URTEIL] gleiche Liga, FM-Export nutzt beide Namen — 0.65 selbst [UNDOKUMENTIERT] */
+  'Saudi Pro League':0.74, /* [UNDOKUMENTIERT] */
+  'HNL':0.66, /* [KONTEXT, KEINE ZAHL] Croatian top flight — Dinamo Zagreb/Hajduk Split, UEFA-aktiv, als "europäisches Mittelfeld" eingeordnet — 0.66 ist trotzdem eine Schätzung */
+  'Liga Portugal':0.86, /* [BUGFIX, KEIN WERT-URTEIL] = Primeira Liga, Sponsor-Namensvariante */
+  'Serie BKT':0.55, /* [KONTEXT, KEINE ZAHL] Italian Serie B, Sponsor-Name — als "unter Serie A, aber starke Fußball-Nation" eingeordnet, kein berechneter Abstand */
+  'SuperLiga':0.52, /* [KONTEXT, KEINE ZAHL] Serbian SuperLiga — UEFA-aktiv, als unterdurchschnittlich gegenüber Westeuropa eingeordnet, keine Kennzahl dahinter */
+  'Superliga':0.80, /* [KONTEXT, KEINE ZAHL] Danish Superliga (Großschreibung S vs. serbisches "SuperLiga" — bewusst zwei unterschiedliche Strings) — Midtjylland/FCK als etablierte UEFA-Teilnehmer eingeordnet, 0.80 selbst geschätzt */
+  'default':0.55 /* [KONTEXT, KEINE ZAHL] explizit "wir wissen es nicht", siehe UNKNOWN_LEAGUES_SEEN unten — KEINE Aussage über tatsächliche Ligastärke */
 };
 /* Erfasst Liga-Namen, die auf den 'default'-Wert (0.55) fallen, statt
    eine echte Übereinstimmung zu finden — derselbe "nicht stillschweigend
@@ -1233,6 +1266,9 @@ var UNRESOLVED_FIELDS=[];
 var LAST_IMPORT_VALIDATION=null;
 var LAST_POSITION_DIAGNOSTIC=null;
 var LAST_IMPORT_FILE_TYPE=null;
+/* sortierte [name,count]-Paare des letzten Imports, nur für den
+   Export-Button gehalten — keine Score-Logik liest diese Variable */
+var LAST_UNKNOWN_LEAGUES_EXPORT=[];
 
 function buildFieldResolver(headers){
   var headerSet={};
@@ -1876,6 +1912,12 @@ function normaliseV2(players){
       p.perfScore=perfScore;
       p.perfScoreAdj=perfScoreAdj;
       p.bd=bd;
+      /* stored purely for the Model Diagnostics panel (renderModelDiagnostics) —
+         no existing calculation reads these two, so adding them cannot change
+         any score. rawPerf kept at 1 decimal since it is intermediate, never
+         itself displayed as "the" score. */
+      p.rawPerf=Math.round(rawPerf*10)/10;
+      p.leagueAdjFactor=leagueAdj;
     }
 
     /* COST EFFICIENCY — replaces the old wage-only Value Score per
@@ -2160,6 +2202,118 @@ function confidenceBadge(p){
   var col=colors[p.confidence.tier]||'var(--text-muted)';
   return '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+col+'22;color:'+col+';border:1px solid '+col+'44">'+
     p.confidence.label+' ('+p.minutes+' Min.)</span>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODEL DIAGNOSTICS — the arithmetic BEHIND moneyballScore itself.
+   Not to be confused with renderScoreBreakdownV2 above, which explains
+   the metrics INSIDE the Performance Score (xG/90, Klär/90, etc.).
+   This panel explains how Performance / Cost Efficiency / Age / Risk
+   combine into the one headline number.
+
+   Real formula, copied verbatim from normaliseV2 (this panel does not
+   change it, only displays it):
+     moneyballScore = perfScoreAdj*0.50 + costEfficiency*0.30
+                     + ageScore*0.12 + (100-riskPenalty)*0.08
+   Contributions below are computed UNROUNDED (1 decimal) so they sum
+   exactly to the pre-clamp total; only the final total is rounded and
+   clamped 1-99, exactly as scorePlayerV2/normaliseV2 already do. If the
+   1-99 clamp actually fired (only possible at extreme edges) that is
+   flagged explicitly rather than silently showing a mismatched number.
+
+   TWO THINGS DELIBERATELY NOT SHOWN AS THEIR OWN WEIGHTED LINE, because
+   they are not separate terms in the real model — showing them as such
+   would misrepresent the formula:
+   - "League Factor" is already baked INTO Performance (a 0.7–1.0
+     dampener applied to the within-group percentile BEFORE the 50%
+     weight, not a separate additive term). Shown as a sub-line under
+     Performance instead.
+   - "Resale" does not exist anywhere in this codebase. "Contract" risk
+     and low-minutes risk are bundled into ONE riskPenalty number at a
+     combined 8% weight and cannot be un-bundled without changing the
+     formula itself — shown as a sub-line under Risk instead. */
+function diagRow(label,weight,contrib,note){
+  var known=contrib!==null;
+  var valStr=known?sign(Math.round(contrib*10)/10):'unbekannt';
+  var maxPossible=weight*100;
+  var col=!known?'var(--text-muted)':(contrib>=maxPossible*0.6?'var(--accent-green)':contrib>=maxPossible*0.4?'var(--accent-amber)':'var(--accent-red)');
+  return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 0;border-bottom:1px solid var(--border-dim)">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+      '<span style="font-size:11px;font-weight:600;color:var(--text-secondary)">'+label+
+        ' <span style="color:var(--text-muted);font-weight:400">('+Math.round(weight*100)+'% Gewicht)</span></span>'+
+      '<span style="font-size:13px;font-weight:800;color:'+col+'">'+valStr+'</span>'+
+    '</div>'+
+    '<div style="font-size:9px;color:var(--text-muted);line-height:1.45">'+note+'</div>'+
+  '</div>';
+}
+function renderModelDiagnostics(p){
+  if(p.unknownPosition){
+    return '<div style="padding:6px 0;font-size:11px;color:var(--text-muted);line-height:1.6">'+
+      'Keine Diagnose m\u00F6glich \u2014 Rolle "'+(p.role||'?')+'" ist nicht in ROLE_ALIASES hinterlegt. '+
+      'Ohne Positionsgruppe gibt es kein PERF_PROFILES-Gewichtungsschema und damit weder Performance- '+
+      'noch Age- noch Risk-Term.</div>';
+  }
+
+  var rows=[];
+  var total=0;
+  var missingParts=[];
+
+  /* Performance — 50% */
+  if(p.dataIncomplete){
+    rows.push(diagRow('Performance',0.50,null,'Pflichtspalten fehlen: '+(p.missingMetrics||[]).join(', ')));
+    missingParts.push('Performance');
+  } else {
+    var perfContrib=p.perfScoreAdj*0.50;
+    total+=perfContrib;
+    rows.push(diagRow('Performance',0.50,perfContrib,
+      'Rohwert (Perzentil in Gruppe) '+p.rawPerf+
+      ' \u2192 Liga-D\u00E4mpfung \u00D7'+p.leagueAdjFactor.toFixed(2)+
+      ' \u2192 '+p.perfScore+
+      ' \u2192 Konfidenz-Korrektur (\u00D7'+p.confidence.mult.toFixed(2)+', zieht Richtung 50 bei wenig Einsatzzeit) \u2192 '+p.perfScoreAdj+
+      '. Liga-Faktor ist hier eingerechnet, KEIN eigener Term.'));
+  }
+
+  /* Cost Efficiency — 30% */
+  if(p.costUnknown){
+    rows.push(diagRow('Cost Efficiency',0.30,null,'Marktwert und Gehalt beide unbekannt \u2014 kein neutraler Platzhalter, bewusst ausgeschlossen'));
+    missingParts.push('Cost Efficiency');
+  } else {
+    var costContrib=p.costEfficiency*0.30;
+    total+=costContrib;
+    rows.push(diagRow('Cost Efficiency',0.30,costContrib,'Perzentil von Performance \u00F7 Gesamtkosten (Marktwert+Gehalt) innerhalb der Positionsgruppe'));
+  }
+
+  /* Age Profile — 12% */
+  var ageContrib=p.ageScore*0.12;
+  total+=ageContrib;
+  rows.push(diagRow('Age Profile',0.12,ageContrib,'Alterskurve mit positionsspezifischer Peak-Verschiebung (AGE_PEAK_SHIFT) \u2014 feste Heuristik, nicht aus Daten gefittet'));
+
+  /* Risk (inverse) — 8% */
+  var riskContrib=(100-p.riskPenalty)*0.08;
+  total+=riskContrib;
+  rows.push(diagRow('Risk (invers)',0.08,riskContrib,
+    'riskPenalty='+p.riskPenalty+' (Vertrag&lt;6 Mon. +10 / &lt;12 Mon. +5, Einsatzzeit&lt;450 Min. +8). '+
+    'Vertragsrisiko und Einsatzzeit-Risiko sind hier EIN gemeinsamer Term \u2014 kein separates "Contract" '+
+    'oder "Resale" existiert im Modell.'));
+
+  var totalHtml;
+  if(missingParts.length>0){
+    totalHtml='<div style="padding-top:10px;margin-top:2px;font-size:11px;color:var(--text-muted);line-height:1.6">'+
+      'Kein Gesamtscore \u2014 '+missingParts.join(' und ')+' fehlt. moneyballScore bleibt bewusst null '+
+      '(Verdict "'+verdictLabel(p.verdict)+'") statt einer Zahl, die unvollst\u00E4ndige Daten verschleiert.</div>';
+  } else {
+    var rounded=Math.round(total);
+    var clamped=Math.max(1,Math.min(99,rounded));
+    var mismatch=clamped!==p.moneyballScore;
+    totalHtml='<div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;margin-top:2px;border-top:1px solid var(--border-mid)">'+
+      '<span style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em">Summe</span>'+
+      '<span style="font-size:18px;font-weight:900;color:'+verdictColor(p.verdict)+'">'+rounded+
+        (clamped!==rounded?' \u2192 '+clamped+' (1\u201399 geclampt)':'')+'</span>'+
+    '</div>'+
+    (mismatch?'<div style="font-size:9px;color:var(--accent-red);margin-top:3px">Abweichung zur tats\u00E4chlichen p.moneyballScore ('+p.moneyballScore+') \u2014 Rundungsdifferenz pr\u00FCfen, nicht ignorieren.</div>':'');
+  }
+
+  return rows.join('')+totalHtml;
 }
 
 function verdictColor(v){
@@ -3979,6 +4133,17 @@ function renderScoutReportV2(p,allPlayers){
     '</div>'+
   '</div>'+
 
+  /* Model Diagnostics — top-level decomposition of moneyballScore.
+     Sits ABOVE Score Breakdown deliberately: this answers "why this
+     total", Score Breakdown below answers "why this Performance Score". */
+  '<div class="card">'+
+    '<div class="card-header"><span class="card-title">Model Diagnostics</span>'+
+      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">Gewichtete Beitr\u00E4ge zum Moneyball Score</span></div>'+
+    '<div style="padding:8px 14px 14px">'+
+      renderModelDiagnostics(p)+
+    '</div>'+
+  '</div>'+
+
   /* Score Breakdown */
   '<div class="card">'+
     '<div class="card-header"><span class="card-title">Score Breakdown</span>'+
@@ -4051,6 +4216,41 @@ window.selectPlayerAndView=function(idx,view){
   window.selectPlayer(idx,view||'scout-reports');
 };
 
+/* Punkt 2: Export-Button — Blob-Download, pipe-getrennt wie angefordert
+   ("Unknown League Name | Count"). UTF-8-BOM vorangestellt, weil die
+   Liganamen Umlaute enthalten (z.B. "OL Baden-Württemberg") und Excel
+   ohne BOM auf Windows/macOS deutsche Locale sonst falsch interpretiert.
+   Liest aus LAST_UNKNOWN_LEAGUES_EXPORT, NICHT erneut aus
+   UNKNOWN_LEAGUES_SEEN — das kann sich zwischen Render und Klick durch
+   einen neuen Import bereits geändert haben; die Liste muss exakt zu
+   dem passen, was beim Rendern sichtbar war. */
+window.exportUnknownLeagues=function(){
+  if(!LAST_UNKNOWN_LEAGUES_EXPORT||LAST_UNKNOWN_LEAGUES_EXPORT.length===0){
+    alert('Keine unbekannten Ligen im aktuellen Import — nichts zu exportieren.');
+    return;
+  }
+  var lines=['Unknown League Name|Count'];
+  LAST_UNKNOWN_LEAGUES_EXPORT.forEach(function(pair){
+    /* Liganamen können theoretisch selbst ein "|" enthalten (kein
+       FM26-Export bisher beobachtet, aber nicht ausgeschlossen) —
+       ersetzt durch "/" statt die Spaltentrennung stillschweigend zu
+       brechen */
+    var safeName=String(pair[0]).replace(/\|/g,'/');
+    lines.push(safeName+'|'+pair[1]);
+  });
+  var csv='\uFEFF'+lines.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  var ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href=url;
+  a.download='unknown_leagues_'+ts+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+};
+
 /* ══════════════════════════════════════════════════════════════
    LOAD FILE
 ══════════════════════════════════════════════════════════════ */
@@ -4094,18 +4294,23 @@ function renderImportAuditPanel(validation,players,fileType,positionDiag,unknown
     stat('Fehlende Pflichtfelder',missingCount===0?'0':missingCount,missingCount>0);
 }
 
-function renderImportWarningV2(validation,unknownRoles,unknownLeagues){
+function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlayers){
   var banner=document.getElementById('import-warning-banner');
   if(!banner)return;
+  totalPlayers=totalPlayers||0;
   var hasMissingCols=validation&&validation.missingRequired&&validation.missingRequired.length>0;
   var unknownRoleEntries=unknownRoles?Object.keys(unknownRoles):[];
   var hasUnknownRoles=unknownRoleEntries.length>0;
-  var unknownLeagueEntries=unknownLeagues?Object.keys(unknownLeagues):[];
+  /* Punkt 1: nach Spieleranzahl absteigend sortiert, statt nach
+     Objekt-Insertion-Order (= Reihenfolge des ersten Auftretens im
+     Import, die nichts mit der Größe des Problems zu tun hat) */
+  var unknownLeagueEntries=unknownLeagues?Object.keys(unknownLeagues).sort(function(a,b){return unknownLeagues[b]-unknownLeagues[a];}):[];
   var hasUnknownLeagues=unknownLeagueEntries.length>0;
 
   if(!hasMissingCols&&!hasUnknownRoles&&!hasUnknownLeagues){
     banner.classList.add('hidden');
     banner.innerHTML='';
+    LAST_UNKNOWN_LEAGUES_EXPORT=[];
     return;
   }
   banner.classList.remove('hidden');
@@ -4128,8 +4333,46 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues){
   }
   if(hasUnknownLeagues){
     var totalLeagueAffected=unknownLeagueEntries.reduce(function(s,l){return s+unknownLeagues[l];},0);
+
+    /* Punkt 3: Mapping Coverage. matchedCount kann nur dann sinnvoll
+       gezeigt werden, wenn totalPlayers tatsächlich übergeben wurde —
+       sonst lieber gar keine Prozentzahl als eine falsche "0%/100%"-
+       Anzeige bei fehlendem Parameter. */
+    var hasTotalCount=totalPlayers>0;
+    var matchedCount=totalPlayers-totalLeagueAffected;
+    var matchedPct=hasTotalCount?Math.round((matchedCount/totalPlayers)*1000)/10:null;
+    var fallbackPct=hasTotalCount?Math.round((totalLeagueAffected/totalPlayers)*1000)/10:null;
+
+    /* Punkt 4: Warnstufe nach Default-Fallback-Anteil, Schwellen wie
+       angefordert. Bezieht sich bewusst nur auf den Liga-Anteil, nicht
+       auf fehlende Spalten oder unbekannte Rollen — das sind andere
+       Fehlerklassen mit eigener Behandlung weiter oben. */
+    var sevColor='var(--accent-green)',sevLabel='GR\u00DCN';
+    if(hasTotalCount){
+      if(fallbackPct>15){sevColor='var(--accent-red)';sevLabel='ROT';}
+      else if(fallbackPct>=5){sevColor='var(--accent-amber)';sevLabel='GELB';}
+    } else {
+      sevColor='var(--text-muted)';sevLabel='?';
+    }
+
+    /* für den Export-Button gemerkt — derselbe sortierte Datensatz,
+       der auch die Liste unten befüllt, damit Anzeige und Export nie
+       auseinanderlaufen können */
+    LAST_UNKNOWN_LEAGUES_EXPORT=unknownLeagueEntries.map(function(l){return [l,unknownLeagues[l]];});
+
     html+='<div style="font-weight:800;margin-bottom:4px">\u26A0 '+unknownLeagueEntries.length+
       ' unbekannte Liga(en) gefunden ('+totalLeagueAffected+' Spieler) \u2014 nutzt den generischen Default-Wert (0.55) statt einer echten Liga-St\u00E4rke. Score wird NICHT blockiert (Liga-Anpassung ist ein D\u00E4mpfungsfaktor, kein Pflichtfeld), aber Liga-Faktor ist eine Sch\u00E4tzung, kein Treffer.</div>'+
+
+      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:rgba(0,0,0,0.18);border-radius:6px;font-size:11px">'+
+        (hasTotalCount?
+          '<span>Liga-Matches: <b>'+matchedCount+'/'+totalPlayers+'</b> Spieler (<b>'+matchedPct+'%</b>)</span>'+
+          '<span>Default-Fallback: <b>'+totalLeagueAffected+'/'+totalPlayers+'</b> Spieler (<b>'+fallbackPct+'%</b>)</span>'
+          :'<span style="color:var(--text-muted)">Gesamtspielerzahl nicht verf\u00FCgbar \u2014 Coverage-% kann nicht berechnet werden</span>'
+        )+
+        '<span style="padding:2px 8px;border-radius:10px;font-weight:800;font-size:10px;letter-spacing:0.04em;background:'+sevColor+'22;color:'+sevColor+';border:1px solid '+sevColor+'55">WARNSTUFE '+sevLabel+(hasTotalCount?' ('+fallbackPct+'%)':'')+'</span>'+
+        '<button onclick="window.exportUnknownLeagues()" style="margin-left:auto;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(239,68,68,0.15);color:var(--text-primary);border:1px solid var(--accent-red)">\u2B07 Export (Name | Count)</button>'+
+      '</div>'+
+
       '<ul style="margin:4px 0 0 18px;padding:0">'+
       unknownLeagueEntries.map(function(l){return '<li style="margin-bottom:2px">"'+l+'" \u00D7 '+unknownLeagues[l]+'</li>';}).join('')+
       '</ul>';
@@ -4166,7 +4409,7 @@ function loadFile(file){
     /* Positions-Diagnose erst JETZT möglich — posGroupFromRole füllt
        UNKNOWN_ROLES_SEEN erst während scorePlayerV2. Banner zeigt
        Spalten- UND Positions-Probleme gemeinsam. */
-    renderImportWarningV2(validation,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN);
+    renderImportWarningV2(validation,UNKNOWN_ROLES_SEEN,UNKNOWN_LEAGUES_SEEN,ALL_PLAYERS.length);
     LAST_POSITION_DIAGNOSTIC=diagnosePositions(ALL_PLAYERS);
     renderImportAuditPanel(validation,ALL_PLAYERS,fileType,LAST_POSITION_DIAGNOSTIC,UNKNOWN_ROLES_SEEN);
 
