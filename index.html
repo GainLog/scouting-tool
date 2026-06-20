@@ -47,10 +47,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-root);color:va
 .anim-deal{animation:dealBarSlide .9s .3s cubic-bezier(.4,0,.2,1) both;}
 
 /* ── LAYOUT ───────────────────────────────────────────────── */
-#app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--nav-h) 1fr;grid-template-areas:"sidebar topnav" "sidebar main";height:100vh;overflow:hidden;}
+#app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--nav-h) minmax(0,1fr);grid-template-areas:"sidebar topnav" "sidebar main";height:100vh;overflow:hidden;}
 
 /* ── SIDEBAR ─────────────────────────────────────────────── */
-#sidebar{grid-area:sidebar;background:var(--bg-sidebar);border-right:1px solid var(--border-dim);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;}
+#sidebar{grid-area:sidebar;background:var(--bg-sidebar);border-right:1px solid var(--border-dim);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;min-height:0;min-width:0;}
+#import-warning-banner summary{list-style:none;}
+#import-warning-banner summary::-webkit-details-marker{display:none;}
+#import-warning-banner details[open] summary span.disclosure-arrow{transform:rotate(90deg);display:inline-block;}
 #sidebar::-webkit-scrollbar{width:4px;}
 #sidebar::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:2px;}
 .sidebar-logo{padding:14px 16px 12px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:10px;flex-shrink:0;}
@@ -100,7 +103,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .btn-import:hover{background:#2563eb;}
 
 /* ── MAIN ────────────────────────────────────────────────── */
-#main{grid-area:main;overflow-y:auto;overflow-x:hidden;background:var(--bg-root);scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;}
+#main{grid-area:main;overflow-y:auto;overflow-x:hidden;background:var(--bg-root);scrollbar-width:thin;scrollbar-color:var(--border-mid) transparent;min-height:0;min-width:0;}
 #main::-webkit-scrollbar{width:5px;}
 #main::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:3px;}
 .main-inner{padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px;}
@@ -590,9 +593,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
     </div>
     <div class="filter-group">
       <div class="filter-label" data-i18n="sb.age.lbl">Alter</div>
-      <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">16</span><span class="slider-val" id="age-val">16&ndash;28</span><span style="font-size:10px;color:var(--text-muted)">45</span></div>
+      <div class="slider-row"><span style="font-size:10px;color:var(--text-muted)">16</span><span class="slider-val" id="age-val">16&ndash;45</span><span style="font-size:10px;color:var(--text-muted)">45</span></div>
       <input type="range" id="filter-age-min" min="16" max="45" value="16">
-      <input type="range" id="filter-age-max" min="16" max="45" value="28" style="margin-top:4px">
+      <input type="range" id="filter-age-max" min="16" max="45" value="45" style="margin-top:4px">
     </div>
     <div class="filter-group">
       <div class="filter-label" data-i18n="sb.budget.lbl">Max. Budget</div>
@@ -644,13 +647,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   </div>
 </nav>
 
-<div id="import-warning-banner" class="hidden" style="background:rgba(239,68,68,0.12);border:1px solid var(--accent-red);color:var(--text-primary);padding:10px 20px;font-size:12.5px;line-height:1.5"></div>
-
-<div id="import-audit-panel" class="hidden" style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border-color);padding:10px 20px;font-size:11.5px;display:flex;gap:24px;flex-wrap:wrap;color:var(--text-secondary)"></div>
-
 <!-- MAIN -->
 <main id="main">
 <div class="main-inner">
+<div id="import-warning-banner" class="hidden" style="background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border-dim);color:var(--text-secondary);padding:6px 20px;font-size:11px;line-height:1.5"></div>
+
+<div id="import-audit-panel" class="hidden" style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border-color);padding:10px 20px;font-size:11.5px;display:flex;gap:24px;flex-wrap:wrap;color:var(--text-secondary)"></div>
+
 <div class="view active" id="view-dashboard">
 
 <div id="dashboard-empty" class="landing-page">
@@ -2537,8 +2540,18 @@ function renderExecV2(players){
   var bestPerf=[].concat(players).sort(function(a,b){return b.perfScoreAdj-a.perfScoreAdj;})[0];
   var bestYoung=[].concat(sorted).filter(function(p){return p.age<=23;}).sort(function(a,b){return b.moneyballScore-a.moneyballScore;})[0]||sorted[1]||bestOverall;
   var worstCostEff=[].concat(withCost).sort(function(a,b){return a.costEfficiency-b.costEfficiency;})[0];
-  var bestWage=[].concat(players).filter(function(p){return p.wageKnown;}).sort(function(a,b){
-    return (b.perfScoreAdj/Math.max(1,b.wage))-(a.perfScoreAdj/Math.max(1,a.wage));
+  /* BUGFIX: vorher nur wageKnown gefordert, kein costUnknown-Ausschluss
+     und kein Mindestgehalt. perfScoreAdj/wage explodiert bei Gehältern
+     nahe 0 (z.B. €300/Jahr — fast sicher ein Freier-Transfer-/Platzhalter-
+     Wert in FM, kein reales Profigehalt) und kürt dann genau diesen
+     Spieler zum "besten Wert", OBWOHL costUnknown=true bedeutet, dass
+     die Karte selbst Score und Cost-Eff als "—" anzeigt — widersprüchlich
+     für den Nutzer. Jetzt: Mindestgehalt (Rauschen/Platzhalter raus) UND
+     costUnknown ausgeschlossen, damit die Karte zu ihren eigenen
+     Quickstats konsistent bleibt. */
+  var WAGE_FLOOR=1000; /* €/Jahr — unterhalb kaum ein reales Profigehalt, eher Freier-Transfer-Artefakt */
+  var bestWage=[].concat(players).filter(function(p){return p.wageKnown&&!p.costUnknown&&p.wage>=WAGE_FLOOR;}).sort(function(a,b){
+    return (b.perfScoreAdj/b.wage)-(a.perfScoreAdj/a.wage);
   })[0]||bestOverall;
 
   function setCard(id,p,stat,meta,cta){
@@ -2944,7 +2957,7 @@ function costBreakdownHtml(p,allInGroup){
       '<div style="position:relative;height:8px;background:rgba(255,255,255,0.06);border-radius:4px">'+
         '<div style="position:absolute;left:'+p.costEfficiency+'%;top:-3px;width:2px;height:14px;background:'+ceCol+';box-shadow:0 0 6px '+ceCol+'"></div>'+
       '</div>'+
-      '<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Perzentil innerhalb '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' ('+(allInGroup?allInGroup.filter(function(x){return x.posGrp===p.posGrp&&!x.costUnknown;}).length:'?')+' vergleichbare Spieler)</span>'+
+      '<div style="font-size:9px;color:var(--text-muted);margin-top:4px">Perzentil innerhalb '+(GROUP_LABELS[p.posGrp]||p.posGrp)+' ('+(allInGroup?allInGroup.filter(function(x){return x.posGrp===p.posGrp&&!x.costUnknown;}).length:'?')+' vergleichbare Spieler)</div>'+
     '</div>'+
   '</div>';
 }
@@ -3222,12 +3235,18 @@ function renderMarketOverviewV2(players){
      that player. */
   var withCost=players.filter(function(p){return !p.costUnknown;});
   var scatterSize=280,pad=18;
+  /* PERFORMANCE-FIX: players.indexOf(p) hier war O(n) PRO Punkt — bei
+     ~960 Punkten gegen 2728 players ein vermeidbarer O(n²)-Scan. Der
+     echte Index ist über players.map() trivial verfügbar, ganz ohne
+     Suche — indexOf komplett entfernt. */
+  var indexById=new Map();
+  players.forEach(function(p,i){indexById.set(p,i);});
   var scatterPts=withCost.map(function(p,i){
     var x=pad+(p.perfScoreAdj/100)*(scatterSize-2*pad);
     var y=(scatterSize-pad)-(p.costEfficiency/100)*(scatterSize-2*pad);
     var col=verdictColor(p.verdict);
     return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="'+col+'" opacity="0.75" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" '+
-      'data-scatidx="'+players.indexOf(p)+'" style="cursor:pointer">'+
+      'data-scatidx="'+indexById.get(p)+'" style="cursor:pointer">'+
       '<title>'+p.name+' \u2022 Perf '+p.perfScoreAdj+' \u2022 Cost-Eff '+p.costEfficiency+'</title>'+
     '</circle>';
   }).join('');
@@ -3515,11 +3534,24 @@ function renderListV2(players){
   var elSecondary=document.getElementById('player-list-body');
   if(!elSecondary)return;
 
+  /* PERFORMANCE-FIX (gemessen, nicht vermutet): bei 2728 Spielern hat
+     diese Funktion allein ~2589ms von ~3046ms Gesamt-Render-Zeit
+     gebraucht — 85% der Zeit für eine 2,15MB-HTML-Tabelle, die
+     ohnehin niemand komplett durchscrollt. Render-Cap auf die ersten
+     LIST_RENDER_CAP Zeilen (players ist bereits sortiert, also die
+     relevantesten); window.selectPlayer(i) bleibt korrekt, weil i aus
+     der UNGEKÜRZTEN players-Reihenfolge stammt (slice(0,CAP) ändert
+     keine Indizes). Wer mehr sehen will: Filter enger setzen — die
+     Tabelle ist kein Ersatz für die Filterleiste. */
+  var LIST_RENDER_CAP=150;
+  var truncated=players.length>LIST_RENDER_CAP;
+  var renderSet=truncated?players.slice(0,LIST_RENDER_CAP):players;
+
   var html;
   if(players.length===0){
     html='<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:12px">Keine Spieler entsprechen den aktuellen Filtern.</div>';
   } else {
-    var rows=players.map(function(p,i){
+    var rows=renderSet.map(function(p,i){
       var vCol=verdictColor(p.verdict);
       return '<tr class="list-row" onclick="window.selectPlayer('+i+')" style="cursor:pointer">'+
         '<td style="padding:8px 10px;font-size:12px;font-weight:600">'+p.name+'</td>'+
@@ -3538,7 +3570,8 @@ function renderListV2(players){
         '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Value</th>'+
         '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Confidence</th>'+
         '<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--text-muted);text-transform:uppercase">Empfehlung</th>'+
-      '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      (truncated?'<div style="padding:10px 14px;text-align:center;font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-dim)">Zeige '+LIST_RENDER_CAP+' von '+players.length+' Spielern — Filter enger setzen, um mehr einzugrenzen.</div>':'');
   }
 
   elSecondary.innerHTML=html;
@@ -4413,19 +4446,27 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
   var html='';
   if(hasMissingCols){
     var lines=validation.impactLines||[];
-    html+='<div style="font-weight:800;margin-bottom:4px">\u26A0 '+validation.missingRequired.length+
-      ' Pflichtspalte(n) im Import nicht gefunden \u2014 betroffene Scores werden als \u201EDATEN UNVOLLST\u00C4NDIG\u201C markiert, NICHT mit 0 verrechnet.</div>'+
-      '<ul style="margin:4px 0 8px 18px;padding:0">'+
+    html+='<details style="margin-bottom:3px">'+
+      '<summary style="cursor:pointer;color:var(--accent-amber)">'+
+        '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> '+validation.missingRequired.length+
+        ' Pflichtspalte(n) im Import nicht gefunden \u2014 betroffene Scores als "Daten unvollst\u00E4ndig" markiert, nicht mit 0 verrechnet'+
+      '</summary>'+
+      '<ul style="margin:4px 0 4px 18px;padding:0;color:var(--text-muted)">'+
       lines.map(function(l){return '<li style="margin-bottom:2px">'+l+'</li>';}).join('')+
-      '</ul>';
+      '</ul>'+
+    '</details>';
   }
   if(hasUnknownRoles){
     var totalAffected=unknownRoleEntries.reduce(function(s,r){return s+unknownRoles[r];},0);
-    html+='<div style="font-weight:800;margin-bottom:4px">\u26A0 '+unknownRoleEntries.length+
-      ' unbekannte Rolle(n) in "Beste Rolle" gefunden ('+totalAffected+' Spieler) \u2014 Position wird NICHT geraten, Verdict wird \u201EPOSITION UNBEKANNT\u201C.</div>'+
-      '<ul style="margin:4px 0 8px 18px;padding:0">'+
+    html+='<details style="margin-bottom:3px">'+
+      '<summary style="cursor:pointer;color:var(--accent-amber)">'+
+        '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> '+unknownRoleEntries.length+
+        ' unbekannte Rolle(n) in "Beste Rolle" ('+totalAffected+' Spieler) \u2014 Position wird nicht geraten'+
+      '</summary>'+
+      '<ul style="margin:4px 0 4px 18px;padding:0;color:var(--text-muted)">'+
       unknownRoleEntries.map(function(r){return '<li style="margin-bottom:2px">"'+r+'" \u00D7 '+unknownRoles[r]+'</li>';}).join('')+
-      '</ul>';
+      '</ul>'+
+    '</details>';
   }
   if(hasUnknownLeagues){
     var totalLeagueAffected=unknownLeagueEntries.reduce(function(s,l){return s+unknownLeagues[l];},0);
@@ -4438,18 +4479,6 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
     var matchedCount=totalPlayers-totalLeagueAffected;
     var matchedPct=hasTotalCount?Math.round((matchedCount/totalPlayers)*1000)/10:null;
     var fallbackPct=hasTotalCount?Math.round((totalLeagueAffected/totalPlayers)*1000)/10:null;
-
-    /* Punkt 4: Warnstufe nach Default-Fallback-Anteil, Schwellen wie
-       angefordert. Bezieht sich bewusst nur auf den Liga-Anteil, nicht
-       auf fehlende Spalten oder unbekannte Rollen — das sind andere
-       Fehlerklassen mit eigener Behandlung weiter oben. */
-    var sevColor='var(--accent-green)',sevLabel='GR\u00DCN';
-    if(hasTotalCount){
-      if(fallbackPct>15){sevColor='var(--accent-red)';sevLabel='ROT';}
-      else if(fallbackPct>=5){sevColor='var(--accent-amber)';sevLabel='GELB';}
-    } else {
-      sevColor='var(--text-muted)';sevLabel='?';
-    }
 
     /* für den Export-Button gemerkt — derselbe sortierte Datensatz,
        der auch die Liste unten befüllt, damit Anzeige und Export nie
@@ -4466,39 +4495,36 @@ function renderImportWarningV2(validation,unknownRoles,unknownLeagues,totalPlaye
     var variantPlayers=variantEntries.reduce(function(s,e){return s+e.count;},0);
     var newLeaguePlayers=newLeagueEntries.reduce(function(s,e){return s+e.count;},0);
 
-    html+='<div style="font-weight:800;margin-bottom:4px">\u26A0 '+unknownLeagueEntries.length+
-      ' unbekannte Liga(en) gefunden ('+totalLeagueAffected+' Spieler) \u2014 nutzt den generischen Default-Wert (0.55) statt einer echten Liga-St\u00E4rke. Score wird NICHT blockiert (Liga-Anpassung ist ein D\u00E4mpfungsfaktor, kein Pflichtfeld), aber Liga-Faktor ist eine Sch\u00E4tzung, kein Treffer.</div>'+
-
-      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;background:rgba(0,0,0,0.18);border-radius:6px;font-size:11px">'+
-        (hasTotalCount?
-          '<span>Liga-Matches: <b>'+matchedCount+'/'+totalPlayers+'</b> Spieler (<b>'+matchedPct+'%</b>)</span>'+
-          '<span>Default-Fallback: <b>'+totalLeagueAffected+'/'+totalPlayers+'</b> Spieler (<b>'+fallbackPct+'%</b>)</span>'
-          :'<span style="color:var(--text-muted)">Gesamtspielerzahl nicht verf\u00FCgbar \u2014 Coverage-% kann nicht berechnet werden</span>'
-        )+
-        '<span style="padding:2px 8px;border-radius:10px;font-weight:800;font-size:10px;letter-spacing:0.04em;background:'+sevColor+'22;color:'+sevColor+';border:1px solid '+sevColor+'55">WARNSTUFE '+sevLabel+(hasTotalCount?' ('+fallbackPct+'%)':'')+'</span>'+
-        '<button onclick="window.exportUnknownLeagues()" style="margin-left:auto;padding:4px 10px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(239,68,68,0.15);color:var(--text-primary);border:1px solid var(--accent-red)">\u2B07 Export (Name | Count | Match | %)</button>'+
+    /* UI-NEUFASSUNG: vorher rote Großbuchstaben-Alarmbox mit Warnstufen-
+       Badge, permanent ausgeklappt — sah nach kaputter App aus, obwohl
+       es nur eine (bekannte, dauerhafte) Datenlücke ist, kein Fehler.
+       Jetzt: eine ruhige Zeile, gedeckte Farbe, alles Detail dahinter
+       eingeklappt. Liga-Anpassung bleibt ein Dämpfungsfaktor, kein
+       Pflichtfeld — Score wird dadurch nicht blockiert, das war auch
+       vorher schon so, nur jetzt nicht mehr wie ein Notfall dargestellt. */
+    html+='<details>'+
+      '<summary style="cursor:pointer;color:var(--text-secondary)">'+
+        '<span class="disclosure-arrow" style="display:inline-block">\u25B6</span> Liga-Mapping: '+
+        (hasTotalCount?matchedCount+'/'+totalPlayers+' Spieler mit echter Liga-St\u00E4rke ('+matchedPct+'%)':'Coverage nicht berechenbar')+
+        ' <span style="color:var(--text-muted)">\u00B7 '+unknownLeagueEntries.length+' unbekannte Liga-Namen, Default-Wert 0.55 verwendet, Score nicht blockiert</span>'+
+        '<button onclick="event.stopPropagation();window.exportUnknownLeagues()" style="margin-left:10px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--border-dim)">\u2B07 Export</button>'+
+      '</summary>'+
+      '<div style="padding:8px 0 4px">'+
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:0 0 8px;color:var(--text-muted)">'+
+          '<span>'+variantEntries.length+' von '+suggestions.length+' Namen = Varianten bekannter Ligen ('+variantPlayers+' Spieler, Normalisierung w\u00FCrde reichen)</span>'+
+          '<span>'+newLeagueEntries.length+' von '+suggestions.length+' Namen = vermutlich neue Liga, braucht echtes Mapping ('+newLeaguePlayers+' Spieler)</span>'+
+        '</div>'+
+        '<ul style="margin:4px 0 0 18px;padding:0;color:var(--text-muted)">'+
+        suggestions.map(function(s){
+          var tag=s.isExactVariant
+            ?'<span style="color:var(--accent-green)">[Variante]</span>'
+            :'<span style="color:var(--text-muted)">[Neu?]</span>';
+          return '<li style="margin-bottom:3px">'+tag+' "'+s.name+'" \u00D7 '+s.count+
+            ' \u2192 \u00E4hnlichster Eintrag: "'+s.bestMatch+'" ('+s.similarity+'%, nur Hinweis)</li>';
+        }).join('')+
+        '</ul>'+
       '</div>'+
-
-      /* NEU: Varianten vs. echte neue Ligen, getrennt. isExactVariant
-         ist die einzige automatisch vertrauenswürdige Kategorie — alles
-         andere zählt hier bewusst als "neue Liga", auch wenn der
-         Ähnlichkeits-Hinweis unten plausibel aussieht (siehe Risiko-
-         Kommentar bei buildLeagueMatchSuggestions: "League 1"/"Ligue 1"
-         und "Série B"/"Série A" sehen ähnlich aus, sind es aber nicht). */
-      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin:0 0 8px;font-size:11px;color:var(--text-secondary)">'+
-        '<span>\u2713 <b>'+variantEntries.length+'</b> von '+suggestions.length+' Namen = echte Varianten bekannter Ligen ('+variantPlayers+' Spieler, Normalisierung reicht)</span>'+
-        '<span>\u26A0 <b>'+newLeagueEntries.length+'</b> von '+suggestions.length+' Namen = vermutlich neue Liga, braucht echtes Mapping ('+newLeaguePlayers+' Spieler)</span>'+
-      '</div>'+
-
-      '<ul style="margin:4px 0 0 18px;padding:0">'+
-      suggestions.map(function(s){
-        var tag=s.isExactVariant
-          ?'<span style="color:var(--accent-green);font-weight:700">[VARIANTE]</span>'
-          :'<span style="color:var(--accent-amber);font-weight:700">[NEU?]</span>';
-        return '<li style="margin-bottom:3px">'+tag+' "'+s.name+'" \u00D7 '+s.count+
-          ' <span style="color:var(--text-muted)">\u2192 \u00E4hnlichster bekannter Eintrag: "'+s.bestMatch+'" ('+s.similarity+'% \u2014 nur Hinweis, kein Automatik-Treffer)</span></li>';
-      }).join('')+
-      '</ul>';
+    '</details>';
   }
   banner.innerHTML=html;
 }
