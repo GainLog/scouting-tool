@@ -3287,16 +3287,31 @@ function findSimilarPlayersV2(p,allPlayers){
 ══════════════════════════════════════════════════════════════ */
 function comparisonTagsV2(focal,other){
   var tags=[];
+  /* AUDIT RUNDE 17 — User-Review nach echter Nutzung: exakte Zahlen
+     wie "999% Gehalt teurer" / "38 Punkte schlechter" erzeugten
+     visuelles Rauschen, die Kernaussage (teurer/günstiger, besser/
+     schlechter) zählt mehr als die exakte Differenz. Jetzt: kurzes
+     Qualitäts-Label für die Anzeige, exakter Wert wandert in den
+     title-Tooltip (Hover) statt komplett zu verschwinden — bewusst
+     NICHT die Information ganz weggeworfen, nur nicht mehr Standard. */
+  function magWord(absVal,t1,t2){
+    if(absVal>=t2)return tt('deutlich','significantly');
+    if(absVal>=t1)return tt('etwas','somewhat');
+    return '';
+  }
 
   /* Moneyball Score: the headline verdict comparison */
   if(focal.moneyballScore!==null&&other.moneyballScore!==null){
     var dScore=other.moneyballScore-focal.moneyballScore;
     if(Math.abs(dScore)>=3){
-      tags.push({label:(dScore>0?'+':'')+dScore+' Score',good:dScore>0});
+      var scoreWord=magWord(Math.abs(dScore),3,15);
+      tags.push({label:(scoreWord?scoreWord+' ':'')+tt(dScore>0?'besserer Score':'schlechterer Score',dScore>0?'better score':'worse score'),
+        good:dScore>0,detail:(dScore>0?'+':'')+dScore+tt(' Punkte Score-Differenz',' points score difference')});
     }
   }
 
-  /* Age: younger is framed as the favourable signal (resale/longevity) */
+  /* Age: younger is framed as the favourable signal (resale/longevity).
+     Bleibt exakt — kleine, schon kompakte Zahl, kein Rauschen-Problem. */
   var dAge=other.age-focal.age;
   if(Math.abs(dAge)>=1){
     tags.push({label:Math.abs(dAge)+tt(' J. ',' yr ')+tt(dAge<0?'jünger':'älter',dAge<0?'younger':'older'),good:dAge<0});
@@ -3308,7 +3323,9 @@ function comparisonTagsV2(focal,other){
     var wageDeltaPct=Math.round((other.wage-focal.wage)/focal.wage*100);
     if(Math.abs(wageDeltaPct)>=8){
       var wageDeltaCapped=Math.min(999,Math.abs(wageDeltaPct));
-      tags.push({label:wageDeltaCapped+(wageDeltaCapped<Math.abs(wageDeltaPct)?'+':'')+tt('% Gehalt ','% wage ')+tt(wageDeltaPct<0?'günstiger':'teurer',wageDeltaPct<0?'cheaper':'more expensive'),good:wageDeltaPct<0});
+      var wageWord=magWord(wageDeltaCapped,8,50);
+      tags.push({label:(wageWord?wageWord+' ':'')+tt(wageDeltaPct<0?'Gehalt günstiger':'Gehalt teurer',wageDeltaPct<0?'wage cheaper':'wage more expensive'),
+        good:wageDeltaPct<0,detail:wageDeltaCapped+(wageDeltaCapped<Math.abs(wageDeltaPct)?'+':'')+tt('% Gehaltsunterschied','% wage difference')});
     }
   }
 
@@ -3322,7 +3339,9 @@ function comparisonTagsV2(focal,other){
     var tvDeltaPct=Math.round((other.transferValue-focal.transferValue)/focal.transferValue*100);
     if(Math.abs(tvDeltaPct)>=8){
       var tvDeltaCapped=Math.min(999,Math.abs(tvDeltaPct));
-      tags.push({label:tvDeltaCapped+(tvDeltaCapped<Math.abs(tvDeltaPct)?'+':'')+tt('% Marktwert ','% market value ')+tt(tvDeltaPct<0?'günstiger':'teurer',tvDeltaPct<0?'cheaper':'more expensive'),good:tvDeltaPct<0});
+      var tvWord=magWord(tvDeltaCapped,8,50);
+      tags.push({label:(tvWord?tvWord+' ':'')+tt(tvDeltaPct<0?'Marktwert günstiger':'Marktwert teurer',tvDeltaPct<0?'market value cheaper':'market value more expensive'),
+        good:tvDeltaPct<0,detail:tvDeltaCapped+(tvDeltaCapped<Math.abs(tvDeltaPct)?'+':'')+tt('% Marktwertunterschied','% market value difference')});
     }
   }
 
@@ -3330,7 +3349,7 @@ function comparisonTagsV2(focal,other){
   if(focal.xg90>0||other.xg90>0){
     var dXg=other.xg90-focal.xg90;
     if(Math.abs(dXg)>=0.05){
-      tags.push({label:'xG/90 '+tt(dXg>0?'höher':'niedriger',dXg>0?'higher':'lower'),good:dXg>0});
+      tags.push({label:'xG/90 '+tt(dXg>0?'höher':'niedriger',dXg>0?'higher':'lower'),good:dXg>0,detail:(dXg>0?'+':'')+dXg.toFixed(2)+' xG/90'});
     }
   }
 
@@ -3338,7 +3357,7 @@ function comparisonTagsV2(focal,other){
   if(focal.xa90>0||other.xa90>0){
     var dXa=other.xa90-focal.xa90;
     if(Math.abs(dXa)>=0.05){
-      tags.push({label:'xA/90 '+tt(dXa>0?'höher':'niedriger',dXa>0?'higher':'lower'),good:dXa>0});
+      tags.push({label:'xA/90 '+tt(dXa>0?'höher':'niedriger',dXa>0?'higher':'lower'),good:dXa>0,detail:(dXa>0?'+':'')+dXa.toFixed(2)+' xA/90'});
     }
   }
 
@@ -3346,7 +3365,9 @@ function comparisonTagsV2(focal,other){
   if(!focal.costUnknown&&!other.costUnknown){
     var dCe=other.costEfficiency-focal.costEfficiency;
     if(Math.abs(dCe)>=5){
-      tags.push({label:Math.abs(dCe)+tt(' Pkt. Cost-Eff. ',' pts Cost-Eff. ')+tt(dCe>0?'besser':'schlechter',dCe>0?'better':'worse'),good:dCe>0});
+      var ceWord=magWord(Math.abs(dCe),5,20);
+      tags.push({label:(ceWord?ceWord+' ':'')+tt(dCe>0?'bessere Cost-Eff.':'schlechtere Cost-Eff.',dCe>0?'better cost-eff.':'worse cost-eff.'),
+        good:dCe>0,detail:Math.abs(dCe)+tt(' Punkte Cost-Efficiency-Differenz',' points cost-efficiency difference')});
     }
   }
 
@@ -3367,7 +3388,7 @@ function similarPlayersHtml(p,allPlayers){
       '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">'+
         tags.map(function(t){
           var col=t.good?'var(--accent-green)':'var(--accent-red)';
-          return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:'+col+'14;color:'+col+';border:1px solid '+col+'33">'+(t.good?'▲':'▼')+' '+t.label+'</span>';
+          return '<span title="'+(t.detail||t.label)+'" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:'+col+'14;color:'+col+';border:1px solid '+col+'33;cursor:default">'+(t.good?'▲':'▼')+' '+t.label+'</span>';
         }).join('')+
       '</div>'
       :'<div style="font-size:9px;color:var(--text-muted);margin-top:4px">'+tt('Nahezu identisches Profil &mdash; keine relevanten Unterschiede','Nearly identical profile &mdash; no relevant differences')+'</div>';
@@ -3414,24 +3435,15 @@ function renderDetailVizV2(p,allPlayers){
   if(!el)return;
   if(!p){ el.innerHTML=''; return; }
 
-  /* same "meaningful metric" definition as performanceProfileHtml's
-     own routing — must match exactly or the card title could say
-     "Radar" while the bar fallback actually rendered, or vice versa */
-  var meaningfulCount=Object.keys(p.bd||{}).filter(function(k){
-    return p.bd[k].raw!==0&&p.bd[k].raw!==null&&!isNaN(p.bd[k].raw);
-  }).length;
-  var profileIsRadar=meaningfulCount>=5;
-  var profileTitle=profileIsRadar?tt('Performance-Radar','Performance Radar'):tt('Performance-Profil','Performance Profile');
-  var profileFootnote=profileIsRadar?
-    tt('Gestrichelt = Gruppen-Median (50)','Dashed = group median (50)')
-    :tt('Zu wenige Metriken für ein Radar-Polygon &mdash; Balkenansicht stattdessen','Too few metrics for a radar polygon &mdash; bar view instead');
-
-  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:14px;margin-bottom:14px">'+
-    '<div class="card" style="padding:16px">'+
-      '<div class="card-header" style="margin-bottom:8px"><span class="card-title">'+profileTitle+'</span></div>'+
-      performanceProfileHtml(p)+
-      '<div style="text-align:center;font-size:9px;color:var(--text-muted);margin-top:6px">'+profileFootnote+'</div>'+
-    '</div>'+
+  /* AUDIT RUNDE 17 — User-Review nach echter Nutzung: Performance-
+     Radar entfernt. Verifiziert im Code (nicht nur behauptet): Radar
+     und Score-Breakdown-Balken lesen exakt dasselbe Objekt (p.bd),
+     dieselben Perzentile, dieselbe Gewichtung — der einzige Unterschied
+     war, dass das Radar Nullwerte vorher filterte. Zwei Darstellungen
+     derselben Zahlen, keine zusätzliche Information. Balken bleiben
+     (in renderOverviewPanelV2), Radar/Profil-Spalte komplett entfernt,
+     auf 2 statt 3 Spalten umgestellt statt mit Ersatzinhalt aufzufüllen. */
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px;margin-bottom:14px">'+
     '<div class="card" style="padding:16px">'+
       '<div class="card-header" style="margin-bottom:8px"><span class="card-title">Cost-Efficiency-Breakdown</span></div>'+
       costBreakdownHtml(p,allPlayers)+
@@ -3511,40 +3523,69 @@ function renderMarketOverviewV2(players){
     '</div>';
   }).join('');
 
-  /* ---- Performance vs. Cost Efficiency scatter ----
-     Honest substitute for "Marktineffizienz %": plots perfScoreAdj
-     (x) against costEfficiency (y) for every player with known
-     cost. Top-left quadrant = high performance, low cost-efficiency
-     rank relative to peers... actually top-right = best value
-     (high perf AND high cost efficiency). Clicking a dot selects
-     that player. */
+  /* ---- Performance vs. Cost Efficiency QUADRANT view ----
+     AUDIT RUNDE 17 — User-Review nach echter Nutzung: der reine
+     Scatter beantwortete nicht "was soll ich daraus lernen" — Punkte
+     waren nur nach Verdict gefärbt, der ausgewählte Spieler war nicht
+     erkennbar, Achsen hatten keine Aussage über "gut"/"schlecht".
+     Jetzt: 4 beschriftete Quadranten (Schwellenwert 50, derselbe
+     Median-Bezug wie überall sonst im Tool — "Gestrichelt = Gruppen-
+     Median (50)" beim Radar/Profil), UND der aktuell ausgewählte
+     Spieler bekommt einen eigenen, größeren, hervorgehobenen Punkt
+     statt im Verdict-Farbrauschen zu verschwinden. */
   var withCost=players.filter(function(p){return !p.costUnknown;});
-  var scatterSize=280,pad=18;
-  /* PERFORMANCE-FIX: players.indexOf(p) hier war O(n) PRO Punkt — bei
-     ~960 Punkten gegen 2728 players ein vermeidbarer O(n²)-Scan. Der
-     echte Index ist über players.map() trivial verfügbar, ganz ohne
-     Suche — indexOf komplett entfernt. */
+  var scatterSize=280,pad=18,mid=pad+(scatterSize-2*pad)/2;
   var indexById=new Map();
   players.forEach(function(p,i){indexById.set(p,i);});
-  var scatterPts=withCost.map(function(p,i){
-    var x=pad+(p.perfScoreAdj/100)*(scatterSize-2*pad);
-    var y=(scatterSize-pad)-(p.costEfficiency/100)*(scatterSize-2*pad);
-    var col=verdictColor(p.verdict);
-    return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="'+col+'" opacity="0.75" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" '+
+  var selP=(typeof SELECTED_IDX!=='undefined'&&FILTERED&&FILTERED[SELECTED_IDX])?FILTERED[SELECTED_IDX]:null;
+
+  function scatterXY(p){
+    return {
+      x:pad+(p.perfScoreAdj/100)*(scatterSize-2*pad),
+      y:(scatterSize-pad)-(p.costEfficiency/100)*(scatterSize-2*pad)
+    };
+  }
+  var scatterPts=withCost.filter(function(p){return p!==selP;}).map(function(p){
+    var xy=scatterXY(p);
+    return '<circle cx="'+xy.x.toFixed(1)+'" cy="'+xy.y.toFixed(1)+'" r="3.5" fill="var(--text-muted)" opacity="0.45" '+
       'data-scatidx="'+indexById.get(p)+'" style="cursor:pointer">'+
       '<title>'+p.name+' \u2022 Perf '+p.perfScoreAdj+' \u2022 Cost-Eff '+p.costEfficiency+'</title>'+
     '</circle>';
   }).join('');
+  var selectedPtHtml='';
+  if(selP&&!selP.costUnknown){
+    var sxy=scatterXY(selP);
+    selectedPtHtml='<circle cx="'+sxy.x.toFixed(1)+'" cy="'+sxy.y.toFixed(1)+'" r="8" fill="'+verdictColor(selP.verdict)+'" opacity="0.25"/>'+
+      '<circle cx="'+sxy.x.toFixed(1)+'" cy="'+sxy.y.toFixed(1)+'" r="5.5" fill="'+verdictColor(selP.verdict)+'" stroke="#fff" stroke-width="1.5" '+
+      'data-scatidx="'+indexById.get(selP)+'" style="cursor:pointer">'+
+      '<title>'+tt('Ausgewählt: ','Selected: ')+selP.name+'</title>'+
+    '</circle>';
+  }
+  var quadLabel=tt('Elite','Elite'), quadValue=tt('Value Buy','Value Buy'),
+      quadExpensive=tt('Teuer','Expensive'), quadWeak=tt('Schwaches Profil','Weak Profile');
   var scatterHtml=withCost.length>0?
     '<svg viewBox="0 0 '+scatterSize+' '+scatterSize+'" style="width:100%;max-width:300px;display:block;margin:0 auto" id="market-scatter-svg">'+
+      /* 4 quadrant background tints, drawn first so dots sit on top */
+      '<rect x="'+mid+'" y="'+pad+'" width="'+(scatterSize-pad-mid)+'" height="'+(mid-pad)+'" fill="var(--accent-green)" opacity="0.06"/>'+
+      '<rect x="'+pad+'" y="'+pad+'" width="'+(mid-pad)+'" height="'+(mid-pad)+'" fill="var(--accent-blue)" opacity="0.05"/>'+
+      '<rect x="'+mid+'" y="'+mid+'" width="'+(scatterSize-pad-mid)+'" height="'+(scatterSize-pad-mid)+'" fill="var(--accent-amber)" opacity="0.06"/>'+
+      '<rect x="'+pad+'" y="'+mid+'" width="'+(mid-pad)+'" height="'+(scatterSize-pad-mid)+'" fill="var(--accent-red)" opacity="0.05"/>'+
       '<line x1="'+pad+'" y1="'+(scatterSize-pad)+'" x2="'+(scatterSize-pad)+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'+
       '<line x1="'+pad+'" y1="'+pad+'" x2="'+pad+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'+
-      '<line x1="'+(scatterSize/2)+'" y1="'+pad+'" x2="'+(scatterSize/2)+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>'+
-      '<line x1="'+pad+'" y1="'+(scatterSize/2)+'" x2="'+(scatterSize-pad)+'" y2="'+(scatterSize/2)+'" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>'+
+      '<line x1="'+mid+'" y1="'+pad+'" x2="'+mid+'" y2="'+(scatterSize-pad)+'" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3"/>'+
+      '<line x1="'+pad+'" y1="'+mid+'" x2="'+(scatterSize-pad)+'" y2="'+mid+'" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3"/>'+
+      '<text x="'+(scatterSize-pad-4)+'" y="'+(pad+11)+'" text-anchor="end" font-size="8.5" font-weight="700" fill="var(--accent-green)">'+quadLabel+'</text>'+
+      '<text x="'+(pad+4)+'" y="'+(pad+11)+'" text-anchor="start" font-size="8.5" font-weight="700" fill="var(--accent-blue)">'+quadValue+'</text>'+
+      '<text x="'+(scatterSize-pad-4)+'" y="'+(scatterSize-pad-7)+'" text-anchor="end" font-size="8.5" font-weight="700" fill="var(--accent-amber)">'+quadExpensive+'</text>'+
+      '<text x="'+(pad+4)+'" y="'+(scatterSize-pad-7)+'" text-anchor="start" font-size="8.5" font-weight="700" fill="var(--accent-red)">'+quadWeak+'</text>'+
       '<text x="'+(scatterSize/2)+'" y="'+(scatterSize-3)+'" text-anchor="middle" font-size="8" fill="var(--text-muted)">'+tt('Performance →','Performance →')+'</text>'+
       '<text x="9" y="'+(scatterSize/2)+'" text-anchor="middle" font-size="8" fill="var(--text-muted)" transform="rotate(-90 9 '+(scatterSize/2)+')">Cost Efficiency →</text>'+
-      scatterPts+
-    '</svg>'
+      scatterPts+selectedPtHtml+
+    '</svg>'+
+    '<div style="text-align:center;font-size:9px;color:var(--text-muted);margin-top:4px">'+tt(
+      'Weißer Rand = ausgewählter Spieler. Quadranten geteilt bei Perzentil 50 (Gruppen-Median).',
+      'White outline = currently selected player. Quadrants split at the 50th percentile (group median).'
+    )+'</div>'
     :'<div style="padding:20px;text-align:center;font-size:11px;color:var(--text-muted)">'+tt('Keine Spieler mit bekannten Kosten im Filter.','No players with known costs in the filter.')+'</div>';
 
   el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">'+
@@ -4689,10 +4730,26 @@ function renderScoutReportV2(p,allPlayers){
      before the detailed score breakdown that follows below. */
   scoutVerdictSummaryHtml(p)+
 
-  /* Deal Analysis — the deeper layer: buy case vs. counter-argument,
-     single biggest risk, best/worst case, model-derived bid range,
-     one-line deal interpretation. */
-  dealAnalysisHtml(p,allPlayers)+
+  /* AUDIT RUNDE 17 — User-Review nach echter Nutzung: Scouting-
+     Priorität ist 1. Verdict 2. Warum kaufen 3. Risiken 4. Kosten
+     5. Angebotsspanne 6. Score-Aufschlüsselung — vorher kamen Red
+     Flags und Finanzielle Eckdaten erst NACH Score Breakdown, also
+     genau umgekehrt zur tatsächlichen Entscheidungsreihenfolge. Jetzt
+     Red Flags + Financials nach vorne, Score Breakdown nach hinten
+     (Deal-Analyse bleibt als ein Block zusammen, nicht aufgespalten —
+     sie deckt Risiko/Bid-Range ohnehin nochmal vertiefend ab). */
+
+  /* Red Flags */
+  '<div class="card" style="border-color:rgba(239,68,68,0.18)">'+
+    '<div class="card-header"><span class="card-title" style="color:var(--accent-red)">&#9888; Red Flags</span></div>'+
+    '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:6px">'+
+      flags.map(function(f){
+        return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:6px 8px;border-radius:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12)">'+
+          '<span style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-red);flex-shrink:0;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);margin-top:1px">'+f.cat+'</span>'+
+          '<span style="color:var(--text-secondary)">'+f.t+'</span></div>';
+      }).join('')+
+    '</div>'+
+  '</div>'+
 
   /* Performance / Value / Moneyball — clearly separated, never blended into one opaque number */
   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">'+
@@ -4713,39 +4770,8 @@ function renderScoutReportV2(p,allPlayers){
     '</div>'+
   '</div>'+
 
-  /* Model Diagnostics — top-level decomposition of moneyballScore.
-     Sits ABOVE Score Breakdown deliberately: this answers "why this
-     total", Score Breakdown below answers "why this Performance Score". */
-  '<div class="card">'+
-    '<div class="card-header"><span class="card-title">Model Diagnostics</span>'+
-      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">'+tt('Gewichtete Beitr\u00E4ge zum Moneyball Score','Weighted contributions to the Moneyball Score')+'</span></div>'+
-    '<div style="padding:8px 14px 14px">'+
-      renderModelDiagnostics(p)+
-    '</div>'+
-  '</div>'+
-
-  /* Score Breakdown */
-  '<div class="card">'+
-    '<div class="card-header"><span class="card-title">Score Breakdown</span>'+
-      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">'+tt('Gewichtetes Modell für ','Weighted model for ')+(GROUP_LABELS[p.posGrp]||p.posGrp)+'</span></div>'+
-    '<div style="padding:10px 14px 14px;display:flex;flex-direction:column;gap:10px">'+
-      renderScoreBreakdownV2(p)+
-    '</div>'+
-  '</div>'+
-
-  /* Red Flags */
-  '<div class="card" style="border-color:rgba(239,68,68,0.18)">'+
-    '<div class="card-header"><span class="card-title" style="color:var(--accent-red)">&#9888; Red Flags</span></div>'+
-    '<div style="padding:8px 14px 14px;display:flex;flex-direction:column;gap:6px">'+
-      flags.map(function(f){
-        return '<div style="display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:6px 8px;border-radius:6px;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12)">'+
-          '<span style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-red);flex-shrink:0;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.12);margin-top:1px">'+f.cat+'</span>'+
-          '<span style="color:var(--text-secondary)">'+f.t+'</span></div>';
-      }).join('')+
-    '</div>'+
-  '</div>'+
-
-  /* Financials — wage/value, transfer value if known */
+  /* Financials — wage/value, transfer value if known. Moved up: "Kosten"
+     ist Priorität 4, vorher stand dieser Block ganz am Ende. */
   '<div class="card">'+
     '<div class="card-header"><span class="card-title">'+tt('Finanzielle Eckdaten','Financial Summary')+'</span></div>'+
     '<div style="padding:10px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">'+
@@ -4753,6 +4779,37 @@ function renderScoutReportV2(p,allPlayers){
       '<div><span style="color:var(--text-muted)">'+tt('Transferwert: ','Transfer Value: ')+'</span><span style="font-weight:700">'+(p.tvKnown?fmtMoney(p.transferValue):tt('unbekannt','unknown'))+'</span></div>'+
       '<div><span style="color:var(--text-muted)">'+tt('Vertrag bis: ','Contract Until: ')+'</span><span style="font-weight:700">'+(p.contractMonthsKnown?p.contractMonths+tt(' Monate',' months'):tt('unbekannt','unknown'))+'</span></div>'+
       '<div><span style="color:var(--text-muted)">'+tt('Liga-Faktor: ','League Factor: ')+'</span><span style="font-weight:700">'+p.lf.toFixed(2)+' ('+p.league+')</span></div>'+
+    '</div>'+
+  '</div>'+
+
+  /* Deal Analysis — the deeper layer: buy case vs. counter-argument,
+     single biggest risk, best/worst case, model-derived bid range
+     (Priorität 5), one-line deal interpretation. Bleibt als ein
+     zusammenhängender Block, nicht aufgespalten. */
+  dealAnalysisHtml(p,allPlayers)+
+
+  /* Model Diagnostics — top-level decomposition of moneyballScore.
+     AUDIT RUNDE 17 — User-Review: "Score-Diagnostik" ist Power-User-
+     Content, nicht für die Standard-Entscheidung relevant. Jetzt
+     standardmäßig eingeklappt statt immer offen, gleiches Muster wie
+     die Liga-Mapping-/Fuzzy-Match-Details im Import-Banner. */
+  '<details class="card" style="padding:0">'+
+    '<summary style="cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:8px">'+
+      '<span class="disclosure-arrow" style="display:inline-block;font-size:10px;color:var(--text-muted)">\u25B6</span>'+
+      '<span class="card-title" style="margin:0">Model Diagnostics</span>'+
+      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">'+tt('Gewichtete Beitr\u00E4ge zum Moneyball Score \u2014 f\u00FCr Power-User','Weighted contributions to the Moneyball Score \u2014 for power users')+'</span>'+
+    '</summary>'+
+    '<div style="padding:0 14px 14px">'+
+      renderModelDiagnostics(p)+
+    '</div>'+
+  '</details>'+
+
+  /* Score Breakdown — Priorität 6, daher jetzt am Ende statt vorne */
+  '<div class="card">'+
+    '<div class="card-header"><span class="card-title">Score Breakdown</span>'+
+      '<span style="font-size:9px;color:var(--text-muted);font-weight:600">'+tt('Gewichtetes Modell für ','Weighted model for ')+(GROUP_LABELS[p.posGrp]||p.posGrp)+'</span></div>'+
+    '<div style="padding:10px 14px 14px;display:flex;flex-direction:column;gap:10px">'+
+      renderScoreBreakdownV2(p)+
     '</div>'+
   '</div>'+
 
@@ -4781,6 +4838,11 @@ window.selectPlayer=function(idx,targetView){
   renderScoutReportV2(p);
   renderOverviewPanelV2(p,FILTERED);
   renderDetailVizV2(p,FILTERED);
+  /* AUDIT RUNDE 17 — Quadranten-Scatter markiert jetzt den ausgewählten
+     Spieler; ohne diesen Aufruf würde die Markierung beim Wechsel des
+     Spielers nicht mitziehen, sondern auf der vorherigen Auswahl
+     hängen bleiben. */
+  renderMarketOverviewV2(FILTERED);
 
   var dest=targetView||'dashboard';
   document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
